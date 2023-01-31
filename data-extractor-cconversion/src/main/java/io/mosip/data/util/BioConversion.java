@@ -9,6 +9,7 @@ import javax.imageio.ImageIO;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Base64;
 
 @Component
 public class BioConversion {
@@ -26,10 +27,11 @@ public class BioConversion {
         return baos.toByteArray();
     }
 
-    public void writeFile(String fileName, byte[] imageData, ImageFormat toFormat) throws IOException {
-        File pdfFile = new File("C:/Users/Thamarai.Kannan/Downloads/" + fileName + "."+ toFormat.getFileFormat());
-        OutputStream os = new FileOutputStream(pdfFile);
+    public String writeFile(String fileName, byte[] imageData, ImageFormat toFormat) throws IOException {
+        File bioFile = new File("C:/Users/Thamarai.Kannan/Downloads/" + fileName + "."+ toFormat.getFileFormat());
+        OutputStream os = new FileOutputStream(bioFile);
         os.write(imageData);
         os.close();
+        return Base64.getEncoder().encodeToString(imageData);
     }
 }

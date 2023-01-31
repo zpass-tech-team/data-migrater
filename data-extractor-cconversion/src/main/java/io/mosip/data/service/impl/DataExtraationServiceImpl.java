@@ -5,6 +5,8 @@ import io.mosip.data.dto.dbimport.DBImportRequest;
 import io.mosip.data.dto.dbimport.FieldFormatRequest;
 import io.mosip.data.service.DataExtractionService;
 import io.mosip.data.util.BioConversion;
+import io.mosip.kernel.biometrics.entities.BIR;
+import io.mosip.kernel.core.cbeffutil.entity.BIRInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,7 @@ import java.sql.*;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Service
 public class DataExtraationServiceImpl  implements DataExtractionService {
@@ -20,9 +23,13 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
     @Autowired
     private BioConversion bioConversion;
 
+    @Autowired
+    private BIRInfo.BIRInfoBuilder birBuilder;
+
     @Override
-    public String extractBioDataFromDB(DBImportRequest dbImportRequest) throws SQLException, IOException {
+    public LinkedHashMap<String, String> extractBioDataFromDB(DBImportRequest dbImportRequest) throws SQLException, IOException {
         Connection conn=null;
+        LinkedHashMap<String, String> biodata = new LinkedHashMap<>();
 
         try {
             if (dbImportRequest.getDbType().equals(DBTypes.MSSQL)) {
@@ -53,10 +60,10 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
                 resultSet = statement.executeQuery(selectSql);
 
                 while (resultSet.next()) {
-                    LinkedHashMap<String, String> biodata = new LinkedHashMap<>();
                     for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
                         byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
-                        convertBiometric(resultSet.getString(fieldFormatRequest.getDisplayName()), fieldFormatRequest, byteVal);
+                        String convertedImageData = convertBiometric(resultSet.getString(fieldFormatRequest.getDisplayName()), fieldFormatRequest, byteVal);
+                        biodata.put(resultSet.getString(fieldFormatRequest.getDisplayName())+ "-" + fieldFormatRequest.getFieldName(),  convertedImageData);
                     }
                 }
             }
@@ -65,12 +72,31 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
                 conn.close();
         }
 
-        return "Successfully Completed";
+        return biodata;
     }
 
     @Override
-    public void convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue) throws IOException {
+    public LinkedHashMap<String, String> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest) throws SQLException, IOException {
+        LinkedHashMap<String, String> bioData = extractBioDataFromDB(dbImportRequest);
+        LinkedHashMap<String, String> convertedData = new LinkedHashMap<>();
+
+        for(Map.Entry<String, String> entry : bioData.entrySet()) {
+            byte[] data = Base64.getDecoder().decode(entry.getValue());
+            StringBuffer byteStringData = new StringBuffer();
+
+            for (byte b : data)
+                if (byteStringData.length() > 0)
+                    byteStringData.append("," + b);
+                else
+                    byteStringData.append(b);
+
+            convertedData.put(entry.getKey(), byteStringData.toString());
+        }
+        return convertedData;
+    }
+
+    private String convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue) throws IOException {
         bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName() , bioValue, fieldFormatRequest.getFromFormat());
-        bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName(), bioConversion.convertImage(fieldFormatRequest.getFromFormat(), fieldFormatRequest.getToFormat(), bioValue), fieldFormatRequest.getToFormat());
+        return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName(), bioConversion.convertImage(fieldFormatRequest.getFromFormat(), fieldFormatRequest.getToFormat(), bioValue), fieldFormatRequest.getToFormat());
     }
 }

@@ -5,9 +5,10 @@ import io.mosip.data.dto.dbimport.FieldFormatRequest;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 
 public interface DataExtractionService {
 
-    public String extractBioDataFromDB(DBImportRequest dbImportRequest) throws SQLException, IOException;
-    public void convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue) throws IOException;
+    public LinkedHashMap<String, String> extractBioDataFromDB(DBImportRequest dbImportRequest) throws SQLException, IOException;
+    public LinkedHashMap<String, String> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest) throws SQLException, IOException;
 }
