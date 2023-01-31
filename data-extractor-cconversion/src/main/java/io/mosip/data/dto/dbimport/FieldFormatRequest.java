@@ -1,18 +1,19 @@
 package io.mosip.data.dto.dbimport;
 
+import io.mosip.data.constant.FieldCategory;
 import io.mosip.data.constant.ImageFormat;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.LinkedHashMap;
 
 @Data
 @Getter
 @Setter
 public class FieldFormatRequest {
     private String FieldName;
-    private String displayName;
+    private FieldCategory fieldCategory;
+    private String primaryField;
     private ImageFormat fromFormat;
     private ImageFormat toFormat;
+    private String fieldToMap;
 }

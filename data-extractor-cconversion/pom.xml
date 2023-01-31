@@ -46,12 +46,6 @@
             <artifactId>springdoc-openapi-ui</artifactId>
             <version>1.6.8</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-cbeffutil-api -->
-        <dependency>
-            <groupId>io.mosip.kernel</groupId>
-            <artifactId>kernel-cbeffutil-api</artifactId>
-            <version>1.2.0.1-B1</version>
-        </dependency>
     </dependencies>
 
 </project>
