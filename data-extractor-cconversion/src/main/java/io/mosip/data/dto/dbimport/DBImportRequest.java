@@ -20,5 +20,6 @@ public class DBImportRequest {
     private String userId;
     private String password;
     private String tableName;
+    private String process;
     private List<FieldFormatRequest> columnDetails;
 }
