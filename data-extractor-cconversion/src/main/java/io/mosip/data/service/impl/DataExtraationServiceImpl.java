@@ -1,13 +1,19 @@
 package io.mosip.data.service.impl;
 
+import io.mosip.data.constant.ApiName;
 import io.mosip.data.constant.DBTypes;
 import io.mosip.data.constant.FieldCategory;
+import io.mosip.data.dto.ResponseWrapper;
 import io.mosip.data.dto.dbimport.DBImportRequest;
 import io.mosip.data.dto.dbimport.FieldFormatRequest;
+import io.mosip.data.dto.packet.DocumentDto;
 import io.mosip.data.dto.packet.PacketResponse;
+import io.mosip.data.exception.ApisResourceAccessException;
 import io.mosip.data.service.DataExtractionService;
+import io.mosip.data.service.DataRestClientService;
 import io.mosip.data.util.BioConversion;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -22,6 +28,12 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
 
     @Autowired
     private BioConversion bioConversion;
+
+    @Autowired
+    private DataRestClientService restApiClient;
+
+    @Autowired
+    private Environment env;
 
     @Override
     public LinkedHashMap<String, String> extractBioDataFromDB(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
@@ -76,7 +88,7 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
             ResultSet resultSet = readDataFromDatabase(dbImportRequest, conn);
             LinkedHashMap<String, String> DemoDetails = new LinkedHashMap<>();
             LinkedHashMap<String, String> bioDetails = new LinkedHashMap<>();
-            LinkedHashMap<String, String> docDetails = new LinkedHashMap<>();
+            LinkedHashMap<String, DocumentDto> docDetails = new LinkedHashMap<>();
 
             while (resultSet.next()) {
                 for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
@@ -89,15 +101,45 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
                         String convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
                         bioDetails.put(fieldMap, convertedImageData);
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
-                        byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
-                        docDetails.put(fieldMap, Base64.getEncoder().encodeToString(byteVal));
+ /*                       DocumentDto document = new DocumentDto();
+                        document.setOwner();
+                        document.setCategory();
+                        document.setDocument(resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes());
+                        document.setFormat();
+                        document.setRefNumber();
+                        document.setType();
+                        document.setValue(fieldMap);
+                        docDetails.put(fieldMap, document);
+
+                        DocumentMetaInfoDTO documentMetaInfoDTO = new DocumentMetaInfoDTO();
+                        documentMetaInfoDTO.setDocumentCategory(document.getCategory());
+                        documentMetaInfoDTO.setDocumentName(document.getValue());
+                        documentMetaInfoDTO.setDocumentOwner(document.getOwner());
+                        documentMetaInfoDTO.setDocumentType(document.getType());
+                        documentMetaInfoDTO.setRefNumber(document.getRefNumber());
+*/
+                   //     docDetails.put(fieldMap, Base64.getEncoder().encodeToString(byteVal));
                     }
                 }
+
+    /*            PacketDto packetDto = new PacketDto();
+                packetDto.setId();
+                packetDto.setProcess(dbImportRequest.getProcess());
+                packetDto.setSource("REGISTRATION_CLIENT");
+                packetDto.setSchemaVersion("0.1");
+                packetDto.setAdditionalInfoReqId();
+                packetDto.setMetaInfo(null);
+                packetDto.setOfflineMode();
+                packetDto.setRefId();
+
+
+                PacketWriter packetWriter = new PacketWriter();
+                packetWriter.createPacket()*/
             }
 
             packetResponse.setDemoDetails(DemoDetails);
             packetResponse.setBioDetails(bioDetails);
-            packetResponse.setDocDetails(docDetails);
+       //     packetResponse.setDocDetails(docDetails);
         } finally {
             if (conn != null)
                 conn.close();
@@ -116,6 +158,7 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
     }
 
     private ResultSet readDataFromDatabase(DBImportRequest dbImportRequest, Connection conn) throws Exception {
+        loadMasterData();
         if (dbImportRequest.getDbType().equals(DBTypes.MSSQL)) {
             DriverManager.registerDriver(new com.microsoft.sqlserver.jdbc.SQLServerDriver());
             conn = DriverManager.getConnection("jdbc:sqlserver://" + dbImportRequest.getUrl() + ";sslProtocol=TLSv1.2;databaseName=" + dbImportRequest.getDatabaseName()+ ";Trusted_Connection=True;", dbImportRequest.getUserId(), dbImportRequest.getPassword());
@@ -163,4 +206,10 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
         } else
             throw new SQLException("Unable to Connect With Database. Please check the Configuration");
     }
+
+    private void loadMasterData() throws ApisResourceAccessException {
+        ResponseWrapper response= (ResponseWrapper) restApiClient.getApi(ApiName.DOCUMENT_CATEGORY, null, "", "", ResponseWrapper.class);
+        System.out.println(response);
+    }
+
 }
