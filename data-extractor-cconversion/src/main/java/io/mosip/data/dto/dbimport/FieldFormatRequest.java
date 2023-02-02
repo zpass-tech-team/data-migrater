@@ -16,4 +16,5 @@ public class FieldFormatRequest {
     private ImageFormat fromFormat;
     private ImageFormat toFormat;
     private String fieldToMap;
+    private String fieldToQualityScore;
 }

@@ -108,7 +108,7 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
                         byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
                         String convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
-                        bioDetails.put(fieldMap, convertedImageData);
+                        bioDetails.put(fieldMap + (fieldFormatRequest.getFieldToQualityScore() != null ? "_" + resultSet.getString(fieldFormatRequest.getFieldToQualityScore()) : ""), convertedImageData);
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
                         byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
                         docDetails.put(fieldMap, Base64.getEncoder().encodeToString(byteVal));
@@ -135,10 +135,10 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
             }
 
             if (bioDetails.size()>0) {
-                packetResponse.setBioDetails(packetCreator.setBiometrics());
+//                packetResponse.setBioDetails(packetCreator.setBiometrics(bioDetails));
             }
 
-       //     packetResponse.setBioDetails(bioDetails);
+            packetResponse.setBioDetails(bioDetails);
        //     packetResponse.setDocDetails(docDetails);
         } finally {
             if (conn != null)
@@ -188,7 +188,10 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
                 }
 
                 uniqueCloumns.add(field);
-                uniqueCloumns.add(fieldFormatRequest.getPrimaryField());
+                if(fieldFormatRequest.getPrimaryField() != null)
+                    uniqueCloumns.add(fieldFormatRequest.getPrimaryField());
+                if(fieldFormatRequest.getFieldToQualityScore() != null)
+                    uniqueCloumns.add(fieldFormatRequest.getFieldToQualityScore());
             }
 
             for (String column : uniqueCloumns) {

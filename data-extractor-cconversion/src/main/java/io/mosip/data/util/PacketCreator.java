@@ -7,15 +7,13 @@ import io.mosip.data.dto.packet.type.IndividualBiometricType;
 import io.mosip.data.dto.packet.type.SimpleType;
 import io.mosip.data.exception.ApisResourceAccessException;
 import io.mosip.data.service.DataRestClientService;
+import io.mosip.kernel.biometrics.entities.BIR;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class PacketCreator {
@@ -25,6 +23,9 @@ public class PacketCreator {
 
     @Autowired
     private Environment env;
+
+//    @Autowired
+//    private BIRBuilder birBuilder;
 
     @Value("${mosip.id.schema.version:0.1}")
     private Float version;
@@ -90,19 +91,20 @@ public class PacketCreator {
         return demoMap;
     }
 
-    public LinkedHashMap<String, String> setBiometrics() throws ApisResourceAccessException {
-        LinkedHashMap<String, Object> demoMap = new LinkedHashMap<>();
+    public LinkedHashMap<String, String> setBiometrics(LinkedHashMap<String, String> bioDetails) throws ApisResourceAccessException {
+/*        LinkedHashMap<String, Object> demoMap = new LinkedHashMap<>();
         LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
 
-/*        LOGGER.debug("Adding Biometrics to packet manager started..");
+//        LOGGER.debug("Adding Biometrics to packet manager started..");
         Map<String, List<BIR>> capturedBiometrics = new HashMap<>();
         Map<String, Map<String, Object>> capturedMetaInfo = new LinkedHashMap<>();
         Map<String, Map<String, Object>> exceptionMetaInfo = new LinkedHashMap<>();
 
-        for(String key : registrationDTO.getBiometrics().keySet()) {
-            String fieldId = key.split("_")[0];
-            String bioAttribute = key.split("_")[1];
-            BIR bir = birBuilder.buildBIR(registrationDTO.getBiometrics().get(key));
+        for(Map.Entry<String, String> entry : bioDetails.entrySet()) {
+            String fieldId = entry.getKey().split("_")[0];
+            String bioAttribute = entry.getKey().split("_")[1];
+            String bioQualityScore = entry.getKey().split("_")[2];
+            BIR bir = birBuilder.buildBIR(bioAttribute, entry.getValue(), bioQualityScore);
             if (!capturedBiometrics.containsKey(fieldId)) {
                 capturedBiometrics.put(fieldId, new ArrayList<>());
             }
@@ -137,7 +139,7 @@ public class PacketCreator {
         });
 
         metaInfoMap.put("biometrics", getJsonString(capturedMetaInfo));
-        metaInfoMap.put("exceptionBiometrics", getJsonString(exceptionMetaInfo));*/
+        metaInfoMap.put("exceptionBiometrics", getJsonString(exceptionMetaInfo)); */
         return null;
     }
 }
