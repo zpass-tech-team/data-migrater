@@ -22,6 +22,7 @@ import io.mosip.data.exception.ApisResourceAccessException;
 import io.mosip.data.service.DataExtractionService;
 import io.mosip.data.service.DataRestClientService;
 import io.mosip.data.util.BioConversion;
+import io.mosip.data.util.PacketCreator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
@@ -38,16 +39,7 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
     private BioConversion bioConversion;
 
     @Autowired
-    private DataRestClientService restApiClient;
-
-    @Autowired
-    private Environment env;
-
-    @Value("${mosip.id.schema.version:0.1}")
-    private Float version;
-
-    @Value("${mosip.primary.language}")
-    private String primaryLamguage;
+    private PacketCreator packetCreator;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -138,59 +130,15 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
                 packetWriter.createPacket()*/
             }
 
-
-
             if (demoDetails.size() > 0) {
-                ObjectMapper mapper = new ObjectMapper();
-                LinkedHashMap<String, Object> demoMap = new LinkedHashMap<>();
-                ResponseWrapper response= (ResponseWrapper) restApiClient.getApi(ApiName.LATEST_ID_SCHEMA, null, "", "", ResponseWrapper.class);
-                LinkedHashMap<String, Object> idSchemaMap = (LinkedHashMap<String, Object>) response.getResponse();
-
-                for(Object obj : (List)idSchemaMap.get("schema")) {
-                    Map<String, Object> map = (Map<String, Object>) obj;
-                    String id = map.get("id").toString();
-                    String type = map.get("type").toString();
-                    Boolean required = (Boolean) map.get("required");
-
-                    if (id.equals("IDSchemaVersion")) {
-                        demoMap.put(id, version);
-                    } else if (type.equals("biometricsType")) {
-                        if (id.equals("individualBiometrics")) {
-                            if (bioDetails.size() > 0) {
-                                IndividualBiometricType indiBiotype = new IndividualBiometricType();
-                                indiBiotype.setFormat("cbeff");
-                                indiBiotype.setVersion(1.0);
-                                indiBiotype.setValue("individualBiometrics_bio_CBEFF");
-                                demoMap.put("individualBiometrics", mapper.writeValueAsString(indiBiotype));
-                            }
-                        }
-
-                    } else if (type.equals("documentType")) {
-
-                    } else if (demoDetails.containsKey(id.toLowerCase()) && demoDetails.get(id.toLowerCase()) != null) {
-                        switch (type) {
-                            case "simpleType":
-                                List<SimpleType> valList = new ArrayList<>();
-                                SimpleType simpleType = new SimpleType(primaryLamguage, demoDetails.get(id.toLowerCase()) == null ? "":demoDetails.get(id.toLowerCase()).toString());
-                                valList.add(simpleType);
-                                demoMap.put(id, mapper.writeValueAsString(valList));
-                                break;
-
-                            case "number":
-
-                            case "string" :
-                                demoMap.put(id, demoDetails.get(id.toLowerCase()) == null ? "" : demoDetails.get(id.toLowerCase()));
-                                break;
-                        }
-                    } else if (required && !dbImportRequest.getIgnoreIdSchemaFields().contains(id)) {
-                        throw new Exception("Mandatory Field '" + id + "' value missing");
-                    }
-                }
-                packetResponse.setDemoDetails(demoMap);
+                packetResponse.setDemoDetails(packetCreator.setDemographic(demoDetails, (bioDetails.size()>0), dbImportRequest.getIgnoreIdSchemaFields()));
             }
 
+            if (bioDetails.size()>0) {
+                packetResponse.setBioDetails(packetCreator.setBiometrics());
+            }
 
-            packetResponse.setBioDetails(bioDetails);
+       //     packetResponse.setBioDetails(bioDetails);
        //     packetResponse.setDocDetails(docDetails);
         } finally {
             if (conn != null)
@@ -210,7 +158,7 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
     }
 
     private ResultSet readDataFromDatabase(DBImportRequest dbImportRequest, Connection conn) throws Exception {
-        loadMasterData();
+ //       loadMasterData();
         if (dbImportRequest.getDbType().equals(DBTypes.MSSQL)) {
             DriverManager.registerDriver(new com.microsoft.sqlserver.jdbc.SQLServerDriver());
             conn = DriverManager.getConnection("jdbc:sqlserver://" + dbImportRequest.getUrl() + ";sslProtocol=TLSv1.2;databaseName=" + dbImportRequest.getDatabaseName()+ ";Trusted_Connection=True;", dbImportRequest.getUserId(), dbImportRequest.getPassword());
@@ -259,7 +207,7 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
             throw new SQLException("Unable to Connect With Database. Please check the Configuration");
     }
 
-    private void loadMasterData() throws ApisResourceAccessException {
+ /*   private void loadMasterData() throws ApisResourceAccessException {
         ObjectMapper mapper = new ObjectMapper();
 
         ResponseWrapper response =  (ResponseWrapper) restApiClient.getApi(ApiName.DOCUMENT_CATEGORY, null, "", "", ResponseWrapper.class);
@@ -274,6 +222,6 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
 
             System.out.println(response);
 
-    }
+    }*/
 
 }
