@@ -11,7 +11,7 @@ import java.util.LinkedHashMap;
 @Setter
 public class PacketResponse {
     private String message;
-    private LinkedHashMap<String, String> DemoDetails;
+    private LinkedHashMap<String, Object> DemoDetails;
     private LinkedHashMap<String, String> bioDetails;
     private LinkedHashMap<String, String> docDetails;
 }

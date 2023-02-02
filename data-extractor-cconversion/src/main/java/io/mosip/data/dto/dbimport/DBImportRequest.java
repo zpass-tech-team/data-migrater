@@ -22,4 +22,5 @@ public class DBImportRequest {
     private String tableName;
     private String process;
     private List<FieldFormatRequest> columnDetails;
+    private List<String> ignoreIdSchemaFields;
 }

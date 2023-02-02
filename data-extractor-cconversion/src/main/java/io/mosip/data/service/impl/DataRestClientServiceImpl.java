@@ -23,10 +23,10 @@ import java.util.List;
  * @author Rishabh Keshari
  */
 @Service
-public class PrintRestClientServiceImpl implements DataRestClientService<Object> {
+public class DataRestClientServiceImpl implements DataRestClientService<Object> {
 
 	/** The logger. */
-	Logger printLogger = DataProcessLogger.getLogger(PrintRestClientServiceImpl.class);
+	Logger printLogger = DataProcessLogger.getLogger(DataRestClientServiceImpl.class);
 
 	/** The rest api client. */
 	@Autowired
