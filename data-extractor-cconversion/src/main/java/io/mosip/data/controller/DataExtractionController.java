@@ -75,7 +75,7 @@ public class DataExtractionController {
         DBImportResponse response = new DBImportResponse();
         try {
             DBImportRequest importRequest = request.getRequest();
-            response.setConvertedBioValues(dataExtractionService.extractBioDataFromDBAsBytes(importRequest));
+            response.setConvertedBioValues(dataExtractionService.extractBioDataFromDBAsBytes(importRequest, false));
             response.setMessage("Successfully Completed");
         } catch (SQLException e) {
             e.printStackTrace();

@@ -5,18 +5,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 
+import io.mosip.commons.packet.constants.Biometric;
+import io.mosip.commons.packet.constants.PacketManagerConstants;
 import io.mosip.data.constant.RegistrationConstants;
 import io.mosip.data.logger.DataProcessLogger;
+import io.mosip.kernel.biometrics.constant.*;
 import io.mosip.kernel.biometrics.entities.*;
+import io.mosip.kernel.core.util.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import io.mosip.kernel.biometrics.constant.BiometricType;
-import io.mosip.kernel.biometrics.constant.ProcessedLevelType;
-import io.mosip.kernel.biometrics.constant.PurposeType;
-import io.mosip.kernel.biometrics.constant.QualityType;
-
 
 @Component
 public class BIRBuilder {
@@ -26,7 +24,7 @@ public class BIRBuilder {
 
 	private static final Logger LOGGER = DataProcessLogger.getLogger(BIRBuilder.class);
 
-	/*public BIR buildBIR(String bioAttribute, byte[] bioData, String bioQualityScore) {
+	public BIR buildBIR(String bioAttribute, byte[] bioData, String bioQualityScore) {
 		LOGGER.debug("started building BIR for for bioAttribute : {}", bioAttribute);
 		BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
 		// Format
@@ -82,9 +80,9 @@ public class BIRBuilder {
 				.withOthers(OtherKey.PAYLOAD, payLoad == null ? RegistrationConstants.EMPTY : payLoad)
 				.withOthers(OtherKey.SPEC_VERSION, bioSpecVaersion) //.withOthers(OtherKey.SPEC_VERSION, bioDto.getSpecVersion() == null ? RegistrationConstants.EMPTY : bioDto.getSpecVersion())
 				.build();
-	}*/
+	}
 
-/*	private List<String> getSubTypes(BiometricType biometricType, String bioAttribute) {
+	private List<String> getSubTypes(BiometricType biometricType, String bioAttribute) {
 		List<String> subtypes = new LinkedList<>();
 		switch (biometricType) {
 		case FINGER:
@@ -108,6 +106,6 @@ public class BIRBuilder {
 			break;
 		}
 		return subtypes;
-	}*/
+	}
 
 }

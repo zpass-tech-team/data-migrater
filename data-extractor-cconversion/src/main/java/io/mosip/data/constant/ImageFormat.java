@@ -3,7 +3,9 @@ package io.mosip.data.constant;
 public enum ImageFormat {
     JPEG("jpg", "jpg"),
     JP2("jpeg 2000", "jp2"),
-    WSQ("wsq","wsq");
+    WSQ("wsq","wsq"),
+    ISO("ISO", "iso");
+
 
     public final String format;
     public final String fileFormat;

@@ -45,9 +45,9 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
 
     @Override
-    public LinkedHashMap<String, String> extractBioDataFromDB(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
+    public LinkedHashMap<String, Object> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
         Connection conn = null;
-        LinkedHashMap<String, String> biodata = new LinkedHashMap<>();
+        LinkedHashMap<String, Object> biodata = new LinkedHashMap<>();
 
         try {
             ResultSet resultSet = readDataFromDatabase(dbImportRequest, conn);
@@ -55,7 +55,7 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
             while (resultSet.next()) {
                 for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
                     byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
-                    String convertedImageData = convertBiometric(resultSet.getString(fieldFormatRequest.getPrimaryField()), fieldFormatRequest, byteVal, localStoreRequired);
+                    byte[] convertedImageData = convertBiometric(resultSet.getString(fieldFormatRequest.getPrimaryField()), fieldFormatRequest, byteVal, localStoreRequired);
                     biodata.put(resultSet.getString(fieldFormatRequest.getPrimaryField())+ "-" + fieldFormatRequest.getFieldName(),  convertedImageData);
                 }
             }
@@ -69,21 +69,13 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
     }
 
     @Override
-    public LinkedHashMap<String, String> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest) throws Exception {
-        LinkedHashMap<String, String> bioData = extractBioDataFromDB(dbImportRequest, false);
-        LinkedHashMap<String, String> convertedData = new LinkedHashMap<>();
+    public LinkedHashMap<String, Object> extractBioDataFromDB(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
+        LinkedHashMap<String, Object> bioData = extractBioDataFromDBAsBytes(dbImportRequest, localStoreRequired);
+        LinkedHashMap<String, Object> convertedData = new LinkedHashMap<>();
 
-        for(Map.Entry<String, String> entry : bioData.entrySet()) {
-            byte[] data = Base64.getDecoder().decode(entry.getValue());
-            StringBuffer byteStringData = new StringBuffer();
-
-            for (byte b : data)
-                if (byteStringData.length() > 0)
-                    byteStringData.append("," + b);
-                else
-                    byteStringData.append(b);
-
-            convertedData.put(entry.getKey(), byteStringData.toString());
+        for(Map.Entry<String, Object> entry : bioData.entrySet()) {
+            String data = Base64.getEncoder().encodeToString((byte[])entry.getValue());
+             convertedData.put(entry.getKey(), data);
         }
         return convertedData;
     }
@@ -96,18 +88,19 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
         try {
             ResultSet resultSet = readDataFromDatabase(dbImportRequest, conn);
             LinkedHashMap<String, Object> demoDetails = new LinkedHashMap<>();
-            LinkedHashMap<String, String> bioDetails = new LinkedHashMap<>();
+            LinkedHashMap<String, Object> bioDetails = new LinkedHashMap<>();
             LinkedHashMap<String, String> docDetails = new LinkedHashMap<>();
+            LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
 
             while (resultSet.next()) {
                 for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
                     String fieldName = fieldFormatRequest.getFieldName().contains(",") ? fieldFormatRequest.getFieldName().replace(",", "") : fieldFormatRequest.getFieldName();
-                    String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap().toLowerCase() : fieldFormatRequest.getFieldName().toLowerCase();
+                    String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldFormatRequest.getFieldName().toLowerCase();
                     if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DEMO)) {
                         demoDetails.put(fieldMap, resultSet.getObject(fieldName));
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
                         byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
-                        String convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
+                        byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
                         bioDetails.put(fieldMap + (fieldFormatRequest.getFieldToQualityScore() != null ? "_" + resultSet.getString(fieldFormatRequest.getFieldToQualityScore()) : ""), convertedImageData);
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
                         byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
@@ -135,11 +128,10 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
             }
 
             if (bioDetails.size()>0) {
-//                packetResponse.setBioDetails(packetCreator.setBiometrics(bioDetails));
+                packetResponse.setBioDetails(packetCreator.setBiometrics(bioDetails, metaInfo));
             }
 
-            packetResponse.setBioDetails(bioDetails);
-       //     packetResponse.setDocDetails(docDetails);
+            packetResponse.setMetaInfo(metaInfo);
         } finally {
             if (conn != null)
                 conn.close();
@@ -148,12 +140,12 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
         return packetResponse;
     }
 
-    private String convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws IOException {
+    private byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws Exception {
         if (localStoreRequired) {
             bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName() , bioValue, fieldFormatRequest.getFromFormat());
-            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName(), bioConversion.convertImage(fieldFormatRequest.getFromFormat(), fieldFormatRequest.getToFormat(), bioValue), fieldFormatRequest.getToFormat());
+            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName(), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getToFormat());
         } else {
-            return Base64.getEncoder().encodeToString(bioConversion.convertImage(fieldFormatRequest.getFromFormat(), fieldFormatRequest.getToFormat(), bioValue));
+            return bioConversion.convertImage(fieldFormatRequest, bioValue);
         }
     }
 

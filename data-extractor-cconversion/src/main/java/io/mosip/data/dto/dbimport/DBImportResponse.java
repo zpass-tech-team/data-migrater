@@ -11,5 +11,5 @@ import java.util.LinkedHashMap;
 @Setter
 public class DBImportResponse {
     private String message;
-    private LinkedHashMap<String, String> convertedBioValues;
+    private LinkedHashMap<String, Object> convertedBioValues;
 }
