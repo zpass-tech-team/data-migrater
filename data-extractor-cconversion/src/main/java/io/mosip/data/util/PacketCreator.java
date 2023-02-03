@@ -131,7 +131,8 @@ public class PacketCreator {
             String subtype = map.get("subType").toString();
 
             if (type.equals("biometricsType")) {
-                List<String> bioAttributes = (List<String>) map.get("bioAttributes");
+                List<String> bioAttributes = new ArrayList<String>();
+                bioAttributes.addAll((List<String>) map.get("bioAttributes"));
                 Integer attributeCount = bioAttributes.size();
                 bioAttributes.add("unknown");
 
