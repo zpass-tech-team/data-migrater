@@ -69,6 +69,11 @@
              <artifactId>commons-packet-manager</artifactId>
              <version>1.2.0.1-B1</version>
          </dependency>
-
+        <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-idgenerator-rid
+        <dependency>
+            <groupId>io.mosip.kernel</groupId>
+            <artifactId>kernel-idgenerator-rid</artifactId>
+            <version>1.2.0.1-B1</version>
+        </dependency> -->
      </dependencies>
  </project>

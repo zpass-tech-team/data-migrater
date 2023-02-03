@@ -8,6 +8,7 @@ package io.mosip.data.constant;
 public enum ApiName {
 	DOCUMENT_CATEGORY,
 	DOCUMENT_TYPES,
-	LATEST_ID_SCHEMA
+	LATEST_ID_SCHEMA,
+	BIOSDK_QUALITY_CHECK
 
 }

@@ -1,34 +1,21 @@
 package io.mosip.data.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import io.mosip.data.constant.ApiName;
+import io.mosip.commons.packet.dto.packet.AuditDto;
 import io.mosip.data.constant.DBTypes;
 import io.mosip.data.constant.FieldCategory;
-import io.mosip.data.dto.ResponseWrapper;
 import io.mosip.data.dto.dbimport.DBImportRequest;
 import io.mosip.data.dto.dbimport.FieldFormatRequest;
 import io.mosip.data.dto.masterdata.DocumentCategoryDto;
-import io.mosip.data.dto.masterdata.DocumentCategoryResponseDto;
 import io.mosip.data.dto.masterdata.DocumentTypeExtnDto;
-import io.mosip.data.dto.masterdata.PageDto;
-import io.mosip.data.dto.packet.DocumentDto;
-import io.mosip.data.dto.packet.PacketResponse;
-import io.mosip.data.dto.packet.type.IndividualBiometricType;
-import io.mosip.data.dto.packet.type.SimpleType;
-import io.mosip.data.exception.ApisResourceAccessException;
+import io.mosip.data.dto.packet.PacketDto;
 import io.mosip.data.service.DataExtractionService;
-import io.mosip.data.service.DataRestClientService;
 import io.mosip.data.util.BioConversion;
 import io.mosip.data.util.PacketCreator;
+import io.mosip.kernel.biometrics.entities.BiometricRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 
@@ -40,6 +27,15 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
 
     @Autowired
     private PacketCreator packetCreator;
+
+  //  @Autowired
+  //  private RidGenerator ridGenerator;
+
+    @Value("${mosip.id.reg.center.id}")
+    private String centerId;
+
+    @Value("${mosip.id.reg.machine.id}")
+    private String machineId;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -81,11 +77,18 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
     }
 
     @Override
-    public PacketResponse createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
+    public PacketDto createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
         Connection conn = null;
-        PacketResponse packetResponse = new PacketResponse();
+        PacketDto packetDto = new PacketDto();
 
         try {
+            packetDto.setProcess(dbImportRequest.getProcess());
+            packetDto.setSource("REGISTRATION_CLIENT");
+            packetDto.setSchemaVersion("0.1");
+            packetDto.setAdditionalInfoReqId(null);
+            packetDto.setMetaInfo(null);
+            packetDto.setOfflineMode(false);
+
             ResultSet resultSet = readDataFromDatabase(dbImportRequest, conn);
             LinkedHashMap<String, Object> demoDetails = new LinkedHashMap<>();
             LinkedHashMap<String, Object> bioDetails = new LinkedHashMap<>();
@@ -107,37 +110,28 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
                         docDetails.put(fieldMap, Base64.getEncoder().encodeToString(byteVal));
                     }
                 }
-
-    /*            PacketDto packetDto = new PacketDto();
-                packetDto.setId();
-                packetDto.setProcess(dbImportRequest.getProcess());
-                packetDto.setSource("REGISTRATION_CLIENT");
-                packetDto.setSchemaVersion("0.1");
-                packetDto.setAdditionalInfoReqId();
-                packetDto.setMetaInfo(null);
-                packetDto.setOfflineMode();
-                packetDto.setRefId();
-
-
-                PacketWriter packetWriter = new PacketWriter();
-                packetWriter.createPacket()*/
             }
 
             if (demoDetails.size() > 0) {
-                packetResponse.setDemoDetails(packetCreator.setDemographic(demoDetails, (bioDetails.size()>0), dbImportRequest.getIgnoreIdSchemaFields()));
+                packetDto.setFields(packetCreator.setDemographic(demoDetails, (bioDetails.size()>0), dbImportRequest.getIgnoreIdSchemaFields()));
             }
 
             if (bioDetails.size()>0) {
-                packetResponse.setBioDetails(packetCreator.setBiometrics(bioDetails, metaInfo));
+                packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo));
             }
+            packetDto.setId(generateRegistrationId(centerId, machineId));
+            packetDto.setRefId(packetDto.getId());
+            packetDto.setMetaInfo(metaInfo);
+            packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
 
-            packetResponse.setMetaInfo(metaInfo);
+            LinkedHashMap<String, Object> idSchema = packetCreator.getLatestIdSchema();
+            packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
         } finally {
             if (conn != null)
                 conn.close();
         }
 
-        return packetResponse;
+        return packetDto;
     }
 
     private byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws Exception {
@@ -219,4 +213,8 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
 
     }*/
 
+    private String generateRegistrationId(String centerId, String machineId) {
+        return "20001100013246732647326487324";
+       // return (String) ridGenerator.generateId(centerId, machineId);
+    }
 }

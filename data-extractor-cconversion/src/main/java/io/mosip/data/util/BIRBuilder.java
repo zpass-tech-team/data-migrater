@@ -45,13 +45,6 @@ public class BIRBuilder {
 		QualityType qualityType = new QualityType();
 		qualityType.setAlgorithm(birAlgorithm);
 
-		if (bioQualityScore==null) {
-//ssadasd
-		} else {
-			qualityType.setScore(Long.parseLong(bioQualityScore));
-		}
-
-
 		VersionType versionType = new VersionType(1, 1);
 
 		String payLoad = null;

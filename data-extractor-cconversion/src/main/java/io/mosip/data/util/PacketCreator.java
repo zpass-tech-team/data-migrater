@@ -1,22 +1,41 @@
 package io.mosip.data.util;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.itextpdf.layout.element.Link;
+import io.mosip.commons.packet.constants.Biometric;
 import io.mosip.data.constant.ApiName;
+import io.mosip.data.dto.RequestWrapper;
 import io.mosip.data.dto.ResponseWrapper;
+import io.mosip.data.dto.biosdk.BioSDKRequest;
+import io.mosip.data.dto.biosdk.OtherDto;
+import io.mosip.data.dto.biosdk.QualityCheckRequest;
+import io.mosip.data.dto.biosdk.SegmentDto;
 import io.mosip.data.dto.packet.metadata.BiometricsMetaInfoDto;
 import io.mosip.data.dto.packet.type.IndividualBiometricType;
 import io.mosip.data.dto.packet.type.SimpleType;
 import io.mosip.data.exception.ApisResourceAccessException;
 import io.mosip.data.service.DataRestClientService;
+import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.kernel.biometrics.constant.OtherKey;
 import io.mosip.kernel.biometrics.entities.BIR;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
+import io.mosip.kernel.biometrics.model.QualityCheck;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Component
@@ -95,13 +114,14 @@ public class PacketCreator {
         return demoMap;
     }
 
-    public LinkedHashMap<String, List<BIR>> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap) throws ApisResourceAccessException, JsonProcessingException {
+    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap) throws Exception {
         LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
 
 //        LOGGER.debug("Adding Biometrics to packet manager started..");
         LinkedHashMap<String, List<BIR>> capturedBiometrics = new LinkedHashMap<>();
         Map<String, Map<String, Object>> capturedMetaInfo = new LinkedHashMap<>();
         Map<String, Map<String, Object>> exceptionMetaInfo = new LinkedHashMap<>();
+        LinkedHashMap<String, BiometricRecord> biometricsMap = new LinkedHashMap<>();
 
         for(Object obj : (List)idSchema.get("schema")) {
             Map<String, Object> map = (Map<String, Object>) obj;
@@ -124,6 +144,37 @@ public class PacketCreator {
                         bioAttributes.remove(bioAttribute);
                         String bioQualityScore = keyEntries.length > 2 ? keyEntries[2] : null;
                         BIR bir = birBuilder.buildBIR(bioAttribute, (byte[])entry.getValue(), bioQualityScore);
+
+                        if (bioQualityScore==null) {
+                            BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
+                            SegmentDto segment = new SegmentDto();
+                            segment.setSegments(new ArrayList<>());
+                            segment.getSegments().add(bir);
+                            segment.setOthers(new OtherDto());
+                            QualityCheckRequest request = new QualityCheckRequest();
+                            request.setSample(segment);
+                            request.setModalitiesToCheck(new ArrayList<>());
+                            request.getModalitiesToCheck().add(biometricType.toString());
+                            String requestText = (new Gson()).toJson(request);
+                            String encodedRequest = Base64.getEncoder().encodeToString(requestText.getBytes(StandardCharsets.UTF_8));
+                            BioSDKRequest bioSDKRequest = new BioSDKRequest();
+                            bioSDKRequest.setVersion("1.0");
+                            bioSDKRequest.setRequest(encodedRequest);
+                            ResponseWrapper response= (ResponseWrapper) restApiClient.postApi(ApiName.BIOSDK_QUALITY_CHECK, null, "", bioSDKRequest, ResponseWrapper.class);
+                            LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResponse();
+                            if(bioSDKResponse.get("statusCode").equals(200)) {
+                                LinkedHashMap<String, Object> resp = (LinkedHashMap<String, Object>) bioSDKResponse.get("response");
+                                LinkedHashMap<String, Object> scoreMap = (LinkedHashMap<String, Object>) resp.get("scores");
+                                LinkedHashMap<String, Object> modalityMap = (LinkedHashMap<String, Object>) scoreMap.get(biometricType.toString());
+                                Double score = (Double) modalityMap.get("score");
+                                bir.getBdbInfo().getQuality().setScore(score.longValue());
+                            } else {
+                                throw new Exception("Error While Calling BIOSDK for Quality Check for Modality " + biometricType.toString() + ", " + bioAttribute);
+                            }
+                        } else {
+                            bir.getBdbInfo().getQuality().setScore(Long.parseLong(bioQualityScore));
+                        }
+
                         if (!capturedBiometrics.containsKey(fieldId)) {
                             capturedBiometrics.put(fieldId, new ArrayList<>());
                         }
@@ -161,21 +212,49 @@ public class PacketCreator {
             capturedBiometrics.getOrDefault(fieldId, new ArrayList<>()).add(bir);
             exceptionMetaInfo.getOrDefault(fieldId, new HashMap<>()).put(bioAttribute,
                     registrationDTO.getBiometricExceptions().get(key));
-        }
+        } */
 
         capturedBiometrics.keySet().forEach(fieldId -> {
             BiometricRecord biometricRecord = new BiometricRecord();
             biometricRecord.setOthers(new HashMap<>());
-            biometricRecord.getOthers().put(OtherKey.CONFIGURED, String.join(",",
-                    registrationDTO.CONFIGURED_BIOATTRIBUTES.getOrDefault(fieldId, Collections.EMPTY_LIST)));
+//            biometricRecord.getOthers().put(OtherKey.CONFIGURED, String.join(",",
+//                    registrationDTO.CONFIGURED_BIOATTRIBUTES.getOrDefault(fieldId, Collections.EMPTY_LIST)));
             biometricRecord.setSegments(capturedBiometrics.get(fieldId));
-            LOGGER.debug("Adding biometric to packet manager for field : {}", fieldId);
-            packetWriter.setBiometric(registrationDTO.getRegistrationId(), fieldId, biometricRecord,
-                    source.toUpperCase(), registrationDTO.getProcessId().toUpperCase());
-        }); */
+//            LOGGER.debug("Adding biometric to packet manager for field : {}", fieldId);
+            biometricsMap.put(fieldId, biometricRecord);
+        });
 
         metaInfoMap.put("biometrics", mapper.writeValueAsString(capturedMetaInfo));
         metaInfoMap.put("exceptionBiometrics", mapper.writeValueAsString(exceptionMetaInfo));
-        return capturedBiometrics;
+        return biometricsMap;
+    }
+
+    public List<Map<String, String>> setAudits(String regId) {
+        LocalDateTime responsetime = LocalDateTime.now(ZoneId.of("UTC"));
+        String timeStamp = responsetime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+
+        List<Map<String, String>> auditList = new LinkedList<>();
+
+        Map<String, String> auditMap = new LinkedHashMap<>();
+        auditMap.put("uuid", UUID.randomUUID().toString());
+        auditMap.put("createdAt", timeStamp);
+        auditMap.put("eventId", "DATA_MIGRATOR_FROM_OTHER_DOMAIN");
+        auditMap.put("eventName", "ADD");
+        auditMap.put("eventType", "REGISTRATION");
+        auditMap.put("hostName", "DATA_MIGRATOR");
+        auditMap.put("hostIp", null);
+        auditMap.put("applicationId", "REG");
+        auditMap.put("applicationName", "REGISTRATION");
+        auditMap.put("sessionUserId", null);
+        auditMap.put("sessionUserName", null);
+        auditMap.put("id", regId);
+        auditMap.put("idType", "REGISTRATION_ID");
+        auditMap.put("createdBy", "MOSIP");
+        auditMap.put("moduleName", "Registration initialization");
+        auditMap.put("moduleId", null);
+        auditMap.put("description", "Registration Via Data Migrator");
+        auditMap.put("actionTimeStamp", timeStamp);
+        auditList.add(auditMap);
+        return auditList;
     }
 }

@@ -4,7 +4,8 @@ import io.mosip.data.dto.RequestWrapper;
 import io.mosip.data.dto.ResponseWrapper;
 import io.mosip.data.dto.dbimport.DBImportRequest;
 import io.mosip.data.dto.dbimport.DBImportResponse;
-import io.mosip.data.dto.packet.PacketResponse;
+import io.mosip.data.dto.packet.PacketDto;
+import io.mosip.data.exception.ServiceError;
 import io.mosip.data.service.DataExtractionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.sql.*;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/dataExtractor")
@@ -73,6 +75,8 @@ public class DataExtractionController {
     public ResponseEntity<ResponseWrapper> importBioByteDataFromDB(@RequestBody RequestWrapper<DBImportRequest> request) {
         ResponseWrapper<DBImportResponse> responseWrapper = new ResponseWrapper();
         DBImportResponse response = new DBImportResponse();
+        responseWrapper.setErrors(new ArrayList<>());
+
         try {
             DBImportRequest importRequest = request.getRequest();
             response.setConvertedBioValues(dataExtractionService.extractBioDataFromDBAsBytes(importRequest, false));
@@ -93,21 +97,29 @@ public class DataExtractionController {
 
     @PostMapping(value = "/importPacketsFromOtherDomain", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ResponseWrapper> createPacketFromOtherDomain(@RequestBody RequestWrapper<DBImportRequest> request) {
-        ResponseWrapper<PacketResponse> responseWrapper = new ResponseWrapper();
-        PacketResponse response = new PacketResponse();
+        ResponseWrapper<PacketDto> responseWrapper = new ResponseWrapper();
+        PacketDto response = new PacketDto();
         try {
             DBImportRequest importRequest = request.getRequest();
             response = dataExtractionService.createPacketFromDataBase(importRequest);
-            response.setMessage("Successfully Completed");
         } catch (SQLException e) {
             e.printStackTrace();
-            response.setMessage("Error : " + e.getMessage());
+            ServiceError error = new ServiceError();
+            error.setErrorCode("IX-0001");
+            error.setMessage("Error : " + e.getMessage());
+            responseWrapper.getErrors().add(error);
         } catch (IOException e) {
             e.printStackTrace();
-            response.setMessage("Error : " + e.getMessage());
+            ServiceError error = new ServiceError();
+            error.setErrorCode("IX-0001");
+            error.setMessage("Error : " + e.getMessage());
+            responseWrapper.getErrors().add(error);
         } catch (Exception e) {
             e.printStackTrace();
-            response.setMessage("Error : " + e.getMessage());
+            ServiceError error = new ServiceError();
+            error.setErrorCode("IX-0001");
+            error.setMessage("Error : " + e.getMessage());
+            responseWrapper.getErrors().add(error);
         }
         responseWrapper.setResponse(response);
         return new ResponseEntity<ResponseWrapper>(responseWrapper, HttpStatus.OK);
