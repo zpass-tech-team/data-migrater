@@ -6,11 +6,11 @@ import java.util.Collection;
 import java.util.List;
 
 import io.mosip.data.constant.RegistrationConstants;
-import io.mosip.data.context.SessionContext;
 import io.mosip.data.entity.RegistrationCommonFields;
 import io.mosip.data.logger.DataProcessLogger;
 import org.json.JSONObject;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import io.mosip.kernel.core.dataaccess.exception.DataAccessLayerException;
@@ -32,6 +32,9 @@ import io.mosip.kernel.core.util.DateUtils;
 public class MetaDataUtils {
 
 	private static final Logger LOGGER = DataProcessLogger.getLogger(MetaDataUtils.class);
+
+
+	private static String contextUser = "BATCH";
 
 	private MetaDataUtils() {
 		super();
@@ -55,13 +58,6 @@ public class MetaDataUtils {
 	public static <S, D extends RegistrationCommonFields> D setUpdateMetaData(final S source, D destination,
 			Boolean mapNullvalues) {
 
-		String contextUser;
-		if (SessionContext.isSessionContextAvailable()) {
-			contextUser = SessionContext.userContext().getUserId();
-		} else {
-			contextUser = RegistrationConstants.JOB_TRIGGER_POINT_SYSTEM;
-		}
-
 		D entity = MapperUtils.map(source, destination, mapNullvalues);
 
 		setUpdatedDateTime(contextUser, entity);
@@ -83,12 +79,6 @@ public class MetaDataUtils {
 	 */
 	public static <T, D extends RegistrationCommonFields> D setCreateMetaData(final T source,
 			Class<? extends RegistrationCommonFields> destinationClass) {
-		String contextUser;
-		if (SessionContext.isSessionContextAvailable()) {
-			contextUser = SessionContext.userContext().getUserId();
-		} else {
-			contextUser = RegistrationConstants.JOB_TRIGGER_POINT_SYSTEM;
-		}
 
 		D entity = (D) MapperUtils.map(source, destinationClass);
 
@@ -107,13 +97,6 @@ public class MetaDataUtils {
 	 */
 	public static <T, D extends RegistrationCommonFields> List<D> setCreateMetaData(final Collection<T> dtoList,
 																					Class<? extends RegistrationCommonFields> entityClass) {
-
-		String contextUser;
-		if (SessionContext.isSessionContextAvailable()) {
-			contextUser = SessionContext.userContext().getUserId();
-		} else {
-			contextUser = RegistrationConstants.JOB_TRIGGER_POINT_SYSTEM;
-		}
 
 		List<D> entities = new ArrayList<>();
 
@@ -161,22 +144,15 @@ public class MetaDataUtils {
 	 * @param <T>              is a type parameter
 	 * @param <D>              is a type parameter
 	 * @param jsonObject       is the source
-	 * @param destinationClass is the destination class
+	 * @param entityClass is the destination class
 	 * @return an entity class which extends {@link RegistrationCommonFields}
 	 * @throws Throwable
 	 * @throws DataAccessLayerException if any error occurs while mapping values
-	 * @see MapperUtils#setCreateJSONObjectToMetaData(Object, Class)
 	 */
 	public static <T, D extends RegistrationCommonFields> D setCreateJSONObjectToMetaData(final JSONObject jsonObject,
 			Class<?> entityClass) throws Throwable {
-		String contextUser = null;
 		D entity = null;
 		try {
-			if (SessionContext.isSessionContextAvailable()) {
-				contextUser = SessionContext.userContext().getUserId();
-			} else {
-				contextUser = RegistrationConstants.JOB_TRIGGER_POINT_SYSTEM;
-			}
 			entity = (D) MapperUtils.mapJSONObjectToEntity(jsonObject, entityClass);
 		} catch (Throwable t) {
 			LOGGER.error(t.getMessage(), t);

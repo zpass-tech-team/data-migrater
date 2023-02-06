@@ -20,7 +20,6 @@ import io.mosip.data.constant.RegistrationConstants;
 import io.mosip.data.dto.config.SyncDataBaseDto;
 import io.mosip.data.dto.config.SyncDataResponseDto;
 import io.mosip.data.exception.RegBaseUncheckedException;
-import io.mosip.data.repository.*;
 import io.mosip.kernel.clientcrypto.util.ClientCryptoUtils;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
@@ -43,7 +42,7 @@ public class ClientSettingSyncHelper {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClientSettingSyncHelper.class);
 	
-	private static final String ENTITY_PACKAGE_NAME = "io.mosip.registration.entity.";
+	private static final String ENTITY_PACKAGE_NAME = "io.mosip.data.entity.";
 	private static final String FIELD_TYPE_DYNAMIC_URL = "dynamic-url";
 	private static final String FIELD_TYPE_DYNAMIC = "dynamic";
 	private static final String FIELD_TYPE_SCRIPT = "script";
@@ -307,8 +306,6 @@ public class ClientSettingSyncHelper {
 	@Async
 	private CompletableFuture handleMachineSync(SyncDataResponseDto syncDataResponseDto) throws SyncFailedException {
 		try {
-			machineTypeRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "MachineType")));
-			machineSpecificationRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "MachineSpecification")));
 			machineRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "Machine")));
 		}  catch (Exception e) {
 			LOGGER.error("Machine Data sync failed", e);
@@ -412,7 +409,7 @@ public class ClientSettingSyncHelper {
 	@Async
 	private CompletableFuture handleMisellaneousSync1(SyncDataResponseDto syncDataResponseDto) throws SyncFailedException  {
 		try {
-			blocklistedWordsRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "BlocklistedWords")));
+			blocklistedWordsRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "BlacklistedWords")));
 //			processListRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "ProcessList")));
 //			screenDetailRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "ScreenDetail")));
 //			screenAuthorizationRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "ScreenAuthorization")));
