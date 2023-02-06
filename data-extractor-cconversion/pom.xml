@@ -69,6 +69,24 @@
              <artifactId>commons-packet-manager</artifactId>
              <version>1.2.0.1-B1</version>
          </dependency>
+    <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-keymanager-service -->
+    <dependency>
+        <groupId>io.mosip.kernel</groupId>
+        <artifactId>kernel-keymanager-service</artifactId>
+        <version>1.2.0.1-B2</version>
+    </dependency>
+        <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-core -->
+        <dependency>
+            <groupId>io.mosip.kernel</groupId>
+            <artifactId>kernel-core</artifactId>
+            <version>1.2.0.1-B1</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-crypto-jce -->
+        <dependency>
+            <groupId>io.mosip.kernel</groupId>
+            <artifactId>kernel-crypto-jce</artifactId>
+            <version>1.1.5.3</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-idgenerator-rid
         <dependency>
             <groupId>io.mosip.kernel</groupId>

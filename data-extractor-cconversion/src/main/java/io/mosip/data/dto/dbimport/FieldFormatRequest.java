@@ -13,8 +13,8 @@ public class FieldFormatRequest {
     private String FieldName;
     private FieldCategory fieldCategory;
     private String primaryField;
-    private ImageFormat fromFormat;
-    private ImageFormat toFormat;
+    private ImageFormat srcFormat;
+    private ImageFormat destFormat;
     private String fieldToMap;
-    private String fieldToQualityScore;
+    private String srcFieldForQualityScore;
 }

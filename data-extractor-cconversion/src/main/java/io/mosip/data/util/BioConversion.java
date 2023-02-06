@@ -27,16 +27,16 @@ public class BioConversion {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] byteData = new byte[0];
 
-        if(fieldFormatRequest.getFromFormat().equals(ImageFormat.JPEG) && !fieldFormatRequest.getToFormat().equals(ImageFormat.JPEG)) {
-            ImageIO.write(ImageIO.read(new ByteArrayInputStream(imageData)), fieldFormatRequest.getToFormat().getFormat(), baos);
+        if(fieldFormatRequest.getSrcFormat().equals(ImageFormat.JPEG) && !fieldFormatRequest.getDestFormat().equals(ImageFormat.JPEG)) {
+            ImageIO.write(ImageIO.read(new ByteArrayInputStream(imageData)), fieldFormatRequest.getDestFormat().getFormat(), baos);
             byteData = baos.toByteArray();
-        } else if(fieldFormatRequest.getToFormat().equals(ImageFormat.JP2)) {
-            ImageIO.write(ImageIO.read(new ByteArrayInputStream(Jnbis.wsq().decode(imageData).toJpg().asByteArray())), fieldFormatRequest.getToFormat().getFormat(), baos);
+        } else if(fieldFormatRequest.getDestFormat().equals(ImageFormat.JP2)) {
+            ImageIO.write(ImageIO.read(new ByteArrayInputStream(Jnbis.wsq().decode(imageData).toJpg().asByteArray())), fieldFormatRequest.getDestFormat().getFormat(), baos);
             byteData = baos.toByteArray();
-        } else if(fieldFormatRequest.getToFormat().equals(ImageFormat.ISO) && (fieldFormatRequest.getFromFormat().equals(ImageFormat.JP2) || fieldFormatRequest.getFromFormat().equals(ImageFormat.WSQ))) {
+        } else if(fieldFormatRequest.getDestFormat().equals(ImageFormat.ISO) && (fieldFormatRequest.getSrcFormat().equals(ImageFormat.JP2) || fieldFormatRequest.getSrcFormat().equals(ImageFormat.WSQ))) {
             Integer inputImageType = null;
 
-            switch(fieldFormatRequest.getFromFormat().toString()) {
+            switch(fieldFormatRequest.getSrcFormat().toString()) {
                 case "JP2":
                     inputImageType = 0;
                     break;

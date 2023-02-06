@@ -6,13 +6,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.itextpdf.layout.element.Link;
 import io.mosip.commons.packet.constants.Biometric;
+import io.mosip.commons.packet.constants.PacketManagerConstants;
 import io.mosip.data.constant.ApiName;
+import io.mosip.data.constant.RegistrationConstants;
 import io.mosip.data.dto.RequestWrapper;
 import io.mosip.data.dto.ResponseWrapper;
 import io.mosip.data.dto.biosdk.BioSDKRequest;
 import io.mosip.data.dto.biosdk.OtherDto;
 import io.mosip.data.dto.biosdk.QualityCheckRequest;
 import io.mosip.data.dto.biosdk.SegmentDto;
+import io.mosip.data.dto.dbimport.DBImportRequest;
+import io.mosip.data.dto.packet.PacketDto;
 import io.mosip.data.dto.packet.metadata.BiometricsMetaInfoDto;
 import io.mosip.data.dto.packet.type.IndividualBiometricType;
 import io.mosip.data.dto.packet.type.SimpleType;
@@ -257,5 +261,58 @@ public class PacketCreator {
         auditMap.put("actionTimeStamp", timeStamp);
         auditList.add(auditMap);
         return auditList;
+    }
+
+    public void setMetaData(Map<String, String> metaInfoMap, PacketDto packetDto, DBImportRequest dbImportRequest) throws JsonProcessingException {
+        Map<String, String> metaData = new LinkedHashMap<>();
+        metaData.put(PacketManagerConstants.REGISTRATIONID, packetDto.getId());
+        metaData.put(RegistrationConstants.PACKET_APPLICATION_ID, packetDto.getId());
+        metaData.put(PacketManagerConstants.META_CREATION_DATE, LocalDateTime.now(ZoneId.of("UTC")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
+        metaData.put(PacketManagerConstants.META_CLIENT_VERSION, ConfigUtil.getConfigUtil().getRegClientVersion());
+        metaData.put(PacketManagerConstants.META_REGISTRATION_TYPE, dbImportRequest.getProcess());
+        metaData.put(PacketManagerConstants.META_PRE_REGISTRATION_ID, null);
+
+        //TODO Need to Redesign after derby DB Install
+/*        MachineMaster machineMaster = machineMappingDAO.getMachine();
+        if (machineMaster == null || machineMaster.getRegCenterId() == null) {
+            throwRegBaseCheckedException(RegistrationExceptionConstants.REG_PKT_INVALID_MACHINE_ID_EXCEPTION);
+        } else {
+            metaData.put(PacketManagerConstants.META_MACHINE_ID, machineMaster.getId());
+            metaData.put(PacketManagerConstants.META_CENTER_ID, machineMaster.getRegCenterId());
+            metaData.put(PacketManagerConstants.META_DONGLE_ID, machineMaster.getSerialNum());
+            metaData.put(PacketManagerConstants.META_KEYINDEX, machineMaster.getKeyIndex());
+        }*/
+
+        metaData.put(PacketManagerConstants.META_MACHINE_ID, ConfigUtil.getConfigUtil().getMachineId());
+        metaData.put(PacketManagerConstants.META_CENTER_ID, ConfigUtil.getConfigUtil().getCenterId());
+        metaData.put(PacketManagerConstants.META_KEYINDEX, ConfigUtil.getConfigUtil().getKeyIndex());
+        //TODO Need to populate Machine Serial No after implementing machine derby sync
+        metaData.put(PacketManagerConstants.META_DONGLE_ID, ConfigUtil.getConfigUtil().getMachineSerialNum());
+        metaData.put("langCodes", String.join(RegistrationConstants.COMMA, ConfigUtil.getConfigUtil().getSelectedLanguages()));
+        metaData.put(PacketManagerConstants.META_APPLICANT_CONSENT, null);
+
+        metaInfoMap.put("metaData", mapper.writeValueAsString(getLabelValueDTOListString(metaData)));
+        metaInfoMap.put("blockListedWords", mapper.writeValueAsString(new ArrayList<>()));
+        metaInfoMap.put("capturedRegisteredDevices", mapper.writeValueAsString(new ArrayList<>()));
+        metaInfoMap.put("capturedNonRegisteredDevices", mapper.writeValueAsString(new ArrayList<>()));
+        metaInfoMap.put("printingName", mapper.writeValueAsString(new ArrayList<>()));
+
+    }
+
+    private List<Map<String, String>> getLabelValueDTOListString(Map<String, String> operationsDataMap) {
+
+        List<Map<String, String>> labelValueMap = new LinkedList<>();
+
+        for (Map.Entry<String, String> fieldName : operationsDataMap.entrySet()) {
+
+            Map<String, String> map = new LinkedHashMap<>();
+
+            map.put("label", fieldName.getKey());
+            map.put("value", fieldName.getValue());
+
+            labelValueMap.add(map);
+        }
+
+        return labelValueMap;
     }
 }

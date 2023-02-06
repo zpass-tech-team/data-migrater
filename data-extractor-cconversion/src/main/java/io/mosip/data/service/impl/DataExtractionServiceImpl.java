@@ -20,7 +20,7 @@ import java.sql.*;
 import java.util.*;
 
 @Service
-public class DataExtraationServiceImpl  implements DataExtractionService {
+public class DataExtractionServiceImpl implements DataExtractionService {
 
     @Autowired
     private BioConversion bioConversion;
@@ -104,7 +104,7 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
                         byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
                         byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
-                        bioDetails.put(fieldMap + (fieldFormatRequest.getFieldToQualityScore() != null ? "_" + resultSet.getString(fieldFormatRequest.getFieldToQualityScore()) : ""), convertedImageData);
+                        bioDetails.put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.getString(fieldFormatRequest.getSrcFieldForQualityScore()) : ""), convertedImageData);
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
                         byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
                         docDetails.put(fieldMap, Base64.getEncoder().encodeToString(byteVal));
@@ -121,6 +121,7 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
             }
             packetDto.setId(generateRegistrationId(centerId, machineId));
             packetDto.setRefId(packetDto.getId());
+            packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
             packetDto.setMetaInfo(metaInfo);
             packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
 
@@ -136,8 +137,8 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
 
     private byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws Exception {
         if (localStoreRequired) {
-            bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName() , bioValue, fieldFormatRequest.getFromFormat());
-            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName(), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getToFormat());
+            bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
+            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName(), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat());
         } else {
             return bioConversion.convertImage(fieldFormatRequest, bioValue);
         }
@@ -176,8 +177,8 @@ public class DataExtraationServiceImpl  implements DataExtractionService {
                 uniqueCloumns.add(field);
                 if(fieldFormatRequest.getPrimaryField() != null)
                     uniqueCloumns.add(fieldFormatRequest.getPrimaryField());
-                if(fieldFormatRequest.getFieldToQualityScore() != null)
-                    uniqueCloumns.add(fieldFormatRequest.getFieldToQualityScore());
+                if(fieldFormatRequest.getSrcFieldForQualityScore() != null)
+                    uniqueCloumns.add(fieldFormatRequest.getSrcFieldForQualityScore());
             }
 
             for (String column : uniqueCloumns) {
