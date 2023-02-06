@@ -20,6 +20,7 @@ import io.mosip.data.constant.RegistrationConstants;
 import io.mosip.data.dto.config.SyncDataBaseDto;
 import io.mosip.data.dto.config.SyncDataResponseDto;
 import io.mosip.data.exception.RegBaseUncheckedException;
+import io.mosip.data.repository.*;
 import io.mosip.kernel.clientcrypto.util.ClientCryptoUtils;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
@@ -56,8 +57,8 @@ public class ClientSettingSyncHelper {
 //	private BiometricTypeRepository biometricTypeRepository;
 //
 	/** Object for Sync Blocklisted Words Repository. */
-	@Autowired
-	private BlocklistedWordsRepository blocklistedWordsRepository;
+//	@Autowired
+//	private BlacklistedWordsRepository blacklistedWordsRepository;
 
 	/** Object for Sync Document Category Repository. */
 	@Autowired
@@ -409,7 +410,7 @@ public class ClientSettingSyncHelper {
 	@Async
 	private CompletableFuture handleMisellaneousSync1(SyncDataResponseDto syncDataResponseDto) throws SyncFailedException  {
 		try {
-			blocklistedWordsRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "BlacklistedWords")));
+//			blacklistedWordsRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "BlacklistedWords")));
 //			processListRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "ProcessList")));
 //			screenDetailRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "ScreenDetail")));
 //			screenAuthorizationRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "ScreenAuthorization")));

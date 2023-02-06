@@ -8,6 +8,7 @@ import io.mosip.data.dto.ResponseWrapper;
 import io.mosip.data.dto.config.SyncDataResponseDto;
 import io.mosip.data.service.DataRestClientService;
 import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
+import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.util.CryptoUtil;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +16,15 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.stereotype.Component;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
 import java.util.*;
 
 @Component
@@ -61,9 +67,28 @@ public class ConfigUtil {
                 configUtil.regClientVersion = env.getProperty("mosip.id.regclient.current.version");
                 configUtil.selectedLanguages = env.getProperty("mosip.selected.languages");
                 configUtil.machineSerialNum = null;
+                createDatabase();
                 syncClientSettings();
             }
         }
+    }
+
+    public void createDatabase() throws Exception {
+            Connection connection = null;
+            try {
+                connection = DriverManager.getConnection(env.getProperty("spring.datasource.url"), env.getProperty("spring.datasource.username"), env.getProperty("spring.datasource.password"));
+//                SQLWarning sqlWarning = connection.getWarnings();
+//                if (sqlWarning != null) {
+//                    throw new Exception(sqlWarning.getCause());// SQLWarning will not be available once connection is
+                    // closed.
+//                }
+                org.apache.derby.tools.ij.runScript(connection,
+                        ConfigUtil.class.getClassLoader().getResourceAsStream("initial.sql"), "UTF-8", System.out,
+                        "UTF-8");
+            } finally {
+                if (connection != null)
+                    connection.close();
+            }
     }
 
     public static ConfigUtil getConfigUtil() {

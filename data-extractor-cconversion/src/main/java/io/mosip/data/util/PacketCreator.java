@@ -100,7 +100,7 @@ public class PacketCreator {
                 switch (type) {
                     case "simpleType":
                         List<SimpleType> valList = new ArrayList<>();
-                        SimpleType simpleType = new SimpleType(primaryLamguage, demoDetails.get(id.toLowerCase()) == null ? "":demoDetails.get(id.toLowerCase()).toString());
+                        SimpleType simpleType = new SimpleType(primaryLamguage, demoDetails.get(id) == null ? "":demoDetails.get(id).toString());
                         valList.add(simpleType);
                         demoMap.put(id, mapper.writeValueAsString(valList));
                         break;

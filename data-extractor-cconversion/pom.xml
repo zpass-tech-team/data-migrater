@@ -71,11 +71,22 @@
              <version>1.2.0.1-B1</version>
          </dependency>
     <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-keymanager-service -->
-    <dependency>
-        <groupId>io.mosip.kernel</groupId>
-        <artifactId>kernel-keymanager-service</artifactId>
-        <version>1.2.0.1-B2</version>
-    </dependency>
+        <dependency>
+            <groupId>io.mosip.kernel</groupId>
+            <artifactId>kernel-keymanager-service</artifactId>
+            <version>1.2.0.1-B2</version>
+            <classifier>lib</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.cloud</groupId>
+                    <artifactId>spring-cloud-starter-sleuth</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.security</groupId>
+                    <artifactId>spring-security-test</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-core -->
         <dependency>
             <groupId>io.mosip.kernel</groupId>
@@ -89,13 +100,18 @@
             <version>1.1.5.3</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <version>${spring.boot.version}</version>
+            <groupId>io.mosip.kernel</groupId>
+            <artifactId>kernel-dataaccess-hibernate</artifactId>
+            <version>1.2.0.1-B1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
+            <version>${apache.derby.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.derby</groupId>
+            <artifactId>derbytools</artifactId>
             <version>${apache.derby.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-idgenerator-rid

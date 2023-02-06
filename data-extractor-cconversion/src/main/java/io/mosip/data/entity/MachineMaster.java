@@ -14,7 +14,7 @@ import javax.persistence.*;
  * @since 1.0.0
  */
 @Entity
-@Table(schema = "data", name = "machine_master")
+@Table(schema = "mosip", name = "machine_master")
 public class MachineMaster extends RegistrationCommonFields implements Serializable {
 
 	/**
