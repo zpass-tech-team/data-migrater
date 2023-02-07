@@ -21,6 +21,7 @@ import io.mosip.data.dto.packet.metadata.BiometricsMetaInfoDto;
 import io.mosip.data.dto.packet.type.IndividualBiometricType;
 import io.mosip.data.dto.packet.type.SimpleType;
 import io.mosip.data.exception.ApisResourceAccessException;
+import io.mosip.data.repository.BlocklistedWordsRepository;
 import io.mosip.data.service.DataRestClientService;
 import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.kernel.biometrics.constant.OtherKey;
@@ -59,6 +60,9 @@ public class PacketCreator {
 
     @Value("${mosip.primary.language}")
     private String primaryLamguage;
+
+    @Autowired
+    private BlocklistedWordsRepository blocklistedWordsRepository;
 
     private LinkedHashMap<String, Object> latestIdSchemaMap;
 
@@ -292,7 +296,7 @@ public class PacketCreator {
         metaData.put(PacketManagerConstants.META_APPLICANT_CONSENT, null);
 
         metaInfoMap.put("metaData", mapper.writeValueAsString(getLabelValueDTOListString(metaData)));
-        metaInfoMap.put("blockListedWords", mapper.writeValueAsString(new ArrayList<>()));
+        metaInfoMap.put("blockListedWords", mapper.writeValueAsString(  blocklistedWordsRepository.findAllActiveBlockListedWords()));
         metaInfoMap.put("capturedRegisteredDevices", mapper.writeValueAsString(new ArrayList<>()));
         metaInfoMap.put("capturedNonRegisteredDevices", mapper.writeValueAsString(new ArrayList<>()));
         metaInfoMap.put("printingName", mapper.writeValueAsString(new ArrayList<>()));

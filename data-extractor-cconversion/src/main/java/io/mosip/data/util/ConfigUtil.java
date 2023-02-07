@@ -6,6 +6,8 @@ import io.mosip.data.constant.ApiName;
 import io.mosip.data.constant.RegistrationConstants;
 import io.mosip.data.dto.ResponseWrapper;
 import io.mosip.data.dto.config.SyncDataResponseDto;
+import io.mosip.data.entity.MachineMaster;
+import io.mosip.data.repository.MachineMasterRepository;
 import io.mosip.data.service.DataRestClientService;
 import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
 import io.mosip.kernel.core.exception.ExceptionUtils;
@@ -54,6 +56,9 @@ public class ConfigUtil {
     @Autowired
     private ClientSettingSyncHelper clientSettingSyncHelper;
 
+    @Autowired
+    private MachineMasterRepository machineMasterRepository;
+
     private static ConfigUtil configUtil;
 
     public void loadConfigDetails() throws Exception {
@@ -62,11 +67,8 @@ public class ConfigUtil {
                 configUtil = new ConfigUtil();
                 configUtil.keyIndex = CryptoUtil.computeFingerPrint(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), null);
                 configUtil.machineName = InetAddress.getLocalHost().getHostName().toLowerCase();
-                configUtil.machineId = env.getProperty("mosip.id.reg.machine.id");
-                configUtil.centerId = env.getProperty("mosip.id.reg.center.id");
                 configUtil.regClientVersion = env.getProperty("mosip.id.regclient.current.version");
                 configUtil.selectedLanguages = env.getProperty("mosip.selected.languages");
-                configUtil.machineSerialNum = null;
                 createDatabase();
                 syncClientSettings();
             }
@@ -107,7 +109,14 @@ public class ConfigUtil {
             saveClientSettings((LinkedHashMap<String, Object>)response.getResponse());
         }
 
- //       setErrorResponse(responseDTO, errorMsg(masterSyncResponse), null);
+        List<MachineMaster> machineMasters = machineMasterRepository.findAll();
+        configUtil.machineSerialNum = machineMasters.get(0).getSerialNum();
+        configUtil.machineId = machineMasters.get(0).getId();
+        configUtil.centerId = machineMasters.get(0).getRegCenterId();
+
+        if (!configUtil.machineName.equalsIgnoreCase(machineMasters.get(0).getName()))
+            throw new Exception("Machine Name '" + configUtil.machineName + "' not Matching with the MOSIP Configuration");
+        //       setErrorResponse(responseDTO, errorMsg(masterSyncResponse), null);
     }
 
     private void saveClientSettings(LinkedHashMap<String, Object> masterSyncResponse) throws Exception {

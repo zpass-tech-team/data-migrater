@@ -1,20 +1,13 @@
 package io.mosip.data.util;
 
 
-import java.io.IOException;
 import java.io.SyncFailedException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.stream.Collectors;
 
 import io.mosip.data.constant.RegistrationConstants;
 import io.mosip.data.dto.config.SyncDataBaseDto;
@@ -22,19 +15,14 @@ import io.mosip.data.dto.config.SyncDataResponseDto;
 import io.mosip.data.exception.RegBaseUncheckedException;
 import io.mosip.data.repository.*;
 import io.mosip.kernel.clientcrypto.util.ClientCryptoUtils;
-import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
-import io.mosip.kernel.core.util.CryptoUtil;
 
 import lombok.NonNull;
 
@@ -57,8 +45,8 @@ public class ClientSettingSyncHelper {
 //	private BiometricTypeRepository biometricTypeRepository;
 //
 	/** Object for Sync Blocklisted Words Repository. */
-//	@Autowired
-//	private BlacklistedWordsRepository blacklistedWordsRepository;
+	@Autowired
+	private BlocklistedWordsRepository blocklistedWordsRepository;
 
 	/** Object for Sync Document Category Repository. */
 	@Autowired
@@ -410,7 +398,7 @@ public class ClientSettingSyncHelper {
 	@Async
 	private CompletableFuture handleMisellaneousSync1(SyncDataResponseDto syncDataResponseDto) throws SyncFailedException  {
 		try {
-//			blacklistedWordsRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "BlacklistedWords")));
+			blocklistedWordsRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "BlocklistedWords")));
 //			processListRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "ProcessList")));
 //			screenDetailRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "ScreenDetail")));
 //			screenAuthorizationRepository.saveAll(buildEntities(getSyncDataBaseDto(syncDataResponseDto, "ScreenAuthorization")));

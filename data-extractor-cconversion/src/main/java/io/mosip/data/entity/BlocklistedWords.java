@@ -22,7 +22,7 @@ import io.mosip.data.entity.id.WordAndLanguageCodeID;
  */
 
 @Entity
-@Table(name = "blocklisted_words", schema = "mosip")
+@Table(name = "blacklisted_words", schema = "mosip")
 @IdClass(WordAndLanguageCodeID.class)
 public class BlocklistedWords extends RegistrationCommonFields implements Serializable {
 

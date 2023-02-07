@@ -10,6 +10,7 @@ import io.mosip.data.dto.masterdata.DocumentTypeExtnDto;
 import io.mosip.data.dto.packet.PacketDto;
 import io.mosip.data.service.DataExtractionService;
 import io.mosip.data.util.BioConversion;
+import io.mosip.data.util.ConfigUtil;
 import io.mosip.data.util.PacketCreator;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,12 +31,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
   //  @Autowired
   //  private RidGenerator ridGenerator;
-
-    @Value("${mosip.id.reg.center.id}")
-    private String centerId;
-
-    @Value("${mosip.id.reg.machine.id}")
-    private String machineId;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -119,7 +114,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             if (bioDetails.size()>0) {
                 packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo));
             }
-            packetDto.setId(generateRegistrationId(centerId, machineId));
+            packetDto.setId(generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId()));
             packetDto.setRefId(packetDto.getId());
             packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
             packetDto.setMetaInfo(metaInfo);
