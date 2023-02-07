@@ -13,6 +13,7 @@ import io.mosip.data.util.BioConversion;
 import io.mosip.data.util.ConfigUtil;
 import io.mosip.data.util.PacketCreator;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
+import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -29,8 +30,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Autowired
     private PacketCreator packetCreator;
 
-  //  @Autowired
-  //  private RidGenerator ridGenerator;
+    @Autowired
+    private RidGenerator ridGenerator;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -210,7 +211,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     }*/
 
     private String generateRegistrationId(String centerId, String machineId) {
-        return "20001100013246732647326487324";
-       // return (String) ridGenerator.generateId(centerId, machineId);
+        return (String) ridGenerator.generateId(centerId, machineId);
     }
 }
