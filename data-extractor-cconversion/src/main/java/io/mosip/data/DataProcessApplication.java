@@ -1,6 +1,7 @@
 package io.mosip.data;
 
 import io.mosip.data.util.ConfigUtil;
+import io.mosip.data.util.MvelUtil;
 import io.mosip.kernel.dataaccess.hibernate.config.HibernateDaoConfig;
 import io.mosip.kernel.dataaccess.hibernate.repository.impl.HibernateRepositoryImpl;
 import org.springframework.boot.SpringApplication;
@@ -12,6 +13,8 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootApplication(scanBasePackages = { "io.mosip.data.*", "${mosip.auth.adapter.impl.basepackage}", "io.mosip.kernel.clientcrypto.*", "io.mosip.kernel.dataaccess.hibernate"}, exclude = {SecurityAutoConfiguration.class, HibernateDaoConfig.class})
 @EntityScan(basePackages = {"io.mosip.data.entity", "io.mosip.kernel.idgenerator.rid.entity"})

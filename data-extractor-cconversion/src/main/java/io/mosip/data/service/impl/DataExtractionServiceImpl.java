@@ -5,15 +5,18 @@ import io.mosip.data.constant.DBTypes;
 import io.mosip.data.constant.FieldCategory;
 import io.mosip.data.dto.dbimport.DBImportRequest;
 import io.mosip.data.dto.dbimport.FieldFormatRequest;
+import io.mosip.data.dto.dbimport.MvelParameter;
 import io.mosip.data.dto.masterdata.DocumentCategoryDto;
 import io.mosip.data.dto.masterdata.DocumentTypeExtnDto;
 import io.mosip.data.dto.packet.PacketDto;
 import io.mosip.data.service.DataExtractionService;
 import io.mosip.data.util.BioConversion;
 import io.mosip.data.util.ConfigUtil;
+import io.mosip.data.util.MvelUtil;
 import io.mosip.data.util.PacketCreator;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
+import org.mvel2.MVEL;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     @Autowired
     private RidGenerator ridGenerator;
+
+    @Autowired
+    private MvelUtil mvelUtil;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -96,7 +102,22 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     String fieldName = fieldFormatRequest.getFieldName().contains(",") ? fieldFormatRequest.getFieldName().replace(",", "") : fieldFormatRequest.getFieldName();
                     String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldFormatRequest.getFieldName().toLowerCase();
                     if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DEMO)) {
-                        demoDetails.put(fieldMap, resultSet.getObject(fieldName));
+                        if (fieldFormatRequest.getMvelExpressions() != null) {
+                            Map map = new HashMap();
+                            for (MvelParameter parameter : fieldFormatRequest.getMvelExpressions().getParameters()) {
+                                if (parameter.getParameterType().equals("String"))
+                                    if(parameter.getParameterValue().contains("${")) {
+                                        String param = parameter.getParameterValue().replace("${", "").replace("}", "");
+                                        map.put(parameter.getParameterName(), resultSet.getObject(param));
+                                    } else {
+                                        map.put(parameter.getParameterName(), parameter.getParameterValue());
+                                    }
+                            }
+
+                            demoDetails.put(fieldMap, mvelUtil.processViaMVEL(fieldFormatRequest.getMvelExpressions().getMvelFile(), map));
+                        } else {
+                            demoDetails.put(fieldMap, resultSet.getObject(fieldName));
+                        }
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
                         byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
                         byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
