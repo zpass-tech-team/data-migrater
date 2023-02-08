@@ -1,6 +1,5 @@
 package io.mosip.data.dto.packet;
 
-import io.mosip.commons.packet.dto.Document;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -23,7 +22,7 @@ public class PacketDto implements Serializable {
     private String schemaJson;
     private Map<String, Object> fields;
     private Map<String, String> metaInfo;
-    private Map<String, Document> documents;
+    private Map<String, DocumentDto> documents;
     private List<Map<String, String>> audits;
     private Map<String, BiometricRecord> biometrics;
 

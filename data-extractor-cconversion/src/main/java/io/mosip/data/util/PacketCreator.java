@@ -2,11 +2,14 @@ package io.mosip.data.util;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.itextpdf.layout.element.Link;
 import io.mosip.commons.packet.constants.Biometric;
 import io.mosip.commons.packet.constants.PacketManagerConstants;
+import io.mosip.commons.packet.dto.Document;
+import io.mosip.commons.packet.dto.packet.DocumentType;
 import io.mosip.data.constant.ApiName;
 import io.mosip.data.constant.RegistrationConstants;
 import io.mosip.data.dto.RequestWrapper;
@@ -16,8 +19,10 @@ import io.mosip.data.dto.biosdk.OtherDto;
 import io.mosip.data.dto.biosdk.QualityCheckRequest;
 import io.mosip.data.dto.biosdk.SegmentDto;
 import io.mosip.data.dto.dbimport.DBImportRequest;
+import io.mosip.data.dto.packet.DocumentDto;
 import io.mosip.data.dto.packet.PacketDto;
 import io.mosip.data.dto.packet.metadata.BiometricsMetaInfoDto;
+import io.mosip.data.dto.packet.metadata.DocumentMetaInfoDTO;
 import io.mosip.data.dto.packet.type.IndividualBiometricType;
 import io.mosip.data.dto.packet.type.SimpleType;
 import io.mosip.data.exception.ApisResourceAccessException;
@@ -99,7 +104,8 @@ public class PacketCreator {
                     }
                 }
             } else if (type.equals("documentType")) {
-
+                if (demoDetails.containsKey(id) && demoDetails.get(id) != null)
+                    demoMap.put(id, demoDetails.get(id));
             } else if (demoDetails.containsKey(id) && demoDetails.get(id) != null) {
                 switch (type) {
                     case "simpleType":
@@ -120,6 +126,58 @@ public class PacketCreator {
             }
         }
         return demoMap;
+    }
+
+    public LinkedHashMap<String, DocumentDto> setDocuments(LinkedHashMap<String, Object> docDetails, List ignorableFields, LinkedHashMap<String, String> metaInfoMap, LinkedHashMap<String, Object> demoDetails)
+            throws Exception {
+
+        LinkedHashMap<String, DocumentDto> docMap = new LinkedHashMap<>();
+        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
+
+        for(Object obj : (List)idSchema.get("schema")) {
+            Map<String, Object> map = (Map<String, Object>) obj;
+            String id = map.get("id").toString();
+            String type = map.get("type").toString();
+            Boolean required = (Boolean) map.get("required");
+            String subType = (String) map.get("subType");
+
+            if (type.equals("documentType")) {
+                if (docDetails.containsKey(id) && docDetails.get(id) != null) {
+                    Document document = mapper.readValue((String) docDetails.get(id), new TypeReference<Document>() {});
+                    DocumentDto documentDto = new DocumentDto();
+                    documentDto.setOwner("Applicant");
+                    documentDto.setDocument(document.getDocument());
+                    documentDto.setCategory(subType);
+                    documentDto.setFormat(document.getFormat());
+                    documentDto.setType(document.getType());
+                    documentDto.setRefNumber(document.getRefNumber());
+                    documentDto.setValue(id);
+                    docMap.put(id,documentDto);
+
+                    DocumentType documentType = new DocumentType(id, document.getType(), document.getFormat(), document.getRefNumber());
+                    demoDetails.put(id, mapper.writeValueAsString(documentType));
+                }  else if (required && !ignorableFields.contains(id)) {
+                    throw new Exception("Mandatory Field '" + id + "' value missing");
+                }
+
+            }
+        }
+
+        List<DocumentMetaInfoDTO> documentMetaInfoDTOs = new LinkedList<>();
+        for (String fieldName : docMap.keySet()) {
+            DocumentDto document = docMap.get(fieldName);
+            DocumentMetaInfoDTO documentMetaInfoDTO = new DocumentMetaInfoDTO();
+            documentMetaInfoDTO.setDocumentCategory(document.getCategory());
+            documentMetaInfoDTO.setDocumentName(document.getValue());
+            documentMetaInfoDTO.setDocumentOwner(document.getOwner());
+            documentMetaInfoDTO.setDocumentType(document.getType());
+            documentMetaInfoDTO.setRefNumber(document.getRefNumber());
+
+            documentMetaInfoDTOs.add(documentMetaInfoDTO);
+        }
+
+        metaInfoMap.put("documents", mapper.writeValueAsString(documentMetaInfoDTOs));
+        return docMap;
     }
 
     public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap) throws Exception {

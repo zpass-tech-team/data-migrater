@@ -1,14 +1,19 @@
 package io.mosip.data.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.mosip.commons.packet.dto.Document;
 import io.mosip.data.constant.DBTypes;
 import io.mosip.data.constant.FieldCategory;
 import io.mosip.data.constant.mvel.ParameterType;
 import io.mosip.data.dto.dbimport.DBImportRequest;
+import io.mosip.data.dto.dbimport.DocumentAttributes;
 import io.mosip.data.dto.dbimport.FieldFormatRequest;
 import io.mosip.data.dto.mvel.MvelParameter;
 import io.mosip.data.dto.masterdata.DocumentCategoryDto;
 import io.mosip.data.dto.masterdata.DocumentTypeExtnDto;
+import io.mosip.data.dto.packet.DocumentDto;
 import io.mosip.data.dto.packet.PacketDto;
+import io.mosip.data.dto.packet.metadata.DocumentMetaInfoDTO;
 import io.mosip.data.repository.BlocklistedWordsRepository;
 import io.mosip.data.service.CustomNativeRepository;
 import io.mosip.data.service.DataExtractionService;
@@ -85,6 +90,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     public PacketDto createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
         Connection conn = null;
         PacketDto packetDto = null;
+        ObjectMapper mapper = new ObjectMapper();
 
         try {
             ResultSet resultSet = readDataFromDatabase(dbImportRequest, conn);
@@ -93,14 +99,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 packetDto = new PacketDto();
                 packetDto.setProcess(dbImportRequest.getProcess());
                 packetDto.setSource("REGISTRATION_CLIENT");
-                packetDto.setSchemaVersion("0.1");
+                packetDto.setSchemaVersion(String.valueOf(packetCreator.getLatestIdSchema().get("idVersion")));
                 packetDto.setAdditionalInfoReqId(null);
                 packetDto.setMetaInfo(null);
                 packetDto.setOfflineMode(false);
 
                 LinkedHashMap<String, Object> demoDetails = new LinkedHashMap<>();
                 LinkedHashMap<String, Object> bioDetails = new LinkedHashMap<>();
-                LinkedHashMap<String, String> docDetails = new LinkedHashMap<>();
+                LinkedHashMap<String, Object> docDetails = new LinkedHashMap<>();
                 LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
 
                 for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
@@ -132,9 +138,31 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
                         bioDetails.put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.getString(fieldFormatRequest.getSrcFieldForQualityScore()) : ""), convertedImageData);
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
-                        byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
-                        docDetails.put(fieldMap, Base64.getEncoder().encodeToString(byteVal));
+
+                        Document document = new Document();
+                        document.setDocument(resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes());
+                        if(fieldFormatRequest.getDocumentAttributes() != null) {
+                            DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
+                            String refField = documentAttributes.getDocumentRefNoField().contains("STATIC") ? "STATIC_" +  getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
+                                    :  documentAttributes.getDocumentRefNoField();
+                            document.setRefNumber(resultSet.getString(refField));
+
+                            String formatField = documentAttributes.getDocumentFormatField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
+                                    :  documentAttributes.getDocumentFormatField();
+                            document.setFormat(resultSet.getString(formatField));
+
+
+                            String codeField = documentAttributes.getDocumentCodeField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
+                                    :  documentAttributes.getDocumentCodeField();
+                            document.setType(resultSet.getString(codeField));
+                        }
+
+                        docDetails.put(fieldMap, mapper.writeValueAsString(document));
                     }
+                }
+
+                if (docDetails.size()>0) {
+                    packetDto.setDocuments(packetCreator.setDocuments(docDetails, dbImportRequest.getIgnoreIdSchemaFields(), metaInfo, demoDetails));
                 }
 
                 if (demoDetails.size() > 0) {
@@ -146,13 +174,16 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 }
 
                 packetDto.setId(generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId()));
-                packetDto.setRefId(packetDto.getId());
+                packetDto.setRefId(ConfigUtil.getConfigUtil().getCenterId()+ "_" + ConfigUtil.getConfigUtil().getMachineId());
                 packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
                 packetDto.setMetaInfo(metaInfo);
                 packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
 
                 LinkedHashMap<String, Object> idSchema = packetCreator.getLatestIdSchema();
                 packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
+
+                // TODO Remove this break while  integrate with production // This is Testing purpose only
+                break;
             }
         } finally {
             if (conn != null)
@@ -206,6 +237,16 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     uniqueCloumns.add(fieldFormatRequest.getPrimaryField());
                 if(fieldFormatRequest.getSrcFieldForQualityScore() != null)
                     uniqueCloumns.add(fieldFormatRequest.getSrcFieldForQualityScore());
+
+                if(fieldFormatRequest.getDocumentAttributes() != null) {
+                    DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
+                    uniqueCloumns.add(documentAttributes.getDocumentRefNoField().contains("STATIC") ? "'" + getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField()) + "' AS STATIC_" +  getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
+                            :  documentAttributes.getDocumentRefNoField());
+                    uniqueCloumns.add(documentAttributes.getDocumentFormatField().contains("STATIC") ? "'" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField()) + "' AS STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
+                            :  documentAttributes.getDocumentFormatField());
+                    uniqueCloumns.add(documentAttributes.getDocumentCodeField().contains("STATIC") ? "'" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField()) + "' AS STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
+                            :  documentAttributes.getDocumentCodeField());
+                }
             }
 
             for (String column : uniqueCloumns) {
@@ -243,5 +284,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     private String generateRegistrationId(String centerId, String machineId) {
         return (String) ridGenerator.generateId(centerId, machineId);
+    }
+
+    private String getDocumentAttributeStaticValue(String val) {
+        return val.substring(val.indexOf(":")+1).trim();
     }
 }

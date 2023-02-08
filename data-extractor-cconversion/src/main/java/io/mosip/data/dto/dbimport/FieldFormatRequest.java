@@ -18,5 +18,6 @@ public class FieldFormatRequest {
     private ImageFormat destFormat;
     private String fieldToMap;
     private String srcFieldForQualityScore;
+    private DocumentAttributes documentAttributes;
     private MvelDto mvelExpressions;
 }
