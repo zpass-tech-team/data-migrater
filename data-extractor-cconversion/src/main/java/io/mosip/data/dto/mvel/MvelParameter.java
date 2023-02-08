@@ -1,5 +1,6 @@
-package io.mosip.data.dto.dbimport;
+package io.mosip.data.dto.mvel;
 
+import io.mosip.data.constant.mvel.ParameterType;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,6 +10,6 @@ import lombok.Setter;
 @Setter
 public class MvelParameter {
     private String parameterName;
-    private String parameterType;
+    private ParameterType parameterType;
     private String parameterValue;
 }

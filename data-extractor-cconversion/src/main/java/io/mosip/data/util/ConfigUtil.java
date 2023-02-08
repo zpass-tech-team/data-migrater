@@ -21,8 +21,11 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.stereotype.Component;
 
+import java.io.FileInputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -84,9 +87,12 @@ public class ConfigUtil {
 //                    throw new Exception(sqlWarning.getCause());// SQLWarning will not be available once connection is
                     // closed.
 //                }
-                org.apache.derby.tools.ij.runScript(connection,
-                        ConfigUtil.class.getClassLoader().getResourceAsStream("initial.sql"), "UTF-8", System.out,
-                        "UTF-8");
+                org.apache.derby.tools.ij.runScript(connection, ConfigUtil.class.getClassLoader().getResourceAsStream("initial.sql"), "UTF-8", System.out, "UTF-8");
+
+                Path path = Paths.get(System.getProperty("user.dir"), "external_db.sql");
+                if(path.toFile().exists()) {
+                    org.apache.derby.tools.ij.runScript(connection, new FileInputStream(path.toFile()), "UTF-8", System.out, "UTF-8");
+                }
             } finally {
                 if (connection != null)
                     connection.close();

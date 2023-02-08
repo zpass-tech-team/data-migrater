@@ -2,6 +2,7 @@ package io.mosip.data.dto.dbimport;
 
 import io.mosip.data.constant.FieldCategory;
 import io.mosip.data.constant.ImageFormat;
+import io.mosip.data.dto.mvel.MvelDto;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
