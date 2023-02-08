@@ -84,23 +84,25 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Override
     public PacketDto createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
         Connection conn = null;
-        PacketDto packetDto = new PacketDto();
+        PacketDto packetDto = null;
 
         try {
-            packetDto.setProcess(dbImportRequest.getProcess());
-            packetDto.setSource("REGISTRATION_CLIENT");
-            packetDto.setSchemaVersion("0.1");
-            packetDto.setAdditionalInfoReqId(null);
-            packetDto.setMetaInfo(null);
-            packetDto.setOfflineMode(false);
-
             ResultSet resultSet = readDataFromDatabase(dbImportRequest, conn);
-            LinkedHashMap<String, Object> demoDetails = new LinkedHashMap<>();
-            LinkedHashMap<String, Object> bioDetails = new LinkedHashMap<>();
-            LinkedHashMap<String, String> docDetails = new LinkedHashMap<>();
-            LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
 
             while (resultSet.next()) {
+                packetDto = new PacketDto();
+                packetDto.setProcess(dbImportRequest.getProcess());
+                packetDto.setSource("REGISTRATION_CLIENT");
+                packetDto.setSchemaVersion("0.1");
+                packetDto.setAdditionalInfoReqId(null);
+                packetDto.setMetaInfo(null);
+                packetDto.setOfflineMode(false);
+
+                LinkedHashMap<String, Object> demoDetails = new LinkedHashMap<>();
+                LinkedHashMap<String, Object> bioDetails = new LinkedHashMap<>();
+                LinkedHashMap<String, String> docDetails = new LinkedHashMap<>();
+                LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
+
                 for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
                     String fieldName = fieldFormatRequest.getFieldName().contains(",") ? fieldFormatRequest.getFieldName().replace(",", "") : fieldFormatRequest.getFieldName();
                     String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldFormatRequest.getFieldName().toLowerCase();
@@ -134,23 +136,24 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         docDetails.put(fieldMap, Base64.getEncoder().encodeToString(byteVal));
                     }
                 }
-            }
 
-            if (demoDetails.size() > 0) {
-                packetDto.setFields(packetCreator.setDemographic(demoDetails, (bioDetails.size()>0), dbImportRequest.getIgnoreIdSchemaFields()));
-            }
+                if (demoDetails.size() > 0) {
+                    packetDto.setFields(packetCreator.setDemographic(demoDetails, (bioDetails.size()>0), dbImportRequest.getIgnoreIdSchemaFields()));
+                }
 
-            if (bioDetails.size()>0) {
-                packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo));
-            }
-            packetDto.setId(generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId()));
-            packetDto.setRefId(packetDto.getId());
-            packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
-            packetDto.setMetaInfo(metaInfo);
-            packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
+                if (bioDetails.size()>0) {
+                    packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo));
+                }
 
-            LinkedHashMap<String, Object> idSchema = packetCreator.getLatestIdSchema();
-            packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
+                packetDto.setId(generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId()));
+                packetDto.setRefId(packetDto.getId());
+                packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
+                packetDto.setMetaInfo(metaInfo);
+                packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
+
+                LinkedHashMap<String, Object> idSchema = packetCreator.getLatestIdSchema();
+                packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
+            }
         } finally {
             if (conn != null)
                 conn.close();

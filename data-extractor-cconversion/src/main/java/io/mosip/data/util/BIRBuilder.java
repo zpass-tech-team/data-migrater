@@ -44,7 +44,7 @@ public class BIRBuilder {
 		// Quality Type
 		QualityType qualityType = new QualityType();
 		qualityType.setAlgorithm(birAlgorithm);
-
+		qualityType.setScore(bioQualityScore == null ? 0L : Long.parseLong(bioQualityScore));
 		VersionType versionType = new VersionType(1, 1);
 
 		String payLoad = null;
@@ -67,7 +67,7 @@ public class BIRBuilder {
 						.build())
 				.withSb(new byte[0]) // .withSb(bioDto.getSignature() == null ? new byte[0] : bioDto.getSignature().getBytes(StandardCharsets.UTF_8))
 				.withOthers(OtherKey.EXCEPTION, bioData==null ? "true" : "false")
-				.withOthers(OtherKey.RETRIES, "1") //.withOthers(OtherKey.RETRIES, bioDto.getNumOfRetries()+ RegistrationConstants.EMPTY)
+				.withOthers(OtherKey.RETRIES, bioData==null ? "0" : "1") //.withOthers(OtherKey.RETRIES, bioDto.getNumOfRetries()+ RegistrationConstants.EMPTY)
 				.withOthers(OtherKey.SDK_SCORE, "0.0") //.withOthers(OtherKey.SDK_SCORE, bioDto.getSdkScore()+RegistrationConstants.EMPTY)
 				.withOthers(OtherKey.FORCE_CAPTURED, "false") //.withOthers(OtherKey.FORCE_CAPTURED, bioDto.isForceCaptured()+RegistrationConstants.EMPTY)
 				.withOthers(OtherKey.PAYLOAD, payLoad == null ? RegistrationConstants.EMPTY : payLoad)
