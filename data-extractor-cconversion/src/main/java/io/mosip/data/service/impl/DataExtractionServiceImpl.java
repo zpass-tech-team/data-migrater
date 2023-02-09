@@ -11,19 +11,16 @@ import io.mosip.data.dto.dbimport.FieldFormatRequest;
 import io.mosip.data.dto.mvel.MvelParameter;
 import io.mosip.data.dto.masterdata.DocumentCategoryDto;
 import io.mosip.data.dto.masterdata.DocumentTypeExtnDto;
-import io.mosip.data.dto.packet.DocumentDto;
 import io.mosip.data.dto.packet.PacketDto;
-import io.mosip.data.dto.packet.metadata.DocumentMetaInfoDTO;
-import io.mosip.data.repository.BlocklistedWordsRepository;
 import io.mosip.data.service.CustomNativeRepository;
 import io.mosip.data.service.DataExtractionService;
 import io.mosip.data.util.BioConversion;
 import io.mosip.data.util.ConfigUtil;
 import io.mosip.data.util.MvelUtil;
 import io.mosip.data.util.PacketCreator;
+import io.mosip.data.validator.IdSchemaFieldValidator;
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.sql.*;
@@ -46,6 +43,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     @Autowired
     CustomNativeRepository customNativeRepository;
+
+    @Autowired
+    IdSchemaFieldValidator idSchemaFieldValidator;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -93,6 +93,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
+            idSchemaFieldValidator.validate(dbImportRequest);
             ResultSet resultSet = readDataFromDatabase(dbImportRequest, conn);
 
             while (resultSet.next()) {
@@ -264,23 +265,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         } else
             throw new SQLException("Unable to Connect With Database. Please check the Configuration");
     }
-
- /*   private void loadMasterData() throws ApisResourceAccessException {
-        ObjectMapper mapper = new ObjectMapper();
-
-        ResponseWrapper response =  (ResponseWrapper) restApiClient.getApi(ApiName.DOCUMENT_CATEGORY, null, "", "", ResponseWrapper.class);
-        DocumentCategoryResponseDto documentCategoryResponse = mapper.convertValue(response.getResponse(), DocumentCategoryResponseDto.class);
-        for (DocumentCategoryDto dto : documentCategoryResponse.getDocumentcategories())
-            documentCategory.put(dto.getCode(), dto);
-
-        response= (ResponseWrapper) restApiClient.getApi(ApiName.DOCUMENT_TYPES, null, "", "", ResponseWrapper.class);
- //       PageDto pageDto = mapper.convertValue(response.getResponse(), PageDto.class);
- //       for (DocumentTypeExtnDto dto : ()pageDto.getData())
- //           documentType.put(dto.getCode(), dto);
-
-            System.out.println(response);
-
-    }*/
 
     private String generateRegistrationId(String centerId, String machineId) {
         return (String) ridGenerator.generateId(centerId, machineId);
