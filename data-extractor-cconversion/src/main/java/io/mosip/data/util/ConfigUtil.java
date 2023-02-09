@@ -82,11 +82,7 @@ public class ConfigUtil {
             Connection connection = null;
             try {
                 connection = DriverManager.getConnection(env.getProperty("spring.datasource.url"), env.getProperty("spring.datasource.username"), env.getProperty("spring.datasource.password"));
-//                SQLWarning sqlWarning = connection.getWarnings();
-//                if (sqlWarning != null) {
-//                    throw new Exception(sqlWarning.getCause());// SQLWarning will not be available once connection is
-                    // closed.
-//                }
+
                 org.apache.derby.tools.ij.runScript(connection, ConfigUtil.class.getClassLoader().getResourceAsStream("initial.sql"), "UTF-8", System.out, "UTF-8");
 
                 Path path = Paths.get(System.getProperty("user.dir"), "external_db.sql");
@@ -109,10 +105,12 @@ public class ConfigUtil {
 
         ResponseWrapper response = (ResponseWrapper) restApiClient.getApi(ApiName.MASTER_VALIDATOR_SERVICE_NAME, null, "keyindex", configUtil.keyIndex, ResponseWrapper.class);
 
-        String errorCode = getErrorCode(getErrorList(response));
+        String message = getErrorMessage(getErrorList(response));
 
         if (null != response.getResponse()) {
             saveClientSettings((LinkedHashMap<String, Object>)response.getResponse());
+        } else {
+            throw new Exception("Machine Not Configured in MOSIP " + message);
         }
 
         List<MachineMaster> machineMasters = machineMasterRepository.findAll();
@@ -122,7 +120,12 @@ public class ConfigUtil {
 
         if (!configUtil.machineName.equalsIgnoreCase(machineMasters.get(0).getName()))
             throw new Exception("Machine Name '" + configUtil.machineName + "' not Matching with the MOSIP Configuration");
-        //       setErrorResponse(responseDTO, errorMsg(masterSyncResponse), null);
+
+        if (configUtil.machineId == null || configUtil.machineId.isEmpty())
+            throw new Exception("Machine Name '" + configUtil.machineName + "' not Configured in MOSIP System");
+
+        if (configUtil.centerId == null || configUtil.centerId.isEmpty())
+            throw new Exception("Registration Center not Configured for Machine Name '" + configUtil.machineName + "' in MOSIP System");
     }
 
     private void saveClientSettings(LinkedHashMap<String, Object> masterSyncResponse) throws Exception {
@@ -138,17 +141,13 @@ public class ConfigUtil {
         } catch (Throwable runtimeException) {
             throw new Exception(runtimeException.getMessage());
         }
-
-//        if (!RegistrationConstants.SUCCESS.equals(response))
-//            setErrorResponse(responseDTO, RegistrationConstants.MASTER_SYNC_ERROR_MESSAGE, null);
     }
 
-    private static String getErrorCode(List<Map<String, Object>> errorList) {
+    private static String getErrorMessage(List<Map<String, Object>> errorList) {
 
         return errorList != null && errorList.get(0) != null
-                ? (String) errorList.get(0).get(RegistrationConstants.ERROR_CODE)
+                ? (String) errorList.get(0).get(RegistrationConstants.ERROR_CODE) + " : " + errorList.get(0).get(RegistrationConstants.MESSAGE_CODE)
                 : null;
-
     }
 
     private static List<Map<String, Object>> getErrorList(ResponseWrapper syncReponse) {
@@ -156,30 +155,5 @@ public class ConfigUtil {
         return syncReponse.getErrors() != null && syncReponse.getErrors().size() > 0
                 ? (List<Map<String, Object>>) syncReponse.getErrors()
                 : null;
-
     }
-
-/*    protected ResponseDTO setErrorResponse(final ResponseDTO response, final String message,
-                                           final Map<String, Object> attributes) {
-
-        *//** Create list of Error Response *//*
-        List<ErrorResponseDTO> errorResponses = (response.getErrorResponseDTOs() != null)
-                ? response.getErrorResponseDTOs()
-                : new LinkedList<>();
-
-        *//** Error response *//*
-        ErrorResponseDTO errorResponse = new ErrorResponseDTO();
-
-        errorResponse.setCode(RegistrationConstants.ERROR);
-        errorResponse.setMessage(message);
-
-        errorResponse.setOtherAttributes(attributes);
-
-        errorResponses.add(errorResponse);
-
-        *//** Adding list of error responses to response *//*
-        response.setErrorResponseDTOs(errorResponses);
-        return response;
-
-    }*/
 }
