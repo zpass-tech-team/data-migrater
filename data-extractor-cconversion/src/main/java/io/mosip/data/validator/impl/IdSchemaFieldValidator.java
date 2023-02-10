@@ -1,9 +1,10 @@
-package io.mosip.data.validator;
+package io.mosip.data.validator.impl;
 
 import io.mosip.data.dto.dbimport.DBImportRequest;
 import io.mosip.data.dto.dbimport.FieldFormatRequest;
 import io.mosip.data.exception.ApisResourceAccessException;
 import io.mosip.data.util.PacketCreator;
+import io.mosip.data.validator.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class IdSchemaFieldValidator {
+public class IdSchemaFieldValidator implements Validator {
 
     @Autowired
     private PacketCreator packetCreator;
@@ -43,6 +44,7 @@ public class IdSchemaFieldValidator {
         return idFields;
     }
 
+    @Override
     public Boolean validate(DBImportRequest dbImportRequest) throws Exception {
         List<String> idFieldsList = getIdFields();
 

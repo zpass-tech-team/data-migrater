@@ -4,21 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.commons.packet.dto.Document;
 import io.mosip.data.constant.DBTypes;
 import io.mosip.data.constant.FieldCategory;
+import io.mosip.data.constant.ValidatorEnum;
 import io.mosip.data.constant.mvel.ParameterType;
 import io.mosip.data.dto.dbimport.DBImportRequest;
 import io.mosip.data.dto.dbimport.DocumentAttributes;
 import io.mosip.data.dto.dbimport.FieldFormatRequest;
+import io.mosip.data.dto.dbimport.QueryFilter;
 import io.mosip.data.dto.mvel.MvelParameter;
 import io.mosip.data.dto.masterdata.DocumentCategoryDto;
 import io.mosip.data.dto.masterdata.DocumentTypeExtnDto;
 import io.mosip.data.dto.packet.PacketDto;
 import io.mosip.data.service.CustomNativeRepository;
 import io.mosip.data.service.DataExtractionService;
-import io.mosip.data.util.BioConversion;
-import io.mosip.data.util.ConfigUtil;
-import io.mosip.data.util.MvelUtil;
-import io.mosip.data.util.PacketCreator;
-import io.mosip.data.validator.IdSchemaFieldValidator;
+import io.mosip.data.util.*;
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,7 +43,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     CustomNativeRepository customNativeRepository;
 
     @Autowired
-    IdSchemaFieldValidator idSchemaFieldValidator;
+    ValidationUtil validationUtil;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -93,7 +91,11 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         ObjectMapper mapper = new ObjectMapper();
 
         try {
-            idSchemaFieldValidator.validate(dbImportRequest);
+            List<ValidatorEnum> enumList = new ArrayList<>();
+            enumList.add(ValidatorEnum.ID_SCHEMA_VALIDATOR);
+            enumList.add(ValidatorEnum.FILTER_VALIDATOR);
+            validationUtil.validateRequest(dbImportRequest, enumList);
+
             ResultSet resultSet = readDataFromDatabase(dbImportRequest, conn);
 
             while (resultSet.next()) {
@@ -204,7 +206,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     }
 
     private ResultSet readDataFromDatabase(DBImportRequest dbImportRequest, Connection conn) throws Exception {
- //       loadMasterData();
         if (dbImportRequest.getDbType().equals(DBTypes.MSSQL)) {
             DriverManager.registerDriver(new com.microsoft.sqlserver.jdbc.SQLServerDriver());
             conn = DriverManager.getConnection("jdbc:sqlserver://" + dbImportRequest.getUrl() + ";sslProtocol=TLSv1.2;databaseName=" + dbImportRequest.getDatabaseName()+ ";Trusted_Connection=True;", dbImportRequest.getUserId(), dbImportRequest.getPassword());
@@ -260,7 +261,23 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             System.out.println("Database Successfully connected");
             Statement statement = conn.createStatement();
 
+            String filterCondition = null;
+            boolean whereCondition= false;
+
+            for (QueryFilter queryFilter : dbImportRequest.getFilters()) {
+                if (!whereCondition) {
+                    filterCondition = " WHERE "; 
+                    whereCondition=true;
+                } else {
+                    filterCondition += " AND ";
+                }
+
+                filterCondition += queryFilter.getFilterField() + " " + queryFilter.getFilterCondition().format(queryFilter.getFromValue(), queryFilter.getToValue(), queryFilter.getFieldType());
+            }
+
+
             String selectSql = "SELECT " + columnNames + "  from " + dbImportRequest.getTableName();
+            selectSql += filterCondition;
             return statement.executeQuery(selectSql);
         } else
             throw new SQLException("Unable to Connect With Database. Please check the Configuration");
