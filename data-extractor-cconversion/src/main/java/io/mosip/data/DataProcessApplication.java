@@ -1,7 +1,6 @@
 package io.mosip.data;
 
 import io.mosip.data.util.ConfigUtil;
-import io.mosip.data.util.MvelUtil;
 import io.mosip.kernel.dataaccess.hibernate.config.HibernateDaoConfig;
 import io.mosip.kernel.dataaccess.hibernate.repository.impl.HibernateRepositoryImpl;
 import org.springframework.boot.SpringApplication;
@@ -14,9 +13,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import java.net.UnknownHostException;
 
 
-@SpringBootApplication(scanBasePackages = { "io.mosip.data.*", "${mosip.auth.adapter.impl.basepackage}", "io.mosip.kernel.clientcrypto.*", "io.mosip.kernel.dataaccess.hibernate"}, exclude = {SecurityAutoConfiguration.class, HibernateDaoConfig.class})
-@EntityScan(basePackages = {"io.mosip.data.entity", "io.mosip.kernel.idgenerator.rid.entity"})
-@EnableJpaRepositories(basePackages = {"io.mosip.data.repository", "io.mosip.kernel.idgenerator.rid.repository"} , repositoryBaseClass = HibernateRepositoryImpl.class)
+@SpringBootApplication(scanBasePackages = { "io.mosip.data.*", "io.mosip.packet.manager.*", "${mosip.auth.adapter.impl.basepackage}", "io.mosip.kernel.clientcrypto.*", "io.mosip.kernel.dataaccess.hibernate", "io.mosip.kernel.keymanagerservice.*"}, exclude = {SecurityAutoConfiguration.class, HibernateDaoConfig.class})
+@EntityScan(basePackages = {"io.mosip.data.entity", "io.mosip.kernel.idgenerator.rid.entity", "io.mosip.kernel.keymanagerservice.entity"})
+@EnableJpaRepositories(basePackages = {"io.mosip.data.repository", "io.mosip.kernel.idgenerator.rid.repository", "io.mosip.kernel.keymanagerservice.repository"} , repositoryBaseClass = HibernateRepositoryImpl.class)
 public class DataProcessApplication {
 
     public static void main(String[] args) {

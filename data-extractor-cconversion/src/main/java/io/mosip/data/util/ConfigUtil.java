@@ -10,26 +10,23 @@ import io.mosip.data.entity.MachineMaster;
 import io.mosip.data.repository.MachineMasterRepository;
 import io.mosip.data.service.DataRestClientService;
 import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
-import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.util.CryptoUtil;
+import io.mosip.kernel.cryptomanager.util.CryptomanagerUtils;
+import io.mosip.kernel.keymanagerservice.dto.KeyPairGenerateResponseDto;
+import io.mosip.kernel.keymanagerservice.dto.UploadCertificateRequestDto;
+import io.mosip.kernel.keymanagerservice.service.KeymanagerService;
+import io.mosip.kernel.keymanagerservice.util.KeymanagerUtil;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.stereotype.Component;
 
 import java.io.FileInputStream;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.SQLWarning;
 import java.util.*;
 
 @Component
@@ -62,6 +59,16 @@ public class ConfigUtil {
     @Autowired
     private MachineMasterRepository machineMasterRepository;
 
+    @Autowired
+    private KeymanagerService keymanagerService;
+
+    @Autowired
+    private CryptomanagerUtils cryptomanagerUtils;
+
+    @Autowired
+    private KeymanagerUtil keymanagerUtil;
+
+
     private static ConfigUtil configUtil;
 
     public void loadConfigDetails() throws Exception {
@@ -74,6 +81,7 @@ public class ConfigUtil {
                 configUtil.selectedLanguages = env.getProperty("mosip.selected.languages");
                 createDatabase();
                 syncClientSettings();
+                fetchPolicy();
             }
         }
     }
@@ -156,4 +164,77 @@ public class ConfigUtil {
                 ? (List<Map<String, Object>>) syncReponse.getErrors()
                 : null;
     }
+
+    public void fetchPolicy() throws Exception {
+//        if (!serviceDelegateUtil.isNetworkAvailable()) {
+ //           return setErrorResponse(responseDTO, RegistrationConstants.NO_INTERNET, null);
+//        }
+//TODO Need to Implement System online or not before starting process
+
+        String stationId = configUtil.machineId;
+        String centerId = stationId != null ? configUtil.centerId : null;
+        validate(centerId, stationId);
+        String centerMachineId = centerId.concat(RegistrationConstants.UNDER_SCORE).concat(stationId);
+
+        String certificateData = getCertificateFromServer(centerMachineId); //fetch policy key from server
+        KeyPairGenerateResponseDto certificateDto = getKeyFromLocalDB(centerMachineId); //get policy key from DB
+        //compare downloaded and saved one, if different then save it
+        if(certificateDto == null || !Arrays.equals(cryptomanagerUtils.getCertificateThumbprint(keymanagerUtil.convertToCertificate(certificateData)),
+                cryptomanagerUtils.getCertificateThumbprint(keymanagerUtil.convertToCertificate(certificateDto.getCertificate())))) {
+            UploadCertificateRequestDto uploadCertRequestDto = new UploadCertificateRequestDto();
+            uploadCertRequestDto.setApplicationId(RegistrationConstants.REG_APP_ID);
+            uploadCertRequestDto.setCertificateData(certificateData);
+            uploadCertRequestDto.setReferenceId(centerMachineId);
+            keymanagerService.uploadOtherDomainCertificate(uploadCertRequestDto);
+        }
+    }
+
+    private boolean validate(String centerId, String machineId)
+            throws Exception {
+        if (centerId == null || machineId == null)
+            throw new Exception("Machine ID & Center ID are Empty");
+
+        return true;
+    }
+
+    private String getCertificateFromServer(String centerMachineId) throws Exception {
+        List<String> queryParm = new ArrayList<>();
+        queryParm.add(RegistrationConstants.GET_CERT_APP_ID);
+        queryParm.add(RegistrationConstants.REF_ID);
+
+        List<String> queryParmValue = new ArrayList<>();
+        queryParmValue.add(RegistrationConstants.REG_APP_ID);
+        queryParmValue.add(centerMachineId);
+
+        ResponseWrapper responseWrapper = (ResponseWrapper) restApiClient
+                .getApi(ApiName.GET_CERTIFICATE, null, queryParm, queryParmValue, ResponseWrapper.class);
+
+        if(null != responseWrapper.getResponse()) {
+            LinkedHashMap<String, Object> responseMap = (LinkedHashMap<String, Object>) responseWrapper.getResponse();
+            return responseMap.get(RegistrationConstants.CERTIFICATE).toString();
+        }
+
+        if(responseWrapper.getErrors() != null &&
+                responseWrapper.getErrors().size() > 0 ) {
+            throw new Exception("Error : " + responseWrapper.getErrors());
+//            LOGGER.error("Get Policy key from server failed with error {}", publicKeySyncResponse.get(RegistrationConstants.ERRORS));
+        }
+
+        throw new Exception("Failed to Policy Sync");
+    }
+
+    private KeyPairGenerateResponseDto getKeyFromLocalDB(String refId) {
+        try {
+            KeyPairGenerateResponseDto certificateDto = keymanagerService
+                    .getCertificate(RegistrationConstants.REG_APP_ID, Optional.of(refId));
+
+            if(certificateDto != null && certificateDto.getCertificate() != null)
+                return certificateDto;
+
+        } catch (Exception ex) {
+ //           LOGGER.error("Error Fetching policy key from DB", ex);
+        }
+        return null;
+    }
+
 }

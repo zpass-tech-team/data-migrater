@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Api
 @RestController
 @RequestMapping("/packetcreator")
 @Tag(name = "packet-creator-controller", description = "Packet Controller")

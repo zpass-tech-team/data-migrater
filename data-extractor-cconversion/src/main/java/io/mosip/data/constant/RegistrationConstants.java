@@ -412,7 +412,7 @@ public class RegistrationConstants {
 	public static final String CBEFF_FILE_FORMAT = "cbeff";
 	public static final String FACE_EXCEPTION = "ExceptionFace";
 	public static final String IDENTITY_JSON_FILE_NAME = "mosip-identity-json-schema.json";
-	public static final String CBEFF_SCHEMA_FILE_PATH = "/cbeff.xsd";
+	public static final String CBEFF_SCHEMA_FILE_PATH = "/externalsamples/cbeff.xsd";
 	public static final String CBEFF_DEFAULT_FORMAT_ORG = "Mosip";
 	public static final String CBEFF_DEFAULT_FORMAT_TYPE = "257";
 	public static final String CBEFF_DEFAULT_ALG_ORG = "HMAC";

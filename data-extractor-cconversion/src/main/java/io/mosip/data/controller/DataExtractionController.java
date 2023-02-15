@@ -1,10 +1,10 @@
 package io.mosip.data.controller;
 
+import io.mosip.commons.packet.dto.packet.PacketDto;
 import io.mosip.data.dto.RequestWrapper;
 import io.mosip.data.dto.ResponseWrapper;
 import io.mosip.data.dto.dbimport.DBImportRequest;
 import io.mosip.data.dto.dbimport.DBImportResponse;
-import io.mosip.data.dto.packet.PacketDto;
 import io.mosip.data.exception.ServiceError;
 import io.mosip.data.service.DataExtractionService;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -38,11 +38,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(final HttpSecurity httpSecurity) throws Exception {
+		String[] ignoringMatches = {"/packetcreator/**", "/dataExtractor/**"};
 		httpSecurity.csrf()
-				.ignoringAntMatchers("/packetcreator/**")
+				.ignoringAntMatchers(ignoringMatches)
 				.and()
 				.authorizeRequests()
-				.antMatchers("/packetcreator/**").permitAll();
+				.antMatchers(ignoringMatches).permitAll();
 
 		httpSecurity.authorizeRequests()
 				.antMatchers(allowedEndPoints())

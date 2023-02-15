@@ -1,26 +1,22 @@
 package io.mosip.data.util;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.itextpdf.layout.element.Link;
 import io.mosip.commons.packet.constants.Biometric;
 import io.mosip.commons.packet.constants.PacketManagerConstants;
 import io.mosip.commons.packet.dto.Document;
 import io.mosip.commons.packet.dto.packet.DocumentType;
+import io.mosip.commons.packet.dto.packet.PacketDto;
 import io.mosip.data.constant.ApiName;
 import io.mosip.data.constant.RegistrationConstants;
-import io.mosip.data.dto.RequestWrapper;
 import io.mosip.data.dto.ResponseWrapper;
 import io.mosip.data.dto.biosdk.BioSDKRequest;
 import io.mosip.data.dto.biosdk.OtherDto;
 import io.mosip.data.dto.biosdk.QualityCheckRequest;
 import io.mosip.data.dto.biosdk.SegmentDto;
 import io.mosip.data.dto.dbimport.DBImportRequest;
-import io.mosip.data.dto.packet.DocumentDto;
-import io.mosip.data.dto.packet.PacketDto;
 import io.mosip.data.dto.packet.metadata.BiometricsMetaInfoDto;
 import io.mosip.data.dto.packet.metadata.DocumentMetaInfoDTO;
 import io.mosip.data.dto.packet.type.IndividualBiometricType;
@@ -29,19 +25,13 @@ import io.mosip.data.exception.ApisResourceAccessException;
 import io.mosip.data.repository.BlocklistedWordsRepository;
 import io.mosip.data.service.DataRestClientService;
 import io.mosip.kernel.biometrics.constant.BiometricType;
-import io.mosip.kernel.biometrics.constant.OtherKey;
 import io.mosip.kernel.biometrics.entities.BIR;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
-import io.mosip.kernel.biometrics.model.QualityCheck;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -61,7 +51,7 @@ public class PacketCreator {
     private BIRBuilder birBuilder;
 
     @Value("${mosip.id.schema.version:0.1}")
-    private Float version;
+    private String version;
 
     @Value("${mosip.primary.language}")
     private String primaryLamguage;
@@ -81,8 +71,8 @@ public class PacketCreator {
         return latestIdSchemaMap;
     }
 
-    public LinkedHashMap<String, Object> setDemographic(LinkedHashMap<String, Object> demoDetails, Boolean isBiometricPresent, List ignorableFields) throws Exception {
-        LinkedHashMap<String, Object> demoMap = new LinkedHashMap<>();
+    public LinkedHashMap<String, String> setDemographic(LinkedHashMap<String, Object> demoDetails, Boolean isBiometricPresent, List ignorableFields) throws Exception {
+        LinkedHashMap<String, String> demoMap = new LinkedHashMap<>();
         LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
 
         for(Object obj : (List)idSchema.get("schema")) {
@@ -105,7 +95,7 @@ public class PacketCreator {
                 }
             } else if (type.equals("documentType")) {
                 if (demoDetails.containsKey(id) && demoDetails.get(id) != null)
-                    demoMap.put(id, demoDetails.get(id));
+                    demoMap.put(id, String.valueOf(demoDetails.get(id)));
             } else if (demoDetails.containsKey(id) && demoDetails.get(id) != null) {
                 switch (type) {
                     case "simpleType":
@@ -118,7 +108,7 @@ public class PacketCreator {
                     case "number":
 
                     case "string" :
-                        demoMap.put(id, demoDetails.get(id) == null ? "" : demoDetails.get(id));
+                        demoMap.put(id, demoDetails.get(id) == null ? "" : String.valueOf(demoDetails.get(id)));
                         break;
                 }
             } else if (required && !ignorableFields.contains(id)) {
@@ -128,10 +118,10 @@ public class PacketCreator {
         return demoMap;
     }
 
-    public LinkedHashMap<String, DocumentDto> setDocuments(LinkedHashMap<String, Object> docDetails, List ignorableFields, LinkedHashMap<String, String> metaInfoMap, LinkedHashMap<String, Object> demoDetails)
+    public LinkedHashMap<String, Document> setDocuments(LinkedHashMap<String, Object> docDetails, List ignorableFields, LinkedHashMap<String, String> metaInfoMap, LinkedHashMap<String, Object> demoDetails)
             throws Exception {
 
-        LinkedHashMap<String, DocumentDto> docMap = new LinkedHashMap<>();
+        LinkedHashMap<String, Document> docMap = new LinkedHashMap<>();
         LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
 
         for(Object obj : (List)idSchema.get("schema")) {
@@ -144,10 +134,10 @@ public class PacketCreator {
             if (type.equals("documentType")) {
                 if (docDetails.containsKey(id) && docDetails.get(id) != null) {
                     Document document = mapper.readValue((String) docDetails.get(id), new TypeReference<Document>() {});
-                    DocumentDto documentDto = new DocumentDto();
-                    documentDto.setOwner("Applicant");
+                    Document documentDto = new Document();
+//                    documentDto.setOwner("Applicant");
                     documentDto.setDocument(document.getDocument());
-                    documentDto.setCategory(subType);
+//                    documentDto.setCategory(subType);
                     documentDto.setFormat(document.getFormat());
                     documentDto.setType(document.getType());
                     documentDto.setRefNumber(document.getRefNumber());
@@ -165,11 +155,11 @@ public class PacketCreator {
 
         List<DocumentMetaInfoDTO> documentMetaInfoDTOs = new LinkedList<>();
         for (String fieldName : docMap.keySet()) {
-            DocumentDto document = docMap.get(fieldName);
+            Document document = docMap.get(fieldName);
             DocumentMetaInfoDTO documentMetaInfoDTO = new DocumentMetaInfoDTO();
-            documentMetaInfoDTO.setDocumentCategory(document.getCategory());
+//            documentMetaInfoDTO.setDocumentCategory(document.getCategory());
             documentMetaInfoDTO.setDocumentName(document.getValue());
-            documentMetaInfoDTO.setDocumentOwner(document.getOwner());
+//            documentMetaInfoDTO.setDocumentOwner(document.getOwner());
             documentMetaInfoDTO.setDocumentType(document.getType());
             documentMetaInfoDTO.setRefNumber(document.getRefNumber());
 
@@ -333,22 +323,9 @@ public class PacketCreator {
         metaData.put(PacketManagerConstants.META_CLIENT_VERSION, ConfigUtil.getConfigUtil().getRegClientVersion());
         metaData.put(PacketManagerConstants.META_REGISTRATION_TYPE, dbImportRequest.getProcess());
         metaData.put(PacketManagerConstants.META_PRE_REGISTRATION_ID, null);
-
-        //TODO Need to Redesign after derby DB Install
-/*        MachineMaster machineMaster = machineMappingDAO.getMachine();
-        if (machineMaster == null || machineMaster.getRegCenterId() == null) {
-            throwRegBaseCheckedException(RegistrationExceptionConstants.REG_PKT_INVALID_MACHINE_ID_EXCEPTION);
-        } else {
-            metaData.put(PacketManagerConstants.META_MACHINE_ID, machineMaster.getId());
-            metaData.put(PacketManagerConstants.META_CENTER_ID, machineMaster.getRegCenterId());
-            metaData.put(PacketManagerConstants.META_DONGLE_ID, machineMaster.getSerialNum());
-            metaData.put(PacketManagerConstants.META_KEYINDEX, machineMaster.getKeyIndex());
-        }*/
-
         metaData.put(PacketManagerConstants.META_MACHINE_ID, ConfigUtil.getConfigUtil().getMachineId());
         metaData.put(PacketManagerConstants.META_CENTER_ID, ConfigUtil.getConfigUtil().getCenterId());
         metaData.put(PacketManagerConstants.META_KEYINDEX, ConfigUtil.getConfigUtil().getKeyIndex());
-        //TODO Need to populate Machine Serial No after implementing machine derby sync
         metaData.put(PacketManagerConstants.META_DONGLE_ID, ConfigUtil.getConfigUtil().getMachineSerialNum());
         metaData.put("langCodes", String.join(RegistrationConstants.COMMA, ConfigUtil.getConfigUtil().getSelectedLanguages()));
         metaData.put(PacketManagerConstants.META_APPLICANT_CONSENT, null);

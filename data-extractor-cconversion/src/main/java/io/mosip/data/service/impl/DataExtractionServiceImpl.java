@@ -2,6 +2,7 @@ package io.mosip.data.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.commons.packet.dto.Document;
+import io.mosip.commons.packet.dto.packet.PacketDto;
 import io.mosip.data.constant.DBTypes;
 import io.mosip.data.constant.FieldCategory;
 import io.mosip.data.constant.ValidatorEnum;
@@ -13,11 +14,11 @@ import io.mosip.data.dto.dbimport.QueryFilter;
 import io.mosip.data.dto.mvel.MvelParameter;
 import io.mosip.data.dto.masterdata.DocumentCategoryDto;
 import io.mosip.data.dto.masterdata.DocumentTypeExtnDto;
-import io.mosip.data.dto.packet.PacketDto;
 import io.mosip.data.service.CustomNativeRepository;
 import io.mosip.data.service.DataExtractionService;
 import io.mosip.data.util.*;
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
+import io.mosip.packet.manager.service.PacketCreatorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +45,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     @Autowired
     ValidationUtil validationUtil;
+
+    @Autowired
+    PacketCreatorService packetCreatorService;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -184,8 +188,10 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                 LinkedHashMap<String, Object> idSchema = packetCreator.getLatestIdSchema();
                 packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
-
+                packetDto.setOfflineMode(true);
                 // TODO Remove this break while  integrate with production // This is Testing purpose only
+                packetCreatorService.persistPacket(packetDto);
+
                 break;
             }
         } finally {
