@@ -9,11 +9,11 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
-import io.mosip.packet.extractor.constant.RegistrationConstants;
-import io.mosip.packet.extractor.dto.config.SyncDataBaseDto;
-import io.mosip.packet.extractor.dto.config.SyncDataResponseDto;
-import io.mosip.packet.extractor.exception.RegBaseUncheckedException;
-import io.mosip.packet.extractor.repository.*;
+import io.mosip.packet.core.constant.RegistrationConstants;
+import io.mosip.packet.core.dto.config.SyncDataBaseDto;
+import io.mosip.packet.core.dto.config.SyncDataResponseDto;
+import io.mosip.packet.core.exception.RegBaseUncheckedException;
+import io.mosip.packet.core.repository.*;
 import io.mosip.kernel.clientcrypto.util.ClientCryptoUtils;
 import org.json.JSONArray;
 import org.slf4j.Logger;

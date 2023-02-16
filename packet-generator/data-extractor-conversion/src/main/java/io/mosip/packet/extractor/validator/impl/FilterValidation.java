@@ -1,9 +1,9 @@
 package io.mosip.packet.extractor.validator.impl;
 
-import io.mosip.packet.extractor.constant.DateFormat;
-import io.mosip.packet.extractor.constant.FieldType;
-import io.mosip.packet.extractor.dto.dbimport.DBImportRequest;
-import io.mosip.packet.extractor.dto.dbimport.QueryFilter;
+import io.mosip.packet.core.constant.DateFormat;
+import io.mosip.packet.core.constant.FieldType;
+import io.mosip.packet.core.dto.dbimport.DBImportRequest;
+import io.mosip.packet.core.dto.dbimport.QueryFilter;
 import io.mosip.packet.extractor.validator.Validator;
 import org.springframework.stereotype.Component;
 

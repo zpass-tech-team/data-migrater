@@ -1,7 +1,7 @@
 package io.mosip.packet.extractor.service;
 
 import io.mosip.commons.packet.dto.packet.PacketDto;
-import io.mosip.packet.extractor.dto.dbimport.DBImportRequest;
+import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 
 import java.io.IOException;
 import java.sql.SQLException;

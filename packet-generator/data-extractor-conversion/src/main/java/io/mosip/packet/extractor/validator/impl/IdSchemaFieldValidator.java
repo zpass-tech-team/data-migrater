@@ -1,8 +1,8 @@
 package io.mosip.packet.extractor.validator.impl;
 
-import io.mosip.packet.extractor.dto.dbimport.DBImportRequest;
-import io.mosip.packet.extractor.dto.dbimport.FieldFormatRequest;
-import io.mosip.packet.extractor.exception.ApisResourceAccessException;
+import io.mosip.packet.core.dto.dbimport.DBImportRequest;
+import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
+import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.extractor.util.PacketCreator;
 import io.mosip.packet.extractor.validator.Validator;
 import org.springframework.beans.factory.annotation.Autowired;

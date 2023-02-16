@@ -1,11 +1,11 @@
 package io.mosip.packet.extractor.controller;
 
 import io.mosip.commons.packet.dto.packet.PacketDto;
-import io.mosip.packet.extractor.dto.RequestWrapper;
-import io.mosip.packet.extractor.dto.ResponseWrapper;
-import io.mosip.packet.extractor.dto.dbimport.DBImportRequest;
-import io.mosip.packet.extractor.dto.dbimport.DBImportResponse;
-import io.mosip.packet.extractor.exception.ServiceError;
+import io.mosip.packet.core.dto.RequestWrapper;
+import io.mosip.packet.core.dto.ResponseWrapper;
+import io.mosip.packet.core.dto.dbimport.DBImportRequest;
+import io.mosip.packet.core.dto.dbimport.DBImportResponse;
+import io.mosip.packet.core.exception.ServiceError;
 import io.mosip.packet.extractor.service.DataExtractionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

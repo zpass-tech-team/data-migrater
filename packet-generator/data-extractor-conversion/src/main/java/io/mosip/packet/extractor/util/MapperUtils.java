@@ -22,9 +22,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-import io.mosip.packet.extractor.entity.RegistrationCommonFields;
-import io.mosip.packet.extractor.exception.RegBaseUncheckedException;
-import io.mosip.packet.extractor.logger.DataProcessLogger;
+import io.mosip.packet.core.entity.RegistrationCommonFields;
+import io.mosip.packet.core.exception.RegBaseUncheckedException;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.kernel.core.util.EmptyCheckUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,9 +37,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.mosip.kernel.core.dataaccess.exception.DataAccessLayerException;
 import io.mosip.kernel.core.exception.ExceptionUtils;
-import static io.mosip.packet.extractor.constant.RegistrationConstants.APPLICATION_ID;
-import static io.mosip.packet.extractor.constant.RegistrationConstants.MAPPER_UTILL;
-import static io.mosip.packet.extractor.constant.RegistrationConstants.APPLICATION_NAME;
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
+import static io.mosip.packet.core.constant.RegistrationConstants.MAPPER_UTILL;
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
 
 /**
  * MapperUtils class provides methods to map or copy values from source object

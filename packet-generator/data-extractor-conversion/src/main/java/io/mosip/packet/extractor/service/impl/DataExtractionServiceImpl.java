@@ -3,17 +3,17 @@ package io.mosip.packet.extractor.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.commons.packet.dto.Document;
 import io.mosip.commons.packet.dto.packet.PacketDto;
-import io.mosip.packet.extractor.constant.DBTypes;
-import io.mosip.packet.extractor.constant.FieldCategory;
-import io.mosip.packet.extractor.constant.ValidatorEnum;
-import io.mosip.packet.extractor.constant.mvel.ParameterType;
-import io.mosip.packet.extractor.dto.dbimport.DBImportRequest;
-import io.mosip.packet.extractor.dto.dbimport.DocumentAttributes;
-import io.mosip.packet.extractor.dto.dbimport.FieldFormatRequest;
-import io.mosip.packet.extractor.dto.dbimport.QueryFilter;
-import io.mosip.packet.extractor.dto.mvel.MvelParameter;
-import io.mosip.packet.extractor.dto.masterdata.DocumentCategoryDto;
-import io.mosip.packet.extractor.dto.masterdata.DocumentTypeExtnDto;
+import io.mosip.packet.core.constant.DBTypes;
+import io.mosip.packet.core.constant.FieldCategory;
+import io.mosip.packet.core.constant.ValidatorEnum;
+import io.mosip.packet.core.constant.mvel.ParameterType;
+import io.mosip.packet.core.dto.dbimport.DBImportRequest;
+import io.mosip.packet.core.dto.dbimport.DocumentAttributes;
+import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
+import io.mosip.packet.core.dto.dbimport.QueryFilter;
+import io.mosip.packet.core.dto.mvel.MvelParameter;
+import io.mosip.packet.core.dto.masterdata.DocumentCategoryDto;
+import io.mosip.packet.core.dto.masterdata.DocumentTypeExtnDto;
 import io.mosip.packet.extractor.service.CustomNativeRepository;
 import io.mosip.packet.extractor.service.DataExtractionService;
 import io.mosip.packet.extractor.util.*;
@@ -195,7 +195,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 packetDto.setOfflineMode(true);
                 // TODO Remove this break while  integrate with production // This is Testing purpose only
                 packetCreatorService.persistPacket(packetDto);
-                packetUploaderService.uploadPacket();
                 break;
             }
         } finally {

@@ -1,7 +1,7 @@
 package io.mosip.packet.extractor.util;
 
-import io.mosip.packet.extractor.constant.ValidatorEnum;
-import io.mosip.packet.extractor.dto.dbimport.DBImportRequest;
+import io.mosip.packet.core.constant.ValidatorEnum;
+import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.extractor.validator.Validator;
 import io.mosip.packet.extractor.validator.impl.FilterValidation;
 import io.mosip.packet.extractor.validator.impl.IdSchemaFieldValidator;

@@ -6,8 +6,8 @@ import java.util.*;
 
 import io.mosip.commons.packet.constants.Biometric;
 import io.mosip.commons.packet.constants.PacketManagerConstants;
-import io.mosip.packet.extractor.constant.RegistrationConstants;
-import io.mosip.packet.extractor.logger.DataProcessLogger;
+import io.mosip.packet.core.constant.RegistrationConstants;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.kernel.biometrics.constant.*;
 import io.mosip.kernel.biometrics.entities.*;
 import io.mosip.kernel.core.util.StringUtils;
