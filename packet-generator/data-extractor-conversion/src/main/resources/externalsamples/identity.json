@@ -1,0 +1,13 @@
+{
+  "identity" : {
+    "name" : {
+      "value" : "fullName"
+    },
+    "phone" : {
+      "value" : "phone"
+    },
+    "email" : {
+      "value" : "email"
+    }
+  }
+}

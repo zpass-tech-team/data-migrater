@@ -31,7 +31,7 @@ public class ClientSettingSyncHelper {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClientSettingSyncHelper.class);
 	
-	private static final String ENTITY_PACKAGE_NAME = "io.mosip.packet.extractor.entity.";
+	private static final String ENTITY_PACKAGE_NAME = "io.mosip.packet.core.entity.";
 	private static final String FIELD_TYPE_DYNAMIC_URL = "dynamic-url";
 	private static final String FIELD_TYPE_DYNAMIC = "dynamic";
 	private static final String FIELD_TYPE_SCRIPT = "script";

@@ -2,11 +2,13 @@ package io.mosip.packet.extractor.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.commons.packet.dto.Document;
+import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.commons.packet.dto.packet.PacketDto;
 import io.mosip.packet.core.constant.DBTypes;
 import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.constant.ValidatorEnum;
 import io.mosip.packet.core.constant.mvel.ParameterType;
+import io.mosip.packet.core.dto.PacketUploadDTO;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.DocumentAttributes;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
@@ -19,10 +21,19 @@ import io.mosip.packet.extractor.service.DataExtractionService;
 import io.mosip.packet.extractor.util.*;
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import io.mosip.packet.manager.service.PacketCreatorService;
-import io.mosip.packet.uploader.service.PacketUploaderService;
+//import io.mosip.packet.uploader.service.PacketUploaderService;
+import org.apache.commons.io.IOUtils;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
 
@@ -50,8 +61,11 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Autowired
     PacketCreatorService packetCreatorService;
 
-    @Autowired
-    PacketUploaderService packetUploaderService;
+//    @Autowired
+//    PacketUploaderService packetUploaderService;
+
+    @Value("${packet.manager.account.name}")
+    private String packetUploadPath;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -193,8 +207,45 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 LinkedHashMap<String, Object> idSchema = packetCreator.getLatestIdSchema();
                 packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
                 packetDto.setOfflineMode(true);
+
                 // TODO Remove this break while  integrate with production // This is Testing purpose only
-                packetCreatorService.persistPacket(packetDto);
+                List<PacketInfo> infoList = packetCreatorService.persistPacket(packetDto);
+
+                Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
+                if (identityFile.toFile().exists()) {
+                    PacketUploadDTO uploadDTO = new PacketUploadDTO();
+
+                    JSONParser parser = new JSONParser();
+                    JSONObject jsonObject = (JSONObject) parser.parse(IOUtils.toString(new FileInputStream(identityFile.toFile()), StandardCharsets.UTF_8));
+                    for (Object entry : jsonObject.keySet()) {
+                        String val = (String) jsonObject.get(entry);
+                        if (val.contains(",")) {
+                            String[] valList = val.split(",");
+                            String fullVal = null;
+
+                            for (String val2 : valList) {
+                                if(fullVal == null) {
+                                    fullVal= (String) demoDetails.get(val2);
+                                } else {
+                                    fullVal += " " + demoDetails.get(val2);
+                                }
+                            }
+                            uploadDTO.setValue(entry.toString(), fullVal);
+                        } else {
+                            uploadDTO.setValue(entry.toString(), demoDetails.get(entry));
+                        }
+                    }
+
+                    PacketInfo info = infoList.get(0);
+                    Path path = Paths.get(System.getProperty("user.dir"), "home/" + packetUploadPath);
+                    uploadDTO.setPacketPath(path.toAbsolutePath().toString());
+                    uploadDTO.setRegistrationType(dbImportRequest.getProcess());
+                    uploadDTO.setPacketId(info.getRefId());
+                    uploadDTO.setRegistrationId(info.getRefId());
+                } else {
+                    throw new Exception("Identity Mapping JSON File missing");
+                }
+
                 break;
             }
         } finally {

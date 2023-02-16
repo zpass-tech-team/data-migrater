@@ -8,6 +8,13 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PacketUploadDTO {
+    public enum PacketUploadDTOEnum {
+        name,
+        phone,
+        email,
+        langCode
+    }
+
     private String name;
     private String phone;
     private String email;
@@ -16,4 +23,21 @@ public class PacketUploadDTO {
     private String packetId;
     private String registrationId;
     private String packetPath;
+
+    public void setValue(String type, Object val) {
+        switch (type) {
+            case "name" :
+                this.name = (String) val;
+                break;
+            case "phone" :
+                this.phone = (String) val;
+                break;
+            case "email" :
+                this.email = (String) val;
+                break;
+            case "langCode" :
+                this.langCode = (String) val;
+                break;
+        }
+    }
 }

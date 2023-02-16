@@ -11,14 +11,41 @@
     <artifactId>packet-generator</artifactId>
     <packaging>pom</packaging>
     <modules>
+        <module>packet-core</module>
         <module>packet-creator</module>
-        <module>packet-uploader</module>
         <module>data-extractor-conversion</module>
     </modules>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <commons-packet-manager.version>1.2.0.1-B1</commons-packet-manager.version>
     </properties>
+
+    <dependencies>
+        <dependency>
+        <groupId>io.mosip.commons</groupId>
+        <artifactId>commons-packet-manager</artifactId>
+        <version>${commons-packet-manager.version}</version>
+        <exclusions>
+            <exclusion>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-webflux</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>io.vertx</groupId>
+                <artifactId>vertx-web</artifactId>
+            </exclusion>
+            <!--                <exclusion>-->
+            <!--                    <groupId>io.mosip.kernel</groupId>-->
+            <!--                    <artifactId>kernel-auth-adapter</artifactId>-->
+            <!--                </exclusion>-->
+            <!--                <exclusion>-->
+            <!--                    <groupId>io.mosip.kernel</groupId>-->
+            <!--                    <artifactId>kernel-logger-logback</artifactId>-->
+            <!--                </exclusion>-->
+            </exclusions>
+        </dependency>
+    </dependencies>
 
 </project>

@@ -112,20 +112,43 @@
             <artifactId>mvel2</artifactId>
             <version>2.4.7.Final</version>
         </dependency>
-        <dependency>
-            <groupId>io.mosip.packet</groupId>
-            <artifactId>packet-creator</artifactId>
-            <version>1.2.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>io.mosip.packet</groupId>
-            <artifactId>packet-uploader</artifactId>
-            <version>1.2.0.1-SNAPSHOT</version>
-        </dependency>
+              <dependency>
+                   <groupId>io.mosip.packet</groupId>
+                   <artifactId>packet-creator</artifactId>
+                   <version>1.2.0.1-SNAPSHOT</version>
+               </dependency>
+        <!--              <dependency>
+                         <groupId>io.mosip.packet</groupId>
+                         <artifactId>packet-uploader</artifactId>
+                         <version>1.2.0.1-SNAPSHOT</version>
+                     </dependency>-->
         <dependency>
             <groupId>io.mosip.packet</groupId>
             <artifactId>packet-core</artifactId>
             <version>1.2.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mosip.commons</groupId>
+            <artifactId>commons-packet-manager</artifactId>
+            <version>${commons-packet-manager.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-webflux</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.vertx</groupId>
+                    <artifactId>vertx-web</artifactId>
+                </exclusion>
+                <!--                <exclusion>-->
+                <!--                    <groupId>io.mosip.kernel</groupId>-->
+                <!--                    <artifactId>kernel-auth-adapter</artifactId>-->
+                <!--                </exclusion>-->
+                <!--                <exclusion>-->
+                <!--                    <groupId>io.mosip.kernel</groupId>-->
+                <!--                    <artifactId>kernel-logger-logback</artifactId>-->
+                <!--                </exclusion>-->
+            </exclusions>
         </dependency>
     </dependencies>
  </project>
