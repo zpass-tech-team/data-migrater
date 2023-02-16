@@ -217,8 +217,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                     JSONParser parser = new JSONParser();
                     JSONObject jsonObject = (JSONObject) parser.parse(IOUtils.toString(new FileInputStream(identityFile.toFile()), StandardCharsets.UTF_8));
-                    for (Object entry : jsonObject.keySet()) {
-                        String val = (String) jsonObject.get(entry);
+                    JSONObject identityJsonObject = (JSONObject) jsonObject.get("identity");
+                    for (Object entry : identityJsonObject.keySet()) {
+                        String val = (String) ((JSONObject)identityJsonObject.get(entry)).get("value");
                         if (val.contains(",")) {
                             String[] valList = val.split(",");
                             String fullVal = null;
@@ -240,7 +241,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     Path path = Paths.get(System.getProperty("user.dir"), "home/" + packetUploadPath);
                     uploadDTO.setPacketPath(path.toAbsolutePath().toString());
                     uploadDTO.setRegistrationType(dbImportRequest.getProcess());
-                    uploadDTO.setPacketId(info.getRefId());
+                    uploadDTO.setPacketId(info.getId());
                     uploadDTO.setRegistrationId(info.getRefId());
                 } else {
                     throw new Exception("Identity Mapping JSON File missing");
