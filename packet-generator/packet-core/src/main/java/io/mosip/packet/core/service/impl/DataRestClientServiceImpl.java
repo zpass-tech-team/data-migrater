@@ -1,21 +1,41 @@
 package io.mosip.packet.core.service.impl;
 
+import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
+import io.mosip.kernel.core.packetuploader.exception.ConnectionException;
+import io.mosip.kernel.core.util.CryptoUtil;
+import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.JsonUtils;
+import io.mosip.kernel.core.util.exception.JsonProcessingException;
 import io.mosip.packet.core.constant.ApiName;
+import io.mosip.packet.core.constant.RegistrationConstants;
+import io.mosip.packet.core.dto.upload.AuthTokenDTO;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.exception.PlatformErrorMessages;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.core.util.RestApiClient;
+import io.mosip.packet.core.util.regclient.RequestHTTPDTO;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The Class RegistrationProcessorRestClientServiceImpl.
@@ -26,7 +46,7 @@ import java.util.List;
 public class DataRestClientServiceImpl implements DataRestClientService<Object> {
 
 	/** The logger. */
-	Logger printLogger = DataProcessLogger.getLogger(DataRestClientServiceImpl.class);
+	Logger LOGGER = DataProcessLogger.getLogger(DataRestClientServiceImpl.class);
 
 	/** The rest api client. */
 	@Autowired
@@ -35,6 +55,11 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 	/** The env. */
 	@Autowired
 	private Environment env;
+
+	@Autowired
+	private ClientCryptoFacade clientCryptoFacade;
+
+	private static final SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
 
 	/*
 	 * (non-Javadoc)
@@ -48,7 +73,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 	@Override
 	public Object getApi(ApiName apiName, List<String> pathsegments, String queryParamName, String queryParamValue,
 						 Class<?> responseType) throws ApisResourceAccessException {
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::getApi()::entry");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::getApi()::entry");
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
 
@@ -79,24 +104,24 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			try {
 
 				uriComponents = builder.build(false).encode();
-				printLogger.debug(uriComponents.toUri().toString(), "URI");
+				LOGGER.debug(uriComponents.toUri().toString(), "URI");
 				obj = restApiClient.getApi(uriComponents.toUri(), responseType);
 
 			} catch (Exception e) {
-				printLogger.error(e.getMessage() , e);
+				LOGGER.error(e.getMessage() , e);
 				throw new ApisResourceAccessException(
 						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(), e);
 
 			}
 		}
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::getApi()::exit");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::getApi()::exit");
 		return obj;
 	}
 
 	@Override
 	public Object getApi(ApiName apiName, List<String> pathsegments, List<String> queryParamName, List<Object> queryParamValue,
 						 Class<?> responseType) throws ApisResourceAccessException {
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::getApi()::entry");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::getApi()::entry");
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
 
@@ -124,24 +149,24 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			try {
 
 				uriComponents = builder.build(false).encode();
-				printLogger.debug(uriComponents.toUri().toString(),"URI");
+				LOGGER.debug(uriComponents.toUri().toString(),"URI");
 				obj = restApiClient.getApi(uriComponents.toUri(), responseType);
 
 			} catch (Exception e) {
-				printLogger.error(e.getMessage() , e);
+				LOGGER.error(e.getMessage() , e);
 
 				throw new ApisResourceAccessException(
 						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(), e);
 
 			}
 		}
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::getApi()::exit");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::getApi()::exit");
 		return obj;
 	}
 
 	public Object postApi(ApiName apiName, String queryParamName, String queryParamValue, Object requestedData,
 			Class<?> responseType, MediaType mediaType) throws ApisResourceAccessException {
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
 
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
@@ -163,14 +188,14 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 				obj = restApiClient.postApi(builder.toUriString(), mediaType, requestedData, responseType);
 
 			} catch (Exception e) {
-				printLogger.error(e.getMessage() , e);
+				LOGGER.error(e.getMessage() , e);
 
 				throw new ApisResourceAccessException(PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(),
 						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getMessage(), e);
 
 			}
 		}
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::postApi()::exit");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::exit");
 		return obj;
 	}
 
@@ -201,7 +226,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 	public Object postApi(ApiName apiName, List<String> pathsegments, String queryParamName, String queryParamValue,
 			Object requestedData, Class<?> responseType) throws ApisResourceAccessException {
 
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
 		UriComponentsBuilder builder = null;
@@ -230,14 +255,14 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 				obj = restApiClient.postApi(builder.toUriString(), null, requestedData, responseType);
 
 			} catch (Exception e) {
-				printLogger.error(e.getMessage() , e);
+				LOGGER.error(e.getMessage() , e);
 
 				throw new ApisResourceAccessException(PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(),
 						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getMessage(), e);
 
 			}
 		}
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::postApi()::exit");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::exit");
 		return obj;
 	}
 
@@ -245,7 +270,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 	public Object postApi(ApiName apiName, MediaType mediaType, List<String> pathsegments, List<String> queryParamName, List<Object> queryParamValue,
 						  Object requestedData, Class<?> responseType) throws ApisResourceAccessException {
 
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
 		UriComponentsBuilder builder = null;
@@ -272,13 +297,13 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 				obj = restApiClient.postApi(builder.toUriString(), mediaType, requestedData, responseType);
 
 			} catch (Exception e) {
-				printLogger.error(e.getMessage() , e);
+				LOGGER.error(e.getMessage() , e);
 				throw new ApisResourceAccessException(PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(),
 						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getMessage(), e);
 
 			}
 		}
-		printLogger.debug("RegistrationProcessorRestClientServiceImpl::postApi()::exit");
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::exit");
 		return obj;
 	}
 
@@ -296,4 +321,88 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 		return ((queryParamName == null) || (("").equals(queryParamName)));
 	}
 
+	/**
+	 * Access resource using restTemplate {@link RestTemplate}
+	 * Note: restTemplate is synchronous client
+	 * @param requestHTTPDTO
+	 * @return
+	 * @throws RestClientException
+	 */
+	public Map<String, Object> invokeURL(RequestHTTPDTO requestHTTPDTO) throws Exception {
+		Map<String, Object> responseMap = null;
+
+		addAuthZToken(requestHTTPDTO);
+		LinkedHashMap responseEntity = restApiClient.invoke(requestHTTPDTO.getUri(), requestHTTPDTO.getHttpMethod(),
+				requestHTTPDTO.getHttpEntity(), requestHTTPDTO.getClazz(), getHttpRequestFactory());
+
+		if (responseEntity != null) {
+			responseMap = new LinkedHashMap<>();
+			responseMap.put(RegistrationConstants.REST_RESPONSE_BODY, ((List)responseEntity.get("response")).get(0));
+			responseMap.put(RegistrationConstants.ERROR, responseEntity.get("errors"));
+		}
+
+		return responseMap;
+	}
+
+	public SimpleClientHttpRequestFactory getHttpRequestFactory() {
+		requestFactory.setReadTimeout(
+				Integer.parseInt((String) env.getProperty(RegistrationConstants.HTTP_API_READ_TIMEOUT)));
+		requestFactory.setConnectTimeout(
+				Integer.parseInt((String) env.getProperty(RegistrationConstants.HTTP_API_WRITE_TIMEOUT)));
+		return requestFactory;
+	}
+
+	public void addAuthZToken(RequestHTTPDTO requestHTTPDTO) throws Exception {
+		try {
+			LOGGER.info("Auth advice triggered to check add authZ token to web service request header...");
+
+			if (requestHTTPDTO.isRequestSignRequired()) {
+				addRequestSignature(requestHTTPDTO.getHttpHeaders(), requestHTTPDTO.getRequestBody());
+			}
+
+			if (requestHTTPDTO.isAuthRequired()) {
+				String authZToken = restApiClient.getToken();
+				setAuthHeaders(requestHTTPDTO.getHttpHeaders(), requestHTTPDTO.getAuthZHeader(), authZToken);
+			}
+
+			requestHTTPDTO.setHttpEntity(new HttpEntity<>(requestHTTPDTO.getRequestBody(), requestHTTPDTO.getHttpHeaders()));
+
+			LOGGER.info("completed with request Auth advice");
+		} catch (Exception regBaseCheckedException) {
+			LOGGER.error("Failed in AuthAdvice >> {} {}", requestHTTPDTO.getUri(), regBaseCheckedException);
+			throw regBaseCheckedException;
+		}
+	}
+
+	private void addRequestSignature(HttpHeaders httpHeaders, Object requestBody) throws Exception {
+		LOGGER.info("Adding request signature to request header");
+
+		try {
+			httpHeaders.add("request-signature", String.format("Authorization:%s", CryptoUtil
+					.encodeToURLSafeBase64(clientCryptoFacade.getClientSecurity().signData(JsonUtils.javaObjectToJsonString(requestBody).getBytes()))));
+			httpHeaders.add(RegistrationConstants.KEY_INDEX, CryptoUtil.computeFingerPrint(
+					clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), null));
+		} catch (JsonProcessingException jsonProcessingException) {
+			throw jsonProcessingException;
+		}
+
+		LOGGER.info("Completed adding request signature to request header completed");
+	}
+
+	private void setAuthHeaders(HttpHeaders httpHeaders, String authHeader, String authZCookie) {
+		LOGGER.info("Adding authZ token to request header");
+
+		String[] arrayAuthHeaders = null;
+
+		if (authHeader != null) {
+			arrayAuthHeaders = authHeader.split(":");
+			if (arrayAuthHeaders[1].equalsIgnoreCase(RegistrationConstants.REST_OAUTH)) {
+				httpHeaders.add(RegistrationConstants.COOKIE, authZCookie);
+			} else if (arrayAuthHeaders[1].equalsIgnoreCase(RegistrationConstants.AUTH_TYPE)) {
+				httpHeaders.add(arrayAuthHeaders[0], arrayAuthHeaders[1]);
+			}
+		}
+
+		LOGGER.info("Adding of authZ token to request header completed");
+	}
 }

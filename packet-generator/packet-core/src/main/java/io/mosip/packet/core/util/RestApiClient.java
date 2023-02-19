@@ -41,6 +41,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -334,5 +335,24 @@ public class RestApiClient {
 		request.setPassword(environment.getProperty("token.request.password"));
 		request.setUserName(environment.getProperty("token.request.username"));
 		return request;
+	}
+
+	public <T> T  invoke(URI uri, HttpMethod httpMethod, HttpEntity<?> entity, Class<?> responseClass, SimpleClientHttpRequestFactory factory) throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
+		RestTemplate restTemplate;
+		T result = null;
+		try {
+			restTemplate = getRestTemplate();
+			if (factory != null)
+				restTemplate.setRequestFactory(factory);
+
+	//		entity.add("Cookie", getToken());
+
+			result = (T) restTemplate.exchange(uri, httpMethod, entity, responseClass).getBody();
+		} catch (Exception e) {
+			logger.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
+					LoggerFileConstant.APPLICATIONID.toString(), e.getMessage() + ExceptionUtils.getStackTrace(e));
+			throw e;
+		}
+		return result;
 	}
 }

@@ -1,16 +1,17 @@
 package io.mosip.packet.core.constant;
 
-public enum ImageFormat {
+public enum DataFormat {
     JPEG("jpg", "jpg"),
     JP2("jpeg 2000", "jp2"),
     WSQ("wsq","wsq"),
-    ISO("ISO", "iso");
+    ISO("ISO", "iso"),
+    YMD("yyyy/mm/dd", "yyyy/mm/dd");
 
 
     public final String format;
     public final String fileFormat;
 
-    ImageFormat(final String format, final String fileFormat) {
+    DataFormat(final String format, final String fileFormat) {
         this.format = format;
         this.fileFormat = fileFormat;
     }

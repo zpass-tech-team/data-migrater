@@ -1,5 +1,6 @@
 package io.mosip.packet.uploader.service.impl;
 
+import com.google.gson.Gson;
 import io.mosip.commons.packet.spi.IPacketCryptoService;
 import io.mosip.kernel.core.packetuploader.exception.ConnectionException;
 import io.mosip.kernel.core.util.CryptoUtil;
@@ -8,11 +9,15 @@ import io.mosip.kernel.core.util.FileUtils;
 import io.mosip.kernel.core.util.HMACUtils2;
 import io.mosip.kernel.core.util.exception.JsonProcessingException;
 import io.mosip.kernel.keymanagerservice.exception.KeymanagerServiceException;
+import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.constant.RegistrationConstants;
-import io.mosip.packet.core.dto.PacketUploadDTO;
-import io.mosip.packet.core.dto.RegistrationPacketSyncDTO;
-import io.mosip.packet.core.dto.SyncRegistrationDTO;
+import io.mosip.packet.core.dto.upload.PacketUploadDTO;
+import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
+import io.mosip.packet.core.dto.upload.RegistrationPacketSyncDTO;
+import io.mosip.packet.core.dto.ResponseWrapper;
+import io.mosip.packet.core.dto.upload.SyncRegistrationDTO;
 import io.mosip.packet.core.service.DataRestClientService;
+import io.mosip.packet.core.util.regclient.ServiceDelegateUtil;
 import io.mosip.packet.uploader.service.PacketUploaderService;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -26,6 +31,7 @@ import org.springframework.retry.RetryContext;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.retry.support.RetryTemplateBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 
@@ -48,12 +54,12 @@ import static java.lang.Long.parseLong;
 public class PacketUploaderServiceImpl  implements PacketUploaderService {
 
         @Autowired
-        private DataRestClientService restApiClient;
+        private ServiceDelegateUtil restApiClient;
 
-        @Value("${mosip.registration.retry.delay.packet.upload}")
+        @Value("${mosip.registration.retry.delay.packet.upload:1000}")
         private String MOSIP_RETRY_DELAY;
 
-        @Value("${mosip.registration.retry.maxattempts.packet.upload}")
+        @Value("${mosip.registration.retry.maxattempts.packet.upload:2}")
         private String MOSIP_RETRY_ATTEMPT;
 
         @Autowired
@@ -64,6 +70,10 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
         private IPacketCryptoService offlinePacketCryptoServiceImpl;
 
         private RetryTemplate retryTemplate;
+
+        private String centerId;
+
+        private String machineId;
 
     @PostConstruct
     public void init() {
@@ -81,15 +91,19 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
     }
 
     @Override
-    public void syncPacket(@NonNull List<PacketUploadDTO> packets) throws Exception {
+    public void syncPacket(@NonNull List<PacketUploadDTO> packets, String centerId, String machineId, LinkedHashMap<String, PacketUploadResponseDTO> response) throws Exception {
         try {
-            syncRIDToServerWithRetryWrapper(packets);
+            this.centerId = centerId;
+            this.machineId = machineId;
+            restApiClient.setCenterMachineId(centerId, machineId);
+            Object obj = syncRIDToServerWithRetryWrapper(packets);
+            System.out.println((new Gson()).toJson(obj));
         } catch (JsonProcessingException | KeymanagerServiceException e) {
             e.printStackTrace();
         }
     }
 
-    private void syncRIDToServerWithRetryWrapper(List<PacketUploadDTO> packets) throws Exception {
+    private Object syncRIDToServerWithRetryWrapper(List<PacketUploadDTO> packets) throws Exception {
         RetryCallback<Boolean, Exception> retryCallback = new RetryCallback<Boolean, Exception>() {
             @SneakyThrows
             @Override
@@ -98,7 +112,7 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
                 return true;
             }
         };
-        retryTemplate.execute(retryCallback);
+        return retryTemplate.execute(retryCallback);
     }
 
         private synchronized void syncRIDToServer(List<PacketUploadDTO> packets) throws Exception {
@@ -132,7 +146,7 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
                 syncDto.setPhone(packet.getPhone());
                 syncDto.setEmail(packet.getEmail());
 
-                try (FileInputStream fis = new FileInputStream(FileUtils.getFile(getEnvironmentProperty(RegistrationConstants.PACKET_LOCATION) +
+                try (FileInputStream fis = new FileInputStream(FileUtils.getFile(packet.getPacketPath() +
                         RegistrationConstants.SLASH + packet.getPacketId() + RegistrationConstants.ZIP_FILE_EXTENSION))) {
                     byte[] byteArray = new byte[(int) fis.available()];
                     fis.read(byteArray);
@@ -154,9 +168,9 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
             registrationPacketSyncDTO.setId(RegistrationConstants.PACKET_SYNC_STATUS_ID);
             registrationPacketSyncDTO.setVersion(RegistrationConstants.PACKET_SYNC_VERSION);
 
-            String refId = String.valueOf(Con)
+            String refId = String.valueOf(centerId)
                     .concat(RegistrationConstants.UNDER_SCORE)
-                    .concat(String.valueOf(getEnvironmentProperty(RegistrationConstants.STATION_ID)));
+                    .concat(String.valueOf(machineId));
 
             syncPacketsToServer(CryptoUtil.encodeToURLSafeBase64(offlinePacketCryptoServiceImpl
                     .encrypt(refId, javaObjectToJsonString(registrationPacketSyncDTO).getBytes())), "User", packetIdExists);
@@ -169,29 +183,30 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
         try {
             LinkedHashMap<String, Object> response = (LinkedHashMap<String, Object>) restApiClient
                     .post(packetIdExists ? RegistrationConstants.PACKET_SYNC_V2 : RegistrationConstants.PACKET_SYNC, javaObjectToJsonString(encodedString), triggerPoint);
-            if (response.get("errors") != null) {
+
+            if (response != null && response.get("errors") != null) {
                 throw new Exception(response.get("errors").toString());
             }
         } catch (ConnectionException e) {
             throw e;
         } catch (JsonProcessingException | RuntimeException e) {
-            throw new RegBaseCheckedException(RegistrationExceptionConstants.REG_PACKET_SYNC_EXCEPTION.getErrorCode(),
-                    RegistrationExceptionConstants.REG_PACKET_SYNC_EXCEPTION.getErrorMessage());
+            throw e;
         }
     }
 
-        public void uploadSyncedPacket(@NonNull List<PacketUploadDTO> packets) throws Exception {
+    @Override
+    public void uploadSyncedPacket(@NonNull List<PacketUploadDTO> packets, LinkedHashMap<String, PacketUploadResponseDTO> response) throws Exception {
         for (PacketUploadDTO packet : packets) {
             try {
                 uploadPacket(packet);
-            } catch (RegBaseCheckedException e) {
+            } catch (Exception e) {
                 throw e;
             }
         }
     }
 
-        public void uploadPacket(@NonNull PacketUploadDTO packetUpload) throws RegBaseCheckedException {
-        File packet = FileUtils.getFile(getEnvironmentProperty(RegistrationConstants.PACKET_LOCATION) +
+        public void uploadPacket(@NonNull PacketUploadDTO packetUpload) throws Exception {
+        File packet = FileUtils.getFile(packetUpload.getPacketPath() +
                 RegistrationConstants.SLASH + packetUpload.getPacketId() + RegistrationConstants.ZIP_FILE_EXTENSION);
         try {
             pushPacketWithRetryWrapper(packet);
@@ -211,27 +226,26 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
         return retryTemplate.execute(retryCallback);
     }
 
-        private String pushPacket(File packet) throws ConnectionException, RegBaseCheckedException {
+        private String pushPacket(File packet) throws ConnectionException, Exception {
         if (!packet.exists())
-            throw new RegBaseCheckedException(RegistrationExceptionConstants.REG_FILE_NOT_FOUND_ERROR_CODE.getErrorCode(),
-                    RegistrationExceptionConstants.REG_FILE_NOT_FOUND_ERROR_CODE.getErrorMessage());
+            throw new Exception("Packet Not Found in the Path " + packet.getAbsolutePath());
 
         LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
         map.add(RegistrationConstants.PACKET_TYPE, new FileSystemResource(packet));
         LinkedHashMap<String, Object> response = (LinkedHashMap<String, Object>) restApiClient
-                .post(RegistrationConstants.PACKET_UPLOAD, map, RegistrationConstants.JOB_TRIGGER_POINT_USER);
+                    .post(RegistrationConstants.PACKET_UPLOAD, map, RegistrationConstants.JOB_TRIGGER_POINT_USER);
 
-        if (response.get(RegistrationConstants.ERRORS) != null) {
+
+            if (response.get(RegistrationConstants.ERRORS) != null) {
             LinkedHashMap<String, String> error = ((List<LinkedHashMap<String, String>>) response.get(RegistrationConstants.ERRORS)).get(0);
-            throw new RegBaseCheckedException(error.get("errorCode"), error.get("message"));
+            throw new Exception(error.get("errorCode") + " : " + error.get("message"));
         }
 
         if (response.get(RegistrationConstants.RESPONSE) != null) {
             return (String) ((LinkedHashMap<String, Object>) response.get(RegistrationConstants.RESPONSE)).get(RegistrationConstants.UPLOAD_STATUS);
         }
 
-        throw new RegBaseCheckedException(RegistrationExceptionConstants.REG_PACKET_UPLOAD_ERROR.getErrorCode(),
-                RegistrationExceptionConstants.REG_PACKET_UPLOAD_ERROR.getErrorMessage());
+        throw new Exception("Packet Upload Error");
     }
 
         private String getEnvironmentProperty(String property) {

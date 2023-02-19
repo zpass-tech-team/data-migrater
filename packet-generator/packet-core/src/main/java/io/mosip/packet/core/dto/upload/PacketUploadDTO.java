@@ -1,4 +1,4 @@
-package io.mosip.packet.core.dto;
+package io.mosip.packet.core.dto.upload;
 
 import lombok.Data;
 import lombok.Getter;

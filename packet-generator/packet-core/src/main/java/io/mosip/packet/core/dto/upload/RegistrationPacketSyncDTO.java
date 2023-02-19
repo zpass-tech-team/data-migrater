@@ -1,6 +1,7 @@
-package io.mosip.packet.core.dto;
+package io.mosip.packet.core.dto.upload;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.mosip.packet.core.dto.upload.SyncRegistrationDTO;
 
 import java.util.List;
 

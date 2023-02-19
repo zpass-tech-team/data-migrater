@@ -1,6 +1,7 @@
 package io.mosip.packet.extractor.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import io.mosip.commons.packet.dto.Document;
 import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.commons.packet.dto.packet.PacketDto;
@@ -8,7 +9,7 @@ import io.mosip.packet.core.constant.DBTypes;
 import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.constant.ValidatorEnum;
 import io.mosip.packet.core.constant.mvel.ParameterType;
-import io.mosip.packet.core.dto.PacketUploadDTO;
+import io.mosip.packet.core.dto.upload.PacketUploadDTO;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.DocumentAttributes;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
@@ -16,12 +17,14 @@ import io.mosip.packet.core.dto.dbimport.QueryFilter;
 import io.mosip.packet.core.dto.mvel.MvelParameter;
 import io.mosip.packet.core.dto.masterdata.DocumentCategoryDto;
 import io.mosip.packet.core.dto.masterdata.DocumentTypeExtnDto;
+import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
 import io.mosip.packet.extractor.service.CustomNativeRepository;
 import io.mosip.packet.extractor.service.DataExtractionService;
 import io.mosip.packet.extractor.util.*;
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import io.mosip.packet.manager.service.PacketCreatorService;
 //import io.mosip.packet.uploader.service.PacketUploaderService;
+import io.mosip.packet.uploader.service.PacketUploaderService;
 import org.apache.commons.io.IOUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -29,7 +32,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -61,11 +63,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Autowired
     PacketCreatorService packetCreatorService;
 
-//    @Autowired
-//    PacketUploaderService packetUploaderService;
+    @Autowired
+    PacketUploaderService packetUploaderService;
 
     @Value("${packet.manager.account.name}")
     private String packetUploadPath;
+
+    @Value("${mosip.selected.languages}")
+    private String primaryLanguage;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -242,7 +247,16 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     uploadDTO.setPacketPath(path.toAbsolutePath().toString());
                     uploadDTO.setRegistrationType(dbImportRequest.getProcess());
                     uploadDTO.setPacketId(info.getId());
-                    uploadDTO.setRegistrationId(info.getRefId());
+                    uploadDTO.setRegistrationId(info.getId().split("-")[0]);
+                    uploadDTO.setLangCode(primaryLanguage);
+
+                    List<PacketUploadDTO> uploadList = new ArrayList<>();
+                    uploadList.add(uploadDTO);
+                    LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
+                    packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
+                    packetUploaderService.uploadSyncedPacket(uploadList, response);
+
+                    System.out.println((new Gson()).toJson(response));
                 } else {
                     throw new Exception("Identity Mapping JSON File missing");
                 }

@@ -2,9 +2,16 @@ package io.mosip.packet.core.service;
 
 import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
+import io.mosip.packet.core.util.regclient.RequestHTTPDTO;
 import org.springframework.http.MediaType;
+import org.springframework.web.client.RestClientException;
 
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The Interface RegistrationProcessorRestClientService.
@@ -118,5 +125,7 @@ public interface DataRestClientService<T> {
 	 */
 	public T postApi(ApiName apiName, MediaType mediaType, List<String> pathsegments, List<String> queryParam, List<Object> queryParamValue,
 					 T requestedData, Class<?> responseType) throws ApisResourceAccessException;
+
+	public Map<String, Object> invokeURL(RequestHTTPDTO requestHTTPDTO) throws Exception;
 
 }

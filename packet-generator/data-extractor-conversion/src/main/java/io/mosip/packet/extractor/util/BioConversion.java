@@ -5,7 +5,7 @@ import io.mosip.biometrics.util.face.FaceEncoder;
 import io.mosip.biometrics.util.finger.FingerEncoder;
 import io.mosip.biometrics.util.iris.IrisEncoder;
 import io.mosip.commons.packet.constants.Biometric;
-import io.mosip.packet.core.constant.ImageFormat;
+import io.mosip.packet.core.constant.DataFormat;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.kernel.biometrics.constant.BiometricType;
 import org.jnbis.api.Jnbis;
@@ -21,13 +21,13 @@ public class BioConversion {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] byteData = new byte[0];
 
-        if(fieldFormatRequest.getSrcFormat().equals(ImageFormat.JPEG) && !fieldFormatRequest.getDestFormat().equals(ImageFormat.JPEG)) {
+        if(fieldFormatRequest.getSrcFormat().equals(DataFormat.JPEG) && !fieldFormatRequest.getDestFormat().equals(DataFormat.JPEG)) {
             ImageIO.write(ImageIO.read(new ByteArrayInputStream(imageData)), fieldFormatRequest.getDestFormat().getFormat(), baos);
             byteData = baos.toByteArray();
-        } else if(fieldFormatRequest.getDestFormat().equals(ImageFormat.JP2)) {
+        } else if(fieldFormatRequest.getDestFormat().equals(DataFormat.JP2)) {
             ImageIO.write(ImageIO.read(new ByteArrayInputStream(Jnbis.wsq().decode(imageData).toJpg().asByteArray())), fieldFormatRequest.getDestFormat().getFormat(), baos);
             byteData = baos.toByteArray();
-        } else if(fieldFormatRequest.getDestFormat().equals(ImageFormat.ISO) && (fieldFormatRequest.getSrcFormat().equals(ImageFormat.JP2) || fieldFormatRequest.getSrcFormat().equals(ImageFormat.WSQ))) {
+        } else if(fieldFormatRequest.getDestFormat().equals(DataFormat.ISO) && (fieldFormatRequest.getSrcFormat().equals(DataFormat.JP2) || fieldFormatRequest.getSrcFormat().equals(DataFormat.WSQ))) {
             Integer inputImageType = null;
 
             switch(fieldFormatRequest.getSrcFormat().toString()) {
@@ -76,7 +76,7 @@ public class BioConversion {
         return byteData;
     }
 
-    public byte[] writeFile(String fileName, byte[] imageData, ImageFormat toFormat) throws IOException {
+    public byte[] writeFile(String fileName, byte[] imageData, DataFormat toFormat) throws IOException {
         File bioFile = new File("C:/Users/Thamarai.Kannan/Downloads/" + fileName + "."+ toFormat.getFileFormat());
         OutputStream os = new FileOutputStream(bioFile);
         os.write(imageData);
