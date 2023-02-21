@@ -5,7 +5,8 @@ public enum DataFormat {
     JP2("jpeg 2000", "jp2"),
     WSQ("wsq","wsq"),
     ISO("ISO", "iso"),
-    YMD("yyyy/mm/dd", "yyyy/mm/dd");
+    YMD("yyyy/MM/dd", "yyyy/MM/dd"),
+    DMY("dd/MM/yyyy", "dd/MM/yyyy");
 
 
     public final String format;

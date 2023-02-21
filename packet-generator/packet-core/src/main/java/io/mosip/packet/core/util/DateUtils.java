@@ -63,6 +63,8 @@ public final class DateUtils {
 	 */
 	private static final String UTC_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
 
+	private static SimpleDateFormat dateFormat;
+
 	private DateUtils() {
 
 	}
@@ -882,4 +884,24 @@ public final class DateUtils {
 		return dateFormatter.format(date);
 	}
 
+	public static Date findDateFormat(String value) {
+		for (io.mosip.packet.core.constant.DateFormat format : io.mosip.packet.core.constant.DateFormat.values()) {
+			dateFormat = new SimpleDateFormat(format.getFormat());
+			try {
+				Date date =  dateFormat.parse(value);
+
+				if(value.equals(dateFormat.format(date)))
+					return date;
+			} catch (Exception e) {
+				//do nothing
+			}
+		}
+		return null;
+	}
+
+
+	public static String parseDate(Date date, String pattern) {
+		dateFormat = new SimpleDateFormat(pattern);
+		return dateFormat.format(date);
+	}
 }

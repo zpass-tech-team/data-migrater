@@ -4,7 +4,9 @@ import io.mosip.packet.core.constant.DateFormat;
 import io.mosip.packet.core.constant.FieldType;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.QueryFilter;
+import io.mosip.packet.core.util.DateUtils;
 import io.mosip.packet.extractor.validator.Validator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigInteger;
@@ -14,8 +16,6 @@ import java.util.List;
 
 @Component
 public class FilterValidation implements Validator {
-
-    private SimpleDateFormat dateFormat;
 
     @Override
     public Boolean validate(DBImportRequest dbImportRequest) throws Exception {
@@ -58,7 +58,7 @@ public class FilterValidation implements Validator {
                     throw new Exception("Filter : " + filter.getFilterField() +  " From Value should be numeric for Field Type : " + filter.getFieldType());
                 }
             } else if (filter.getFieldType().equals(FieldType.DATE)){
-                Date toDate = findDateFormat(filter.getFromValue());
+                Date toDate = DateUtils.findDateFormat(filter.getFromValue());
 
                 if(toDate == null)
                     throw new Exception("Invalid Date Format Entered in Filter From Value for " + filter.getFilterField() );
@@ -79,7 +79,7 @@ public class FilterValidation implements Validator {
                     throw new Exception("Filter : " + filter.getFilterField() +  " To Value should be numeric for Field Type : " + filter.getFieldType());
                 }
             } else if (filter.getFieldType().equals(FieldType.DATE)){
-                Date fromDate = findDateFormat(filter.getToValue());
+                Date fromDate = DateUtils.findDateFormat(filter.getToValue());
 
                 if(fromDate == null)
                     throw new Exception("Invalid Date Format Entered in Filter To Value for " + filter.getFilterField() );
@@ -94,8 +94,8 @@ public class FilterValidation implements Validator {
                 if(((new BigInteger(filter.getFromValue())).compareTo(new BigInteger(filter.getToValue())) > 1))
                     throw new Exception("Filter : " + filter.getFilterField() +  " From Value should be less than To value for field Type : " + filter.getFieldType());
             } else if (filter.getFieldType().equals(FieldType.DATE)){
-                Date fromDate = findDateFormat(filter.getFromValue());
-                Date toDate = findDateFormat(filter.getToValue());
+                Date fromDate = DateUtils.findDateFormat(filter.getFromValue());
+                Date toDate = DateUtils.findDateFormat(filter.getToValue());
 
                 if(fromDate.after(toDate))
                     throw new Exception("Filter : " + filter.getFilterField() +  " From Date should be less than To date for field Type : " + filter.getFieldType());
@@ -105,20 +105,5 @@ public class FilterValidation implements Validator {
             }
         }
         return true;
-    }
-
-    private Date findDateFormat(String value) {
-        for (DateFormat format : DateFormat.values()) {
-            dateFormat = new SimpleDateFormat(format.getFormat());
-            try {
-                Date date =  dateFormat.parse(value);
-
-                if(value.equals(dateFormat.format(date)))
-                    return date;
-            } catch (Exception e) {
-                //do nothing
-            }
-        }
-        return null;
     }
 }

@@ -6,6 +6,7 @@ import io.mosip.commons.packet.dto.Document;
 import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.commons.packet.dto.packet.PacketDto;
 import io.mosip.packet.core.constant.DBTypes;
+import io.mosip.packet.core.constant.DataFormat;
 import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.constant.ValidatorEnum;
 import io.mosip.packet.core.constant.mvel.ParameterType;
@@ -18,6 +19,7 @@ import io.mosip.packet.core.dto.mvel.MvelParameter;
 import io.mosip.packet.core.dto.masterdata.DocumentCategoryDto;
 import io.mosip.packet.core.dto.masterdata.DocumentTypeExtnDto;
 import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
+import io.mosip.packet.core.util.DateUtils;
 import io.mosip.packet.extractor.service.CustomNativeRepository;
 import io.mosip.packet.extractor.service.DataExtractionService;
 import io.mosip.packet.extractor.util.*;
@@ -38,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.util.*;
+import java.util.Date;
 
 @Service
 public class DataExtractionServiceImpl implements DataExtractionService {
@@ -143,6 +146,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     String fieldName = fieldFormatRequest.getFieldName().contains(",") ? fieldFormatRequest.getFieldName().replace(",", "") : fieldFormatRequest.getFieldName();
                     String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldFormatRequest.getFieldName().toLowerCase();
                     if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DEMO)) {
+                        Object demoValue = null;
                         if (fieldFormatRequest.getMvelExpressions() != null) {
                             Map map = new HashMap();
                             for (MvelParameter parameter : fieldFormatRequest.getMvelExpressions().getParameters()) {
@@ -159,10 +163,22 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 }
                             }
 
-                            demoDetails.put(fieldMap, mvelUtil.processViaMVEL(fieldFormatRequest.getMvelExpressions().getMvelFile(), map));
+                            demoValue = mvelUtil.processViaMVEL(fieldFormatRequest.getMvelExpressions().getMvelFile(), map);
                         } else {
-                            demoDetails.put(fieldMap, resultSet.getObject(fieldName));
+                            demoValue = resultSet.getObject(fieldName);
                         }
+
+                        if (fieldFormatRequest.getDestFormat() != null) {
+                            if (fieldFormatRequest.getDestFormat().equals(DataFormat.DMY) || fieldFormatRequest.getDestFormat().equals(DataFormat.YMD)) {
+                                Date dateVal = DateUtils.findDateFormat(demoValue.toString());
+                                demoValue = DateUtils.parseDate(dateVal, fieldFormatRequest.getDestFormat().getFormat());
+                            } else {
+                                throw new Exception("Invalid Format for Conversion for Demo Details for Field : " + fieldFormatRequest.getFieldName());
+                            }
+                        }
+
+                        demoDetails.put(fieldMap, demoValue);
+
                     } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
                         byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
                         byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
