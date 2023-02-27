@@ -241,8 +241,8 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
             throw new Exception(error.get("errorCode") + " : " + error.get("message"));
         }
 
-        if (response.get(RegistrationConstants.RESPONSE) != null) {
-            return (String) ((LinkedHashMap<String, Object>) response.get(RegistrationConstants.RESPONSE)).get(RegistrationConstants.UPLOAD_STATUS);
+        if (response.get(RegistrationConstants.REST_RESPONSE_BODY) != null) {
+            return (String) ((LinkedHashMap<String, Object>) response.get(RegistrationConstants.REST_RESPONSE_BODY)).get(RegistrationConstants.UPLOAD_STATUS);
         }
 
         throw new Exception("Packet Upload Error");

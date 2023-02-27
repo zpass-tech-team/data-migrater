@@ -7,6 +7,7 @@ import io.mosip.packet.core.constant.RegistrationConstants;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.config.SyncDataResponseDto;
 import io.mosip.packet.core.entity.MachineMaster;
+import io.mosip.packet.core.exception.ServiceError;
 import io.mosip.packet.core.repository.MachineMasterRepository;
 import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
@@ -20,6 +21,7 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
 import java.net.InetAddress;
@@ -122,9 +124,14 @@ public class ConfigUtil {
         }
 
         List<MachineMaster> machineMasters = machineMasterRepository.findAll();
-        configUtil.machineSerialNum = machineMasters.get(0).getSerialNum();
-        configUtil.machineId = machineMasters.get(0).getId();
-        configUtil.centerId = machineMasters.get(0).getRegCenterId();
+
+        if (machineMasters.size() > 0) {
+            configUtil.machineSerialNum = machineMasters.get(0).getSerialNum();
+            configUtil.machineId = machineMasters.get(0).getId();
+            configUtil.centerId = machineMasters.get(0).getRegCenterId();
+        } else {
+            throw new Exception("Machine Details Fetching from MOSIP Failed");
+        }
 
         if (!configUtil.machineName.equalsIgnoreCase(machineMasters.get(0).getName()))
             throw new Exception("Machine Name '" + configUtil.machineName + "' not Matching with the MOSIP Configuration");
@@ -151,17 +158,17 @@ public class ConfigUtil {
         }
     }
 
-    private static String getErrorMessage(List<Map<String, Object>> errorList) {
+    private static String getErrorMessage(List<Object> errorList) {
 
         return errorList != null && errorList.get(0) != null
-                ? (String) errorList.get(0).get(RegistrationConstants.ERROR_CODE) + " : " + errorList.get(0).get(RegistrationConstants.MESSAGE_CODE)
+                ? (String) ((ServiceError)errorList.get(0)).getErrorCode() + " : " + ((ServiceError)errorList.get(0)).getMessage()
                 : null;
     }
 
-    private static List<Map<String, Object>> getErrorList(ResponseWrapper syncReponse) {
+    private static List<Object> getErrorList(ResponseWrapper syncReponse) {
 
         return syncReponse.getErrors() != null && syncReponse.getErrors().size() > 0
-                ? (List<Map<String, Object>>) syncReponse.getErrors()
+                ? (List<Object>) syncReponse.getErrors()
                 : null;
     }
 

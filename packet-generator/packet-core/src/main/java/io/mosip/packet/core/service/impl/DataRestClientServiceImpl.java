@@ -337,7 +337,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 
 		if (responseEntity != null) {
 			responseMap = new LinkedHashMap<>();
-			responseMap.put(RegistrationConstants.REST_RESPONSE_BODY, ((List)responseEntity.get("response")).get(0));
+			responseMap.put(RegistrationConstants.REST_RESPONSE_BODY, responseEntity.get("response"));
 			responseMap.put(RegistrationConstants.ERROR, responseEntity.get("errors"));
 		}
 

@@ -4,6 +4,7 @@ import io.mosip.packet.core.constant.DateFormat;
 import io.mosip.packet.core.constant.FieldType;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.QueryFilter;
+import io.mosip.packet.core.dto.dbimport.TableRequestDto;
 import io.mosip.packet.core.util.DateUtils;
 import io.mosip.packet.extractor.validator.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,22 +20,29 @@ public class FilterValidation implements Validator {
 
     @Override
     public Boolean validate(DBImportRequest dbImportRequest) throws Exception {
-        List<QueryFilter> filterList = dbImportRequest.getFilters();
+        List<TableRequestDto> tableList = dbImportRequest.getTableDetails();
 
-        for(QueryFilter filter : filterList) {
-            switch(filter.getFilterCondition().toString()) {
-                case "EQUAL":
-                case "LESS_THEN_AND_EQUAL":
-                case "LESS_THEN":
-                case "GREATER_THEN":
-                case "GREATER_THEN_AND_EQUAL":
-                    validateFilter(true, true, true, false, false, filter);
-                    break;
-                case "BETWEEN":
-                    validateFilter(true, true, true, true, true, filter);
-                    break;
+        for (TableRequestDto tableRequestDto : tableList) {
+            if (tableRequestDto.getFilters() != null) {
+                List<QueryFilter> filterList = tableRequestDto.getFilters();
+
+                for(QueryFilter filter : filterList) {
+                    switch(filter.getFilterCondition().toString()) {
+                        case "EQUAL":
+                        case "LESS_THEN_AND_EQUAL":
+                        case "LESS_THEN":
+                        case "GREATER_THEN":
+                        case "GREATER_THEN_AND_EQUAL":
+                            validateFilter(true, true, true, false, false, filter);
+                            break;
+                        case "BETWEEN":
+                            validateFilter(true, true, true, true, true, filter);
+                            break;
+                    }
+                }
             }
         }
+
         return true;
     }
 

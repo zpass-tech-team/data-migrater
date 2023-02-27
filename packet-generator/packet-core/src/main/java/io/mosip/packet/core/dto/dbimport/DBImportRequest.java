@@ -17,9 +17,8 @@ public class DBImportRequest {
     private String databaseName;
     private String userId;
     private String password;
-    private String tableName;
+    private List<TableRequestDto> tableDetails;
     private String process;
-    private List<QueryFilter> filters;
     private List<FieldFormatRequest> columnDetails;
     private List<String> ignoreIdSchemaFields;
 }

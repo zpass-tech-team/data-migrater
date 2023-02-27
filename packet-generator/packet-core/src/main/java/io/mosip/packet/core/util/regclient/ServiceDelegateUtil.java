@@ -146,7 +146,6 @@ public class ServiceDelegateUtil {
 		LOGGER.debug("Post method called - {} ", serviceName);
 
 		RequestHTTPDTO requestDto;
-		Object responseBody = null;
 		Map<String, Object> responseMap = null;
 
 		try {
@@ -164,13 +163,9 @@ public class ServiceDelegateUtil {
 			LOGGER.error(e.getMessage(), e);
 			throw e;
 		}
-
-		if (isResponseValid(responseMap, RegistrationConstants.REST_RESPONSE_BODY)) {
-			responseBody = responseMap.get(RegistrationConstants.REST_RESPONSE_BODY);
-		}
 		LOGGER.debug("Post method ended - {} ", serviceName);
 
-		return responseBody;
+		return responseMap;
 	}
 
 

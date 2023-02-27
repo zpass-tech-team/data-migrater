@@ -14,7 +14,7 @@ public enum FilterCondition {
         this.condition=condition;
     }
 
-    public String format(String fromVal, String toVal, FieldType fieldType) {
+    public String format(String fromVal, String toVal, FieldType fieldType) throws Exception {
         String fromValue = ((!FieldType.NUMBER.equals(fieldType)) ? "'"+fromVal+"'" : fromVal);
         String toValue = ((!FieldType.NUMBER.equals(fieldType)) ? "'"+toVal+"'" : toVal);
 
