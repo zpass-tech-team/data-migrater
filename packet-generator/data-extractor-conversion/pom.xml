@@ -157,4 +157,32 @@
             <version>3.9.1</version>
         </dependency>
     </dependencies>
+
+    <build>
+    <plugins>
+        <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.0.1</version>
+        <executions>
+            <execution>
+                <id>copy-resources-1</id>
+                <!-- here the phase you need -->
+                <phase>validate</phase>
+                <goals>
+                    <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                    <outputDirectory>${basedir}/target/mockmds</outputDirectory>
+                    <resources>
+                        <resource>
+                            <directory>${basedir}/mockmds</directory>
+                            <filtering>true</filtering>
+                        </resource>
+                    </resources>
+                </configuration>
+            </execution>
+        </executions>
+        </plugin>
+    </plugins>
+    </build>
  </project>

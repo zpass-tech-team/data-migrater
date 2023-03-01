@@ -26,10 +26,15 @@
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
         </dependency>
-<!--        <dependency>
+        <dependency>
             <groupId>io.mosip.packet</groupId>
-            <artifactId>packet-uploader</artifactId>
+            <artifactId>packet-core</artifactId>
             <version>1.2.0.1-SNAPSHOT</version>
-        </dependency>-->
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>2.7.5</version>
+        </dependency>
     </dependencies>
 </project>

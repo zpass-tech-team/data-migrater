@@ -9,6 +9,7 @@ import io.mosip.commons.packet.constants.PacketManagerConstants;
 import io.mosip.commons.packet.dto.Document;
 import io.mosip.commons.packet.dto.packet.DocumentType;
 import io.mosip.commons.packet.dto.packet.PacketDto;
+import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.constant.RegistrationConstants;
 import io.mosip.packet.core.dto.ResponseWrapper;
@@ -17,6 +18,11 @@ import io.mosip.packet.core.dto.biosdk.OtherDto;
 import io.mosip.packet.core.dto.biosdk.QualityCheckRequest;
 import io.mosip.packet.core.dto.biosdk.SegmentDto;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
+import io.mosip.packet.core.dto.mockmds.BioMetricsDto;
+import io.mosip.packet.core.dto.mockmds.CaptureRequestDeviceDetailDto;
+import io.mosip.packet.core.dto.mockmds.CaptureRequestDto;
+import io.mosip.packet.core.dto.mockmds.RCaptureResponseDataDTO;
+import io.mosip.packet.core.dto.packet.BiometricsDto;
 import io.mosip.packet.core.dto.packet.metadata.BiometricsMetaInfoDto;
 import io.mosip.packet.core.dto.packet.metadata.DocumentMetaInfoDTO;
 import io.mosip.packet.core.dto.packet.type.IndividualBiometricType;
@@ -27,6 +33,7 @@ import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.kernel.biometrics.entities.BIR;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
+import io.mosip.packet.manager.util.mock.sbi.devicehelper.MockDeviceUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
@@ -50,11 +57,32 @@ public class PacketCreator {
     @Autowired
     private BIRBuilder birBuilder;
 
+    @Autowired
+    private MockDeviceUtil mockDeviceUtil;
+
     @Value("${mosip.id.schema.version:0.1}")
     private String version;
 
     @Value("${mosip.primary.language}")
     private String primaryLamguage;
+
+    @Value("${mosip.packet.creator.environment:Staging}")
+    private String environment;
+
+    @Value("${mosip.packet.creator.purpose:Registration}")
+    private String purpose;
+
+    @Value("${mosip.packet.creator.requested.score}")
+    private String requestedScore;
+
+    @Value("${mosip.bio.spec.version:0.9.5}")
+    private String bioSpecVaersion;
+
+    @Value("${mosip.registration.mdm.trust.domain.rcapture:DEVICE}")
+    private String rCaptureTrustDomain;
+
+    @Autowired
+    private MosipDeviceSpecificationHelper mosipDeviceSpecificationHelper;
 
     @Autowired
     private BlocklistedWordsRepository blocklistedWordsRepository;
@@ -200,7 +228,38 @@ public class PacketCreator {
                     if(fieldId.equals(id) && bioAttributes.contains(bioAttribute)) {
                         bioAttributes.remove(bioAttribute);
                         String bioQualityScore = keyEntries.length > 2 ? keyEntries[2] : null;
-                        BIR bir = birBuilder.buildBIR(bioAttribute, (byte[])entry.getValue(), bioQualityScore);
+                        String bioType = Biometric.getSingleTypeByAttribute(bioAttribute).value();
+                        CaptureRequestDto captureRequestDto = new CaptureRequestDto();
+                        CaptureRequestDeviceDetailDto captureRequestDeviceDetailDto = new CaptureRequestDeviceDetailDto();
+                        captureRequestDeviceDetailDto.setType(bioType);
+                        captureRequestDeviceDetailDto.setBioSubType(bioAttribute);
+                        captureRequestDeviceDetailDto.setRequestedScore(Integer.parseInt(requestedScore));
+
+                        captureRequestDto.setEnv(environment);
+                        captureRequestDto.setPurpose(purpose);
+                        captureRequestDto.setSpecVersion(bioSpecVaersion);
+                        captureRequestDto.setTransactionId(UUID.randomUUID().toString());
+                        captureRequestDto.setBio(captureRequestDeviceDetailDto);
+
+                        BioMetricsDto bioMetricsDto = mockDeviceUtil.getBiometricData(bioType, captureRequestDto, Base64.getUrlEncoder().encodeToString((byte[]) entry.getValue()), "en", "0");
+
+//                        mosipDeviceSpecificationHelper.validateJWTResponse(bioMetricsDto.getData(), rCaptureTrustDomain);
+                        String payLoad = mosipDeviceSpecificationHelper.getPayLoad(bioMetricsDto.getData());
+                        String signature = mosipDeviceSpecificationHelper.getSignature(bioMetricsDto.getData());
+
+                        String decodedPayLoad = new String(CryptoUtil.decodeURLSafeBase64(payLoad));
+
+
+                        RCaptureResponseDataDTO dataDTO = mapper.readValue(decodedPayLoad, RCaptureResponseDataDTO.class);
+
+                        BiometricsDto biometricDTO = new BiometricsDto(bioAttribute, dataDTO.getDecodedBioValue(),
+                                Double.parseDouble(dataDTO.getQualityScore()== null ? "0" : dataDTO.getQualityScore()));
+                        biometricDTO.setPayLoad(decodedPayLoad);
+                        biometricDTO.setSignature(signature);
+                        biometricDTO.setSpecVersion(bioMetricsDto.getSpecVersion());
+                        biometricDTO.setCaptured(true);
+                        biometricDTO.setAttributeISO(dataDTO.getBioValue().getBytes(StandardCharsets.UTF_8));
+                        BIR bir = birBuilder.buildBIR(biometricDTO);
 
                         if (bioQualityScore==null) {
                             BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
@@ -248,15 +307,15 @@ public class PacketCreator {
                     bioAttributes.clear();
 
                 for (String bioAttribute : bioAttributes) {
-                    BIR bir = birBuilder.buildBIR(bioAttribute, null, "0");
+//                    BIR bir = birBuilder.buildBIR(bioAttribute, null, "0");
                     if (!capturedBiometrics.containsKey(id)) {
                         capturedBiometrics.put(id, new ArrayList<>());
                     }
-                    capturedBiometrics.get(id).add(bir);
+//                    capturedBiometrics.get(id).add(bir);
                     if (!capturedMetaInfo.containsKey(id)) {
                         capturedMetaInfo.put(id, new HashMap<>());
                     }
-                    capturedMetaInfo.get(id).put(bioAttribute, new BiometricsMetaInfoDto(1, false, bir.getBdbInfo().getIndex()));
+//                    capturedMetaInfo.get(id).put(bioAttribute, new BiometricsMetaInfoDto(1, false, bir.getBdbInfo().getIndex()));
                 }
             }
 

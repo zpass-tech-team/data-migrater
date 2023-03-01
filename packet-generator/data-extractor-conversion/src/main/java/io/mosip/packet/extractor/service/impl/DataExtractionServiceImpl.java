@@ -158,7 +158,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                 packetDto = new PacketDto();
                 packetDto.setProcess(dbImportRequest.getProcess());
-                packetDto.setSource("REGISTRATION_CLIENT");
+                packetDto.setSource("DATAMIGRATOR");
                 packetDto.setSchemaVersion(String.valueOf(packetCreator.getLatestIdSchema().get("idVersion")));
                 packetDto.setAdditionalInfoReqId(null);
                 packetDto.setMetaInfo(null);
