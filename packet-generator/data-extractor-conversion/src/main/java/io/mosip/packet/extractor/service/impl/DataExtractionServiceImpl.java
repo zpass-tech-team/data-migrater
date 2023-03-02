@@ -3,6 +3,7 @@ package io.mosip.packet.extractor.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.itextpdf.layout.element.Link;
 import io.mosip.commons.packet.dto.Document;
 import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.commons.packet.dto.packet.PacketDto;
@@ -31,6 +32,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -71,6 +73,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Value("${mosip.selected.languages}")
     private String primaryLanguage;
 
+    @Value("${mosip.packet.creater.source}")
+    private String source;
+
     @Autowired
     private QueryFormatter formatter;
 
@@ -89,8 +94,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         LinkedHashMap<String, Object> biodata = new LinkedHashMap<>();
 
         try {
-/*            connectDatabase(dbImportRequest);
-            ResultSet resultSet = readDataFromDatabase(dbImportRequest.);
+            connectDatabase(dbImportRequest);
+            populateTableFields(dbImportRequest);
+            ResultSet resultSet = readDataFromDatabase(dbImportRequest.getTableDetails().get(0));
 
             while (resultSet.next()) {
                 for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
@@ -98,7 +104,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     byte[] convertedImageData = convertBiometric(resultSet.getString(fieldFormatRequest.getPrimaryField()), fieldFormatRequest, byteVal, localStoreRequired);
                     biodata.put(resultSet.getString(fieldFormatRequest.getPrimaryField())+ "-" + fieldFormatRequest.getFieldName(),  convertedImageData);
                 }
-            }*/
+            }
         } finally {
             if (conn != null)
                 conn.close();
@@ -143,7 +149,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             ResultSet resultSet = null;
             resultSet = readDataFromDatabase(tableRequestDto);
 
-            while (resultSet != null && resultSet.next()) {
+            if (resultSet != null) {
                 populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet);
 
                 for (int i = 1; i < tableRequestDtoList.size(); i++) {
@@ -151,14 +157,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     resultSet = null;
                     resultSet = readDataFromDatabase(tableRequestDto);
 
-                    while (resultSet != null && resultSet.next()) {
+                    if (resultSet != null) {
                         populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet);
                     }
                 }
 
                 packetDto = new PacketDto();
                 packetDto.setProcess(dbImportRequest.getProcess());
-                packetDto.setSource("DATAMIGRATOR");
+                packetDto.setSource(source);
                 packetDto.setSchemaVersion(String.valueOf(packetCreator.getLatestIdSchema().get("idVersion")));
                 packetDto.setAdditionalInfoReqId(null);
                 packetDto.setMetaInfo(null);
@@ -388,12 +394,36 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     private void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet) throws Exception {
         List<FieldCategory> availableCategory = Arrays.asList(tableRequestDto.getFieldCategory());
 
-        for (FieldFormatRequest fieldFormatRequest : columnDetails) {
-            dataMapper(availableCategory, fieldFormatRequest, resultSet);
+        List<Map<String, Object>> resultData = extractResultSet(resultSet);
+
+        for(Map<String, Object> result : resultData) {
+            for (FieldFormatRequest fieldFormatRequest : columnDetails) {
+                dataMapper(availableCategory, fieldFormatRequest, result);
+            }
         }
+
     }
 
-    private void dataMapper(List<FieldCategory> availableCategory, FieldFormatRequest fieldFormatRequest, ResultSet resultSet) throws Exception {
+    private List<Map<String, Object>> extractResultSet(ResultSet resultSet) throws SQLException {
+        List<Map<String, Object>> mapList = new ArrayList<>();
+        LinkedHashMap<String, Object> resultData = new LinkedHashMap<>();
+        ResultSetMetaData metadata = resultSet.getMetaData();
+        int columnCount = metadata.getColumnCount();
+        for (int i = 1; i <= columnCount; i++) {
+            resultData.put(metadata.getColumnName(i), null);
+        }
+        while (resultSet.next()) {
+            Map<String, Object> resultMap = (LinkedHashMap<String, Object>) resultData.clone();
+
+            for (Map.Entry<String, Object> entry : resultMap.entrySet()) {
+                resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
+            }
+            mapList.add(resultMap);
+        }
+        return mapList;
+    }
+
+    private void dataMapper(List<FieldCategory> availableCategory, FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
 
         if (availableCategory.contains(fieldFormatRequest.getFieldCategory())) {
@@ -409,7 +439,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         if (parameter.getParameterType().equals(ParameterType.STRING))
                             if(parameter.getParameterValue().contains("${")) {
                                 String param = parameter.getParameterValue().replace("${", "").replace("}", "");
-                                map.put(parameter.getParameterName(), resultSet.getObject(param));
+                                map.put(parameter.getParameterName(), resultSet.get(param));
                             } else {
                                 map.put(parameter.getParameterName(), parameter.getParameterValue());
                             }
@@ -421,7 +451,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                     demoValue = mvelUtil.processViaMVEL(fieldFormatRequest.getMvelExpressions().getMvelFile(), map);
                 } else {
-                    demoValue = resultSet.getObject(fieldName);
+                    demoValue = resultSet.get(fieldName);
                 }
 
                 if (fieldFormatRequest.getDestFormat() != null) {
@@ -437,32 +467,42 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 dataMap.get(fieldFormatRequest.getFieldCategory()).put(originalField, demoValue);
 
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
-                byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
+
+                byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldFormatRequest.getFieldName()));
                 byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
-                dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.getString(fieldFormatRequest.getSrcFieldForQualityScore()) : ""), convertedImageData);
+                dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.get(fieldFormatRequest.getSrcFieldForQualityScore()) : ""), convertedImageData);
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
                 Document document = new Document();
-                document.setDocument(resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes());
+                document.setDocument(convertObjectToByteArray(resultSet.get(fieldFormatRequest.getFieldName())));
                 if(fieldFormatRequest.getDocumentAttributes() != null) {
                     DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
                     String refField = documentAttributes.getDocumentRefNoField().contains("STATIC") ? "STATIC_" +  getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
                             :  documentAttributes.getDocumentRefNoField();
-                    document.setRefNumber(resultSet.getString(refField));
+                    document.setRefNumber(String.valueOf(resultSet.get(refField)));
                     dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + refField, document.getRefNumber());
 
                     String formatField = documentAttributes.getDocumentFormatField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
                             :  documentAttributes.getDocumentFormatField();
-                    document.setFormat(resultSet.getString(formatField));
+                    document.setFormat(String.valueOf(resultSet.get(formatField)));
                     dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + formatField, document.getFormat());
 
                     String codeField = documentAttributes.getDocumentCodeField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
                             :  documentAttributes.getDocumentCodeField();
-                    document.setType(resultSet.getString(codeField));
+                    document.setType(String.valueOf(resultSet.get(codeField)));
                     dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + codeField, document.getType());
                 }
 
                 dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, mapper.writeValueAsString(document));
             }
         }
+    }
+
+    private byte[] convertObjectToByteArray(Object obj) throws IOException {
+//        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//        ObjectOutputStream oos = new ObjectOutputStream(bos);
+ //       oos.writeObject(obj);
+//        oos.flush();
+ //       return bos.toByteArray();
+        return (byte[]) obj;
     }
 }

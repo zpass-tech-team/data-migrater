@@ -96,6 +96,22 @@ public class MosipDeviceSpecificationHelper {
 				RegistrationExceptionConstants.MDS_SIGNATURE_EMPTY.getErrorMessage());
 	}
 
+	public String getDigitalId(String data) throws Exception {
+		if (data == null || data.isEmpty()) {
+			throw new Exception(RegistrationExceptionConstants.MDS_JWT_INVALID.getErrorCode()+ " : " +
+					RegistrationExceptionConstants.MDS_JWT_INVALID.getErrorMessage());
+		}
+		Pattern pattern = Pattern.compile(RegistrationConstants.BIOMETRIC_SEPERATOR);
+		Matcher matcher = pattern.matcher(data);
+		if(matcher.find()) {
+			//returns header..signature
+			return matcher.group(1);
+		}
+
+		throw new Exception(RegistrationExceptionConstants.MDS_SIGNATURE_EMPTY.getErrorCode()+ " : " +
+				RegistrationExceptionConstants.MDS_SIGNATURE_EMPTY.getErrorMessage());
+	}
+
 	public void validateJWTResponse(final String signedData, final String domain) throws Exception {
 		JWTSignatureVerifyRequestDto jwtSignatureVerifyRequestDto = new JWTSignatureVerifyRequestDto();
 		jwtSignatureVerifyRequestDto.setValidateTrust(true);
