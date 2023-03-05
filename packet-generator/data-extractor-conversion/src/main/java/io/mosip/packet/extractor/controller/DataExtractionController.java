@@ -5,6 +5,7 @@ import io.mosip.packet.core.dto.RequestWrapper;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.DBImportResponse;
+import io.mosip.packet.core.dto.dbimport.PacketCreatorResponse;
 import io.mosip.packet.core.exception.ServiceError;
 import io.mosip.packet.extractor.service.DataExtractionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,8 +98,8 @@ public class DataExtractionController {
 
     @PostMapping(value = "/importPacketsFromOtherDomain", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ResponseWrapper> createPacketFromOtherDomain(@RequestBody RequestWrapper<DBImportRequest> request) {
-        ResponseWrapper<PacketDto> responseWrapper = new ResponseWrapper();
-        PacketDto response = new PacketDto();
+        ResponseWrapper<PacketCreatorResponse> responseWrapper = new ResponseWrapper();
+        PacketCreatorResponse response = new PacketCreatorResponse();
         try {
             DBImportRequest importRequest = request.getRequest();
             response = dataExtractionService.createPacketFromDataBase(importRequest);

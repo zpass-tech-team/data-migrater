@@ -1,9 +1,7 @@
 package io.mosip.packet.extractor.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.itextpdf.layout.element.Link;
 import io.mosip.commons.packet.dto.Document;
 import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.commons.packet.dto.packet.PacketDto;
@@ -83,7 +81,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     private Statement statement = null;
 
-    private Map<FieldCategory, LinkedHashMap<String, Object>> dataMap = new HashMap<>();
+    private List<Map<FieldCategory, LinkedHashMap<String, Object>>> dataMap = new ArrayList<>();
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
@@ -96,7 +94,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         try {
             connectDatabase(dbImportRequest);
             populateTableFields(dbImportRequest);
-            ResultSet resultSet = readDataFromDatabase(dbImportRequest.getTableDetails().get(0));
+            ResultSet resultSet = readDataFromDatabase(dbImportRequest.getTableDetails().get(0), null);
 
             while (resultSet.next()) {
                 for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
@@ -127,8 +125,10 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     }
 
     @Override
-    public PacketDto createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
+    public PacketCreatorResponse createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
         PacketDto packetDto = null;
+        PacketCreatorResponse packetCreatorResponse = new PacketCreatorResponse();
+        packetCreatorResponse.setRID(new ArrayList<>());
         dataMap.clear();
 
         try {
@@ -139,110 +139,110 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             populateTableFields(dbImportRequest);
             connectDatabase(dbImportRequest);
 
-            dataMap.put(FieldCategory.DEMO, new LinkedHashMap<>());
-            dataMap.put(FieldCategory.BIO, new LinkedHashMap<>());
-            dataMap.put(FieldCategory.DOC, new LinkedHashMap<>());
-
             List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
             Collections.sort(tableRequestDtoList);
             TableRequestDto tableRequestDto  = tableRequestDtoList.get(0);
             ResultSet resultSet = null;
-            resultSet = readDataFromDatabase(tableRequestDto);
+            resultSet = readDataFromDatabase(tableRequestDto, null);
 
             if (resultSet != null) {
-                populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet);
+                populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null);
 
-                for (int i = 1; i < tableRequestDtoList.size(); i++) {
-                    tableRequestDto  = tableRequestDtoList.get(i);
-                    resultSet = null;
-                    resultSet = readDataFromDatabase(tableRequestDto);
+                for (Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap : dataMap) {
+                    for (int i = 1; i < tableRequestDtoList.size(); i++) {
+                        tableRequestDto  = tableRequestDtoList.get(i);
+                        resultSet = null;
+                        resultSet = readDataFromDatabase(tableRequestDto, dataHashMap);
 
-                    if (resultSet != null) {
-                        populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet);
-                    }
-                }
-
-                packetDto = new PacketDto();
-                packetDto.setProcess(dbImportRequest.getProcess());
-                packetDto.setSource(source);
-                packetDto.setSchemaVersion(String.valueOf(packetCreator.getLatestIdSchema().get("idVersion")));
-                packetDto.setAdditionalInfoReqId(null);
-                packetDto.setMetaInfo(null);
-                packetDto.setOfflineMode(false);
-
-                LinkedHashMap<String, Object> demoDetails = dataMap.get(FieldCategory.DEMO);
-                LinkedHashMap<String, Object> bioDetails = dataMap.get(FieldCategory.BIO);
-                LinkedHashMap<String, Object> docDetails = dataMap.get(FieldCategory.DOC);
-                LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
-
-                if (docDetails.size()>0) {
-                    packetDto.setDocuments(packetCreator.setDocuments(docDetails, dbImportRequest.getIgnoreIdSchemaFields(), metaInfo, demoDetails));
-                }
-
-                if (demoDetails.size() > 0) {
-                    packetDto.setFields(packetCreator.setDemographic(demoDetails, (bioDetails.size()>0), dbImportRequest.getIgnoreIdSchemaFields()));
-                }
-
-                if (bioDetails.size()>0) {
-                    packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo));
-                }
-
-                packetDto.setId(generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId()));
-                packetDto.setRefId(ConfigUtil.getConfigUtil().getCenterId()+ "_" + ConfigUtil.getConfigUtil().getMachineId());
-                packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
-                packetDto.setMetaInfo(metaInfo);
-                packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
-
-                LinkedHashMap<String, Object> idSchema = packetCreator.getLatestIdSchema();
-                packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
-                packetDto.setOfflineMode(true);
-
-                // TODO Remove this break while  integrate with production // This is Testing purpose only
-                List<PacketInfo> infoList = packetCreatorService.persistPacket(packetDto);
-
-                Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
-                if (identityFile.toFile().exists()) {
-                    PacketUploadDTO uploadDTO = new PacketUploadDTO();
-
-                    JSONParser parser = new JSONParser();
-                    JSONObject jsonObject = (JSONObject) parser.parse(IOUtils.toString(new FileInputStream(identityFile.toFile()), StandardCharsets.UTF_8));
-                    JSONObject identityJsonObject = (JSONObject) jsonObject.get("identity");
-                    for (Object entry : identityJsonObject.keySet()) {
-                        String val = (String) ((JSONObject)identityJsonObject.get(entry)).get("value");
-                        if (val.contains(",")) {
-                            String[] valList = val.split(",");
-                            String fullVal = null;
-
-                            for (String val2 : valList) {
-                                if(fullVal == null) {
-                                    fullVal= (String) demoDetails.get(val2);
-                                } else {
-                                    fullVal += " " + demoDetails.get(val2);
-                                }
-                            }
-                            uploadDTO.setValue(entry.toString(), fullVal);
-                        } else {
-                            uploadDTO.setValue(entry.toString(), demoDetails.get(entry));
+                        if (resultSet != null) {
+                            populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, dataHashMap);
                         }
                     }
 
-                    PacketInfo info = infoList.get(0);
-                    Path path = Paths.get(System.getProperty("user.dir"), "home/" + packetUploadPath);
-                    uploadDTO.setPacketPath(path.toAbsolutePath().toString());
-                    uploadDTO.setRegistrationType(dbImportRequest.getProcess());
-                    uploadDTO.setPacketId(info.getId());
-                    uploadDTO.setRegistrationId(info.getId().split("-")[0]);
-                    uploadDTO.setLangCode(primaryLanguage);
+                    packetDto = new PacketDto();
+                    packetDto.setProcess(dbImportRequest.getProcess());
+                    packetDto.setSource(source);
+                    packetDto.setSchemaVersion(String.valueOf(packetCreator.getLatestIdSchema().get("idVersion")));
+                    packetDto.setAdditionalInfoReqId(null);
+                    packetDto.setMetaInfo(null);
+                    packetDto.setOfflineMode(false);
 
-                    List<PacketUploadDTO> uploadList = new ArrayList<>();
-                    uploadList.add(uploadDTO);
-                    LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
-                    packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
-                    packetUploaderService.uploadSyncedPacket(uploadList, response);
+                    LinkedHashMap<String, Object> demoDetails = dataHashMap.get(FieldCategory.DEMO);
+                    LinkedHashMap<String, Object> bioDetails = dataHashMap.get(FieldCategory.BIO);
+                    LinkedHashMap<String, Object> docDetails = dataHashMap.get(FieldCategory.DOC);
 
-                    System.out.println((new Gson()).toJson(response));
-                } else {
-                    throw new Exception("Identity Mapping JSON File missing");
+                    LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
+
+                    if (docDetails.size()>0) {
+                        packetDto.setDocuments(packetCreator.setDocuments(docDetails, dbImportRequest.getIgnoreIdSchemaFields(), metaInfo, demoDetails));
+                    }
+
+                    if (demoDetails.size() > 0) {
+                        packetDto.setFields(packetCreator.setDemographic(demoDetails, (bioDetails.size()>0), dbImportRequest.getIgnoreIdSchemaFields()));
+                    }
+
+                    if (bioDetails.size()>0) {
+                        packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo));
+                    }
+
+                    packetDto.setId(generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId()));
+                    packetDto.setRefId(ConfigUtil.getConfigUtil().getCenterId()+ "_" + ConfigUtil.getConfigUtil().getMachineId());
+                    packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
+                    packetDto.setMetaInfo(metaInfo);
+                    packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
+
+                    LinkedHashMap<String, Object> idSchema = packetCreator.getLatestIdSchema();
+                    packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
+                    packetDto.setOfflineMode(true);
+
+                    // TODO Remove this break while  integrate with production // This is Testing purpose only
+                    List<PacketInfo> infoList = packetCreatorService.persistPacket(packetDto);
+
+                    Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
+
+                    if (identityFile.toFile().exists()) {
+                        PacketUploadDTO uploadDTO = new PacketUploadDTO();
+
+                        JSONParser parser = new JSONParser();
+                        JSONObject jsonObject = (JSONObject) parser.parse(IOUtils.toString(new FileInputStream(identityFile.toFile()), StandardCharsets.UTF_8));
+                        JSONObject identityJsonObject = (JSONObject) jsonObject.get("identity");
+                        for (Object entry : identityJsonObject.keySet()) {
+                            String val = (String) ((JSONObject)identityJsonObject.get(entry)).get("value");
+                            if (val.contains(",")) {
+                                String[] valList = val.split(",");
+                                String fullVal = null;
+
+                                for (String val2 : valList) {
+                                    if(fullVal == null) {
+                                        fullVal= (String) demoDetails.get(val2);
+                                    } else {
+                                        fullVal += " " + demoDetails.get(val2);
+                                    }
+                                }
+                                uploadDTO.setValue(entry.toString(), fullVal);
+                            } else {
+                                uploadDTO.setValue(entry.toString(), demoDetails.get(entry));
+                            }
+                        }
+
+                        PacketInfo info = infoList.get(0);
+                        Path path = Paths.get(System.getProperty("user.dir"), "home/" + packetUploadPath);
+                        uploadDTO.setPacketPath(path.toAbsolutePath().toString());
+                        uploadDTO.setRegistrationType(dbImportRequest.getProcess());
+                        uploadDTO.setPacketId(info.getId());
+                        uploadDTO.setRegistrationId(info.getId().split("-")[0]);
+                        uploadDTO.setLangCode(primaryLanguage);
+
+                        List<PacketUploadDTO> uploadList = new ArrayList<>();
+                        uploadList.add(uploadDTO);
+                        LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
+                        packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
+                        packetUploaderService.uploadSyncedPacket(uploadList, response);
+                        packetCreatorResponse.getRID().add(info.getId());
+                        System.out.println((new Gson()).toJson(response));
+                    } else {
+                        throw new Exception("Identity Mapping JSON File missing");
+                    }
                 }
             }
         } finally {
@@ -250,7 +250,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 conn.close();
         }
 
-        return packetDto;
+        return packetCreatorResponse;
     }
 
     private byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws Exception {
@@ -317,9 +317,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             }
         }
     }
-    private ResultSet readDataFromDatabase(TableRequestDto tableRequestDto) throws Exception {
+    private ResultSet readDataFromDatabase(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception {
         if(conn != null) {
-            return getResult(tableRequestDto);
+            return getResult(tableRequestDto, dataHashMap);
         } else
             throw new SQLException("Unable to Connect With Database. Please check the Configuration");
     }
@@ -332,7 +332,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         return val.substring(val.indexOf(":")+1).trim();
     }
 
-    private ResultSet getResult(TableRequestDto tableRequestDto) throws Exception {
+    private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap) throws Exception {
         if (tableRequestDto.getQueryType().equals(QuerySelection.TABLE)) {
 
             List<FieldCategory> tableMap = Arrays.asList(tableRequestDto.getFieldCategory());
@@ -366,19 +366,23 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             String filterCondition = null;
             boolean whereCondition= false;
 
-            for (QueryFilter queryFilter : tableRequestDto.getFilters()) {
-                if (!whereCondition) {
-                    filterCondition = " WHERE ";
-                    whereCondition=true;
-                } else {
-                    filterCondition += " AND ";
+            String selectSql = "SELECT " + columnNames + "  from " + tableRequestDto.getTableName();
+
+            if(tableRequestDto.getFilters() != null) {
+                for (QueryFilter queryFilter : tableRequestDto.getFilters()) {
+                    if (!whereCondition) {
+                        filterCondition = " WHERE ";
+                        whereCondition=true;
+                    } else {
+                        filterCondition += " AND ";
+                    }
+
+                    filterCondition += queryFilter.getFilterField() + " " + queryFilter.getFilterCondition().format(queryFilter.getFromValue(), queryFilter.getToValue(), queryFilter.getFieldType());
                 }
 
-                filterCondition += queryFilter.getFilterField() + " " + queryFilter.getFilterCondition().format(queryFilter.getFromValue(), queryFilter.getToValue(), queryFilter.getFieldType());
+                selectSql += filterCondition;
             }
 
-            String selectSql = "SELECT " + columnNames + "  from " + tableRequestDto.getTableName();
-            selectSql += filterCondition;
             return statement.executeQuery(formatter.replaceColumntoDataIfAny(selectSql, dataMap));
         } else if (tableRequestDto.getQueryType().equals(QuerySelection.SQL_QUERY)) {
             if(statement != null)
@@ -391,17 +395,28 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             return null;
     }
 
-    private void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet) throws Exception {
+    private void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2) throws Exception {
         List<FieldCategory> availableCategory = Arrays.asList(tableRequestDto.getFieldCategory());
 
         List<Map<String, Object>> resultData = extractResultSet(resultSet);
 
         for(Map<String, Object> result : resultData) {
-            for (FieldFormatRequest fieldFormatRequest : columnDetails) {
-                dataMapper(availableCategory, fieldFormatRequest, result);
-            }
-        }
+            Map<FieldCategory, LinkedHashMap<String, Object>> dataMap1 = new HashMap<>();
 
+            if (dataMap != null && dataMap.size() > 0 && dataMap2 != null) {
+                dataMap1 = dataMap2;
+            } else {
+                dataMap1.put(FieldCategory.DEMO, new LinkedHashMap<>());
+                dataMap1.put(FieldCategory.BIO, new LinkedHashMap<>());
+                dataMap1.put(FieldCategory.DOC, new LinkedHashMap<>());
+            }
+
+            for (FieldFormatRequest fieldFormatRequest : columnDetails) {
+                dataMapper(availableCategory, fieldFormatRequest, result, dataMap1);
+            }
+            if(dataMap2 == null)
+                dataMap.add(dataMap1);
+        }
     }
 
     private List<Map<String, Object>> extractResultSet(ResultSet resultSet) throws SQLException {
@@ -423,7 +438,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         return mapList;
     }
 
-    private void dataMapper(List<FieldCategory> availableCategory, FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet) throws Exception {
+    private void dataMapper(List<FieldCategory> availableCategory, FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
 
         if (availableCategory.contains(fieldFormatRequest.getFieldCategory())) {
@@ -463,14 +478,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     }
                 }
 
-                dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, demoValue);
-                dataMap.get(fieldFormatRequest.getFieldCategory()).put(originalField, demoValue);
+                dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, demoValue);
+                dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, demoValue);
 
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
 
                 byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldFormatRequest.getFieldName()));
                 byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
-                dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.get(fieldFormatRequest.getSrcFieldForQualityScore()) : ""), convertedImageData);
+                dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.get(fieldFormatRequest.getSrcFieldForQualityScore()) : ""), convertedImageData);
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
                 Document document = new Document();
                 document.setDocument(convertObjectToByteArray(resultSet.get(fieldFormatRequest.getFieldName())));
@@ -479,20 +494,20 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     String refField = documentAttributes.getDocumentRefNoField().contains("STATIC") ? "STATIC_" +  getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
                             :  documentAttributes.getDocumentRefNoField();
                     document.setRefNumber(String.valueOf(resultSet.get(refField)));
-                    dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + refField, document.getRefNumber());
+                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + refField, document.getRefNumber());
 
                     String formatField = documentAttributes.getDocumentFormatField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
                             :  documentAttributes.getDocumentFormatField();
                     document.setFormat(String.valueOf(resultSet.get(formatField)));
-                    dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + formatField, document.getFormat());
+                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + formatField, document.getFormat());
 
                     String codeField = documentAttributes.getDocumentCodeField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
                             :  documentAttributes.getDocumentCodeField();
                     document.setType(String.valueOf(resultSet.get(codeField)));
-                    dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + codeField, document.getType());
+                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + codeField, document.getType());
                 }
 
-                dataMap.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, mapper.writeValueAsString(document));
+                dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, mapper.writeValueAsString(document));
             }
         }
     }
