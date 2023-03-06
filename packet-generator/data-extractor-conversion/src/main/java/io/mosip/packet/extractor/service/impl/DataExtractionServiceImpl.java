@@ -21,6 +21,7 @@ import io.mosip.packet.extractor.util.*;
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import io.mosip.packet.manager.service.PacketCreatorService;
 //import io.mosip.packet.uploader.service.PacketUploaderService;
+import io.mosip.packet.manager.util.mock.sbi.devicehelper.MockDeviceUtil;
 import io.mosip.packet.uploader.service.PacketUploaderService;
 import org.apache.commons.io.IOUtils;
 import org.json.simple.JSONObject;
@@ -77,6 +78,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Autowired
     private QueryFormatter formatter;
 
+    @Autowired
+    private MockDeviceUtil mockDeviceUtil;
+
     private Connection conn = null;
 
     private Statement statement = null;
@@ -126,6 +130,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     @Override
     public PacketCreatorResponse createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
+        mockDeviceUtil.resetDevices();
+        mockDeviceUtil.initDeviceHelpers();
         PacketDto packetDto = null;
         PacketCreatorResponse packetCreatorResponse = new PacketCreatorResponse();
         packetCreatorResponse.setRID(new ArrayList<>());

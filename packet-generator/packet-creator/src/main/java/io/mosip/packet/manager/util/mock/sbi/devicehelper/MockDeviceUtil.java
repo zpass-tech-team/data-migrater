@@ -121,6 +121,11 @@ public class MockDeviceUtil {
         this.deviceHelpers.put(SBIConstant.MOSIP_BIOMETRIC_TYPE_FACE , sbiFaceHelper.getInstance(env));
     }
 
+    public void resetDevices() {
+        for(Map.Entry<String, SBIDeviceHelper> entry : this.deviceHelpers.entrySet())
+            entry.getValue().resetDevices();
+    }
+
     public SBIDeviceHelper getDeviceHelper (String deviceTypeName)
     {
         if (this.deviceHelpers != null && this.deviceHelpers.size() >= 0)

@@ -38,4 +38,10 @@ public class SBIFingerSlapHelper extends SBIDeviceHelper {
 		}
 		return instance; 
 	}
+
+
+	@Override
+	public void resetDevices() {
+		instance=null;
+	}
 }

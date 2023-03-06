@@ -36,4 +36,9 @@ public class SBIIrisDoubleHelper extends SBIDeviceHelper {
 		}
 		return instance;
 	}
+
+	@Override
+	public void resetDevices() {
+		instance=null;
+	}
 }

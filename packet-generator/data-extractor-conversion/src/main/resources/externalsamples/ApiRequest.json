@@ -1,0 +1,221 @@
+{
+  "id": "string",
+  "metadata": {},
+  "request": {
+    "dbType": "MSSQL",
+    "url": "localhost\\SQLEXPRESS",
+    "port": "",
+    "databaseName": "MOSIP_NEW",
+    "userId": "trialblazerseee",
+    "password": "ka09071989",
+    "process": "MIGRATOR",
+    "tableDetails": [
+      {
+        "queryType": "SQL_QUERY",
+        "executionOrderSequence": 2,
+        "tableName": "dbo.CITIZEN",
+        "fieldCategory": [
+          "DOC"
+        ],
+        "sqlQuery": "SELECT poc_dt_id, cit_id, doc_ref_no, 'JPG' AS doc_format, document FROM DBO.POC_DOCUMENTS WHERE cit_id = ${DEMO:CITIZEN_ID}"
+      },
+      {
+        "queryType": "TABLE",
+        "executionOrderSequence": 1,
+        "tableName": "dbo.CITIZEN",
+        "fieldCategory": [
+          "DEMO",
+          "BIO"
+        ],
+        "nonIdSchemaFields": [
+          "CITIZEN_ID"
+        ],
+        "filters" : [
+          {
+            "filterField" : "CITIZEN_ID",
+            "fieldType" : "VARCHAR",
+            "fromValue" : "2322428",
+            "filterCondition" : "EQUAL"
+          }
+        ]
+      }
+    ],
+    "ignoreIdSchemaFields": [
+      "proofOfConsent",
+      "proofOfIdentity",
+      "region",
+      "district",
+      "chiefdom",
+      "consentText",
+      "consent"
+    ],
+    "columnDetails": [
+      {
+        "fieldName": "CITIZEN_ID",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "CITIZEN_ID"
+      },
+      {
+        "fieldName": "FIRSTNAME",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "firstName"
+      },
+      {
+        "fieldName": "MIDDLENAME",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "middleName"
+      },
+      {
+        "fieldName": "LASTNAME",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "lastName"
+      },
+      {
+        "fieldName": "BIRTHDATE",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "dateOfBirth",
+        "destFormat": "YMD"
+      },
+      {
+        "fieldName": "GENDER",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "gender"
+      },
+      {
+        "fieldName": "PHONE_NUMBER",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "phone"
+      },
+      {
+        "fieldName": "NATIONALITY",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "residenceStatus",
+        "mvelExpressions": {
+          "mvelFile": "Nationality.mvel",
+          "parameters": [
+            {
+              "parameterName": "nationality",
+              "parameterType": "STRING",
+              "parameterValue": "${NATIONALITY}"
+            },
+            {
+              "parameterName": "nationalList",
+              "parameterType": "SQL",
+              "parameterValue": "SELECT lower(COUNTRY_CODE) FROM ECOWAS_MAP"
+            }
+          ]
+        }
+      },
+      {
+        "fieldName": "RESIDENTIAL_ADDRESS",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "addressLine"
+      },
+      {
+        "fieldName": "PERMANENT_ADDRESS",
+        "fieldCategory": "DEMO",
+        "fieldToMap": "permanentAddressLine"
+      },
+      {
+        "fieldName": "document",
+        "fieldCategory": "DOC",
+        "fieldToMap": "proofOfAddress",
+        "documentAttributes": {
+          "documentRefNoField": "doc_ref_no",
+          "documentFormatField": "doc_format",
+          "documentCodeField": "poc_dt_id"
+        }
+      },
+      {
+        "fieldName": "LEFT_THUMB",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_leftThumb"
+      },
+      {
+        "fieldName": "photo",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "JPEG",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_face"
+      },
+      {
+        "fieldName": "LEFT_INDEX_FINGER",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_leftIndex"
+      },
+      {
+        "fieldName": "LEFT_MIDDLE_FINGER",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_leftMiddle"
+      },
+      {
+        "fieldName": "LEFT_RING_FINGER",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_leftRing"
+      },
+      {
+        "fieldName": "LEFT_LITTLE_FINGER",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_leftLittle"
+      },
+      {
+        "fieldName": "RIGHT_THUMB",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_rightThumb"
+      },
+      {
+        "fieldName": "RIGHT_INDEX_FINGER",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_rightIndex"
+      },
+      {
+        "fieldName": "RIGHT_MIDDLE_FINGER",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_rightMiddle"
+      },
+      {
+        "fieldName": "RIGHT_RING_FINGER",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_rightRing"
+      },
+      {
+        "fieldName": "RIGHT_LITTLE_FINGER",
+        "fieldCategory": "BIO",
+        "primaryField": "FIRSTNAME",
+        "srcFormat": "WSQ",
+        "destFormat": "JP2",
+        "fieldToMap": "individualBiometrics_rightLittle"
+      }
+    ]
+  },
+  "requesttime": "2018-12-10T06:12:52.994Z",
+  "version": "string"
+}

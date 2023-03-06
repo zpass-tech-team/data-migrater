@@ -31,31 +31,13 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 public abstract class SBIDeviceHelper {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SBIDeviceHelper.class);	
-
-//	private String purpose;
-//	private String profileId;
-//	private String deviceId;
-//	private int deviceSubId;
-
+	private static final Logger LOGGER = LoggerFactory.getLogger(SBIDeviceHelper.class);
 	private String deviceType;
 	private String deviceSubType;
 
 	private DigitalId digitalId;
 	private DeviceInfo deviceInfo;
-//	private DiscoverDto discoverDto;
-//	private DeviceInfoDto deviceInfoDto;
-  //  private HashMap<String, String> statusMap = new HashMap<> ();
-    //private HashMap<String, Long> delayMap = new HashMap<> ();
-//    protected int qualityScore;
-//    protected boolean isQualityScoreSet;
-//    private boolean scoreFromIso = false;
-//    private SBICaptureInfo captureInfo;
-
-//	public abstract long initDevice ();
-//	public abstract int deInitDevice ();
-// /   public abstract int getLiveStream ();
-//    public abstract int getBioCapture (boolean isUsedForAuthenication) throws Exception;
+	public abstract void resetDevices();
 
 	public Environment env;
 

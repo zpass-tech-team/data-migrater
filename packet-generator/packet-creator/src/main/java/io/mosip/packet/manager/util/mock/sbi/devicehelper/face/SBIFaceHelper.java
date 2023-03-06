@@ -37,4 +37,9 @@ public class SBIFaceHelper extends SBIDeviceHelper {
 		}
 		return instance;
 	}
+
+	@Override
+	public void resetDevices() {
+		instance=null;
+	}
 }
