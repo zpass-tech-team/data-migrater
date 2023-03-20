@@ -245,7 +245,7 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
             return (String) ((LinkedHashMap<String, Object>) response.get(RegistrationConstants.REST_RESPONSE_BODY)).get(RegistrationConstants.UPLOAD_STATUS);
         }
 
-        throw new Exception("Packet Upload Error");
+        throw new Exception("Packet Upload Error : " + (new Gson()).toJson(response));
     }
 
         private String getEnvironmentProperty(String property) {

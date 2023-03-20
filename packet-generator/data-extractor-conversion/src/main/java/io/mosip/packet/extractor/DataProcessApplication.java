@@ -47,6 +47,7 @@ public class DataProcessApplication {
                 System.out.println("Request : " + (new Gson()).toJson(request));
                 PacketCreatorResponse response =  context.getBean(DataExtractionService.class).createPacketFromDataBase(request.getRequest());
                 System.out.println("Response : " + (new Gson()).toJson(response));
+                System.exit(0);
             }
         } catch (UnknownHostException e) {
             e.printStackTrace();

@@ -1,0 +1,1 @@
+java -Dmosip.packet.creator.refer.internal.json.file=true -jar ./data-extractor-conversion-1.2.0.1-SNAPSHOT.jar --spring.profiles.active=default --spring.config.location=application-default.properties

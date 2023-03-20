@@ -1,9 +1,0 @@
-def getNationality() {
-  Object nationality = identity.get('nationality');
-
-  if(nationality == 'SLE') {
-    return "SLE";
-  } else {
-    return "NFR";
-  }
-}
