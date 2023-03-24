@@ -2,7 +2,7 @@ package io.mosip.packet.extractor.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.kernel.core.exception.ExceptionUtils;
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.kernel.signature.constant.SignatureConstant;
@@ -13,7 +13,8 @@ import io.mosip.packet.core.constant.MDMError;
 import io.mosip.packet.core.constant.RegistrationConstants;
 
 import io.mosip.packet.core.constant.RegistrationExceptionConstants;
-import org.slf4j.LoggerFactory;
+import io.mosip.kernel.logger.logback.factory.Logfactory;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import org.apache.http.Consts;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -47,7 +48,7 @@ import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NA
 @Component
 public class MosipDeviceSpecificationHelper {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MosipDeviceSpecificationHelper.class);
+	private static final Logger LOGGER = DataProcessLogger.getLogger(MosipDeviceSpecificationHelper.class);
 	private static final String MDM_DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
 	private ObjectMapper mapper = new ObjectMapper();

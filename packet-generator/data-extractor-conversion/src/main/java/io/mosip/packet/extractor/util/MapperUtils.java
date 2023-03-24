@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.entity.RegistrationCommonFields;
 import io.mosip.packet.core.exception.RegBaseUncheckedException;
 import io.mosip.packet.core.logger.DataProcessLogger;

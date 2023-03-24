@@ -2,12 +2,13 @@ package io.mosip.packet.core.util.mockmds;
 
 import java.nio.charset.StandardCharsets;
 
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
-import org.slf4j.LoggerFactory;
+import io.mosip.kernel.logger.logback.factory.Logfactory;
+import io.mosip.packet.core.logger.DataProcessLogger;
 
 public class StringHelper {
-	private static final Logger LOGGER = LoggerFactory.getLogger(StringHelper.class);
+	private static final Logger LOGGER = DataProcessLogger.getLogger(StringHelper.class);
 
 	public static String base64UrlEncode (byte [] arg)
     {

@@ -1,7 +1,7 @@
 package io.mosip.packet.extractor.controller;
 
 import io.mosip.commons.packet.dto.packet.PacketDto;
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.dto.RequestWrapper;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
 import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
@@ -106,27 +107,30 @@ public class DataExtractionController {
         PacketCreatorResponse response = new PacketCreatorResponse();
         try {
             DBImportRequest importRequest = request.getRequest();
-            LOGGER.info("SESSION_ID", "MIGRATOR", importRequest.getProcess(), "DataExtractionController :: importPacketsFromOtherDomain():: entry");
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: entry");
             response = dataExtractionService.createPacketFromDataBase(importRequest);
-            LOGGER.info("SESSION_ID", "MIGRATOR", importRequest.getProcess(), "DataExtractionController :: importPacketsFromOtherDomain():: exit");
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: exit");
         } catch (SQLException e) {
             e.printStackTrace();
             ServiceError error = new ServiceError();
             error.setErrorCode("IX-0001");
             error.setMessage("Error : " + e.getMessage());
             responseWrapper.getErrors().add(error);
+            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, error.getErrorCode(), error.getMessage());
         } catch (IOException e) {
             e.printStackTrace();
             ServiceError error = new ServiceError();
             error.setErrorCode("IX-0001");
             error.setMessage("Error : " + e.getMessage());
             responseWrapper.getErrors().add(error);
+            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, error.getErrorCode(), error.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
             ServiceError error = new ServiceError();
             error.setErrorCode("IX-0001");
             error.setMessage("Error : " + e.getMessage());
             responseWrapper.getErrors().add(error);
+            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, error.getErrorCode(), error.getMessage());
         }
         responseWrapper.setResponse(response);
         return new ResponseEntity<ResponseWrapper>(responseWrapper, HttpStatus.OK);

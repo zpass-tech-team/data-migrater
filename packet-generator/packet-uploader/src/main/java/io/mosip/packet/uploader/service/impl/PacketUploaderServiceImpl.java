@@ -2,6 +2,7 @@ package io.mosip.packet.uploader.service.impl;
 
 import com.google.gson.Gson;
 import io.mosip.commons.packet.spi.IPacketCryptoService;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.packetuploader.exception.ConnectionException;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
@@ -16,6 +17,7 @@ import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
 import io.mosip.packet.core.dto.upload.RegistrationPacketSyncDTO;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.upload.SyncRegistrationDTO;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.core.util.regclient.ServiceDelegateUtil;
 import io.mosip.packet.uploader.service.PacketUploaderService;
@@ -49,9 +51,12 @@ import java.util.stream.Collectors;
 import static io.mosip.kernel.core.util.JsonUtils.javaObjectToJsonString;
 import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
+import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Service
 public class PacketUploaderServiceImpl  implements PacketUploaderService {
+
+    private static final Logger LOGGER = DataProcessLogger.getLogger(PacketUploaderServiceImpl.class);
 
         @Autowired
         private ServiceDelegateUtil restApiClient;
@@ -97,7 +102,7 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
             this.machineId = machineId;
             restApiClient.setCenterMachineId(centerId, machineId);
             Object obj = syncRIDToServerWithRetryWrapper(packets);
-            System.out.println((new Gson()).toJson(obj));
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Sync API Response" + (new Gson()).toJson(obj));
         } catch (JsonProcessingException | KeymanagerServiceException e) {
             e.printStackTrace();
         }

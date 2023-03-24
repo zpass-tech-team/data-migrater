@@ -10,11 +10,12 @@ import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Random;
 
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.SBIConstant;
 import io.mosip.packet.core.dto.mockmds.DeviceInfo;
 import io.mosip.packet.core.dto.mockmds.DigitalId;
-import org.slf4j.LoggerFactory;
+import io.mosip.kernel.logger.logback.factory.Logfactory;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.util.mockmds.CryptoUtility;
 import io.mosip.packet.core.util.mockmds.FileHelper;
 import io.mosip.packet.core.util.mockmds.StringHelper;
@@ -31,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 public abstract class SBIDeviceHelper {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SBIDeviceHelper.class);
+	private static final Logger LOGGER = DataProcessLogger.getLogger(SBIDeviceHelper.class);
 	private String deviceType;
 	private String deviceSubType;
 

@@ -1,7 +1,7 @@
 package io.mosip.packet.core.service.impl;
 
 import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.packetuploader.exception.ConnectionException;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;

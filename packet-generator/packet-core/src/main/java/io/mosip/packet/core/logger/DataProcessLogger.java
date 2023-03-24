@@ -1,14 +1,14 @@
 package io.mosip.packet.core.logger;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.kernel.logger.logback.factory.Logfactory;
 
 public final class DataProcessLogger {
     private DataProcessLogger(){
     }
 
     public static Logger getLogger(Class<?> clazz) {
-        return LoggerFactory.getLogger(clazz);
+        return Logfactory.getSlf4jLogger(clazz);
     }
 }

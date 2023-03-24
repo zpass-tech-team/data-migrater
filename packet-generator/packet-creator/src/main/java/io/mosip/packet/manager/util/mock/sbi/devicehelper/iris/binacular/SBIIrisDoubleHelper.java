@@ -1,9 +1,10 @@
 package io.mosip.packet.manager.util.mock.sbi.devicehelper.iris.binacular;
 
 
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.SBIConstant;
-import org.slf4j.LoggerFactory;
+import io.mosip.kernel.logger.logback.factory.Logfactory;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.SBIDeviceHelper;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.finger.slap.SBIFingerSlapHelper;
 import lombok.Getter;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 public class SBIIrisDoubleHelper extends SBIDeviceHelper {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SBIIrisDoubleHelper.class);
+	private static final Logger LOGGER = DataProcessLogger.getLogger(SBIIrisDoubleHelper.class);
 
 	private SBIIrisDoubleHelper() {
 	}

@@ -11,7 +11,7 @@ import java.util.Iterator;
 
 import javax.net.ssl.SSLContext;
 
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.LoggerFileConstant;
 import io.mosip.packet.core.dto.PasswordRequest;
 import io.mosip.packet.core.dto.request.Metadata;
@@ -19,6 +19,7 @@ import io.mosip.packet.core.dto.request.SecretKeyRequest;
 import io.mosip.packet.core.dto.request.TokenRequestDTO;
 import io.mosip.packet.core.exception.TokenGenerationFailedException;
 import io.mosip.packet.core.logger.DataProcessLogger;
+import net.logstash.logback.appender.listener.AppenderListener;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.http.Header;
@@ -46,6 +47,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 import com.google.gson.Gson;
 
@@ -88,8 +90,8 @@ public class RestApiClient {
 			result = (T) restTemplate.exchange(uri, HttpMethod.GET, setRequestHeader(null, null), responseType)
 					.getBody();
 		} catch (Exception e) {
-			logger.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-					LoggerFileConstant.APPLICATIONID.toString(), e.getMessage() + ExceptionUtils.getStackTrace(e));
+			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+					APPLICATION_ID, e.getMessage() + ExceptionUtils.getStackTrace(e));
 			throw e;
 		}
 		return result;
@@ -115,13 +117,13 @@ public class RestApiClient {
 		T result = null;
 		try {
 			restTemplate = getRestTemplate();
-			logger.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-					LoggerFileConstant.APPLICATIONID.toString(), uri);
+			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+					APPLICATION_ID, uri);
 			result = (T) restTemplate.postForObject(uri, setRequestHeader(requestType, mediaType), responseClass);
 
 		} catch (Exception e) {
-			logger.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-					LoggerFileConstant.APPLICATIONID.toString(), e.getMessage() + ExceptionUtils.getStackTrace(e));
+			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+					APPLICATION_ID, e.getMessage() + ExceptionUtils.getStackTrace(e));
 
 			throw e;
 		}
@@ -149,14 +151,14 @@ public class RestApiClient {
 		T result = null;
 		try {
 			restTemplate = getRestTemplate();
-			logger.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-					LoggerFileConstant.APPLICATIONID.toString(), uri);
+			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+					APPLICATION_ID, uri);
 			result = (T) restTemplate.patchForObject(uri, setRequestHeader(requestType, mediaType), responseClass);
 
 		} catch (Exception e) {
 
-			logger.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-					LoggerFileConstant.APPLICATIONID.toString(), e.getMessage() + ExceptionUtils.getStackTrace(e));
+			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+					APPLICATION_ID, e.getMessage() + ExceptionUtils.getStackTrace(e));
 
 			throw e;
 		}
@@ -191,16 +193,16 @@ public class RestApiClient {
 		ResponseEntity<T> response = null;
 		try {
 			restTemplate = getRestTemplate();
-			logger.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-					LoggerFileConstant.APPLICATIONID.toString(), uri);
+			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+					APPLICATION_ID, uri);
 
 			response = (ResponseEntity<T>) restTemplate.exchange(uri, HttpMethod.PUT,
 					setRequestHeader(requestType.toString(), mediaType), responseClass);
 			result = response.getBody();
 		} catch (Exception e) {
 
-			logger.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-					LoggerFileConstant.APPLICATIONID.toString(), e.getMessage() + ExceptionUtils.getStackTrace(e));
+			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+					APPLICATION_ID, e.getMessage() + ExceptionUtils.getStackTrace(e));
 
 			throw e;
 		}
@@ -208,12 +210,9 @@ public class RestApiClient {
 	}
 
 	public RestTemplate getRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
-		logger.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-				LoggerFileConstant.APPLICATIONID.toString(), Arrays.asList(environment.getActiveProfiles()).toString());
+		logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+				APPLICATION_ID, Arrays.asList(environment.getActiveProfiles()).toString());
 		if (Arrays.stream(environment.getActiveProfiles()).anyMatch("dev-k8"::equals)) {
-			logger.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-					LoggerFileConstant.APPLICATIONID.toString(),
-					Arrays.asList(environment.getActiveProfiles()).toString());
 			return new RestTemplate();
 		} else {
 			TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
@@ -312,8 +311,8 @@ public class RestApiClient {
 				System.setProperty("token", token.substring(14, token.indexOf(';')));
 				return token.substring(0, token.indexOf(';'));
 			} catch (IOException e) {
-				logger.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-						LoggerFileConstant.APPLICATIONID.toString(), e.getMessage() + ExceptionUtils.getStackTrace(e));
+				logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+						APPLICATION_ID, e.getMessage() + ExceptionUtils.getStackTrace(e));
 				throw e;
 			}
 		}
@@ -349,8 +348,8 @@ public class RestApiClient {
 
 			result = (T) restTemplate.exchange(uri, httpMethod, entity, responseClass).getBody();
 		} catch (Exception e) {
-			logger.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
-					LoggerFileConstant.APPLICATIONID.toString(), e.getMessage() + ExceptionUtils.getStackTrace(e));
+			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+					APPLICATION_ID, e.getMessage() + ExceptionUtils.getStackTrace(e));
 			throw e;
 		}
 		return result;

@@ -7,7 +7,7 @@ import java.util.*;
 
 import io.mosip.commons.packet.constants.Biometric;
 import io.mosip.commons.packet.constants.PacketManagerConstants;
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.RegistrationConstants;
 import io.mosip.packet.core.dto.mockmds.BioMetricsDto;
 import io.mosip.packet.core.dto.packet.BiometricsDto;

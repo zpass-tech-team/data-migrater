@@ -1,9 +1,10 @@
 package io.mosip.packet.manager.util.mock.sbi.devicehelper.finger.slap;
 
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.packet.core.constant.SBIConstant;
-import org.slf4j.LoggerFactory;
+import io.mosip.kernel.logger.logback.factory.Logfactory;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.SBIDeviceHelper;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,7 +18,7 @@ import java.net.InetAddress;
 @Getter
 @Setter
 public class SBIFingerSlapHelper extends SBIDeviceHelper {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SBIFingerSlapHelper.class);
+	private static final Logger LOGGER = DataProcessLogger.getLogger(SBIFingerSlapHelper.class);
 
 	private SBIFingerSlapHelper() {
 	}

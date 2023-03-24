@@ -17,9 +17,10 @@ import javax.sql.DataSource;
 
 import io.mosip.packet.core.constant.RegistrationExceptionConstants;
 import io.mosip.packet.core.logger.DataProcessLogger;
+import io.mosip.packet.core.logger.DerbySlf4jBridge;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -58,9 +59,9 @@ import static io.mosip.packet.core.constant.RegistrationConstants.*;
         "io.mosip.kernel.partnercertservice.service", "io.mosip.kernel.partnercertservice.helper" })
 public class HibernateConfig extends HibernateDaoConfig {
 
-    private static final Logger LOGGER = DataProcessLogger.getLogger(HibernateConfig.class);
+    private static Logger LOGGER = DataProcessLogger.getLogger(HibernateConfig.class);
 
-    private static final String LOGGER_CLASS_NAME = "REGISTRATION - DAO Config - DB";
+    private static final String LOGGER_CLASS_NAME = "SESSION_ID";
     private static final String dbPath = "db/migrator";
     private static final String DRIVER_CLASS_NAME = "org.apache.derby.jdbc.EmbeddedDriver";
     private static final String URL = "jdbc:derby:%s;bootPassword=%s";
@@ -193,8 +194,8 @@ public class HibernateConfig extends HibernateDaoConfig {
 
     @VisibleForTesting
     private void setupDataSource() throws Exception {
-        LOGGER.info(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID", "****** SETTING UP DATASOURCE *******");
-        System.setProperty("derby.stream.error.method", "io.mosip.registration.config.DerbySlf4jBridge.bridge");
+        LOGGER.info(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID, "SETTING UP DATASOURCE");
+        System.setProperty("derby.stream.error.method", "io.mosip.packet.core.logger.DerbySlf4jBridge.bridge");
         createDatabase();
         reEncryptExistingDB();
         setupUserAndPermits();
@@ -212,9 +213,9 @@ public class HibernateConfig extends HibernateDaoConfig {
             DriverManager.getConnection(SHUTDOWN_URL);
         } catch (SQLException ex) {
             if (((ex.getErrorCode() == 50000) && ("XJ015".equals(ex.getSQLState())))) {
-                LOGGER.info(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID", "Derby DB shutdown successful.");
+                LOGGER.info(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID, "Derby DB shutdown successful.");
             } else
-                LOGGER.error(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID", ExceptionUtils.getStackTrace(ex));
+                LOGGER.error(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID, ExceptionUtils.getStackTrace(ex));
         }
     }
 
@@ -223,7 +224,7 @@ public class HibernateConfig extends HibernateDaoConfig {
      * db -> create DB secret -> runs initial DB script -> shutdown database
      */
     private void createDatabase() throws Exception {
-        LOGGER.debug(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID", "****** DATASOURCE dbPath : " + dbPath);
+        LOGGER.debug(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID, "****** DATASOURCE dbPath : " + dbPath);
         Connection connection = null;
         try {
             if (createDb(dbPath)) {
@@ -233,18 +234,18 @@ public class HibernateConfig extends HibernateDaoConfig {
                         dbConf.get(USERNAME_KEY), dbConf.get(PWD_KEY));
                 SQLWarning sqlWarning = connection.getWarnings();
                 if (sqlWarning != null) {
-                    LOGGER.error(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID",
+                    LOGGER.error(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID,
                             ExceptionUtils.getStackTrace(sqlWarning.getCause()));
                     throw new Exception(sqlWarning.getCause());// SQLWarning will not be available once connection is
                     // closed.
                 }
                 org.apache.derby.tools.ij.runScript(connection,
-                        HibernateConfig.class.getClassLoader().getResourceAsStream("initial.sql"), "UTF-8", System.out,
+                        HibernateConfig.class.getClassLoader().getResourceAsStream("initial.sql"), "UTF-8", DerbySlf4jBridge.ijBridge(),
                         "UTF-8");
 
                 Path path = Paths.get(System.getProperty("user.dir"), "external_db.sql");
                 if(path.toFile().exists()) {
-                    org.apache.derby.tools.ij.runScript(connection, new FileInputStream(path.toFile()), "UTF-8", System.out, "UTF-8");
+                    org.apache.derby.tools.ij.runScript(connection, new FileInputStream(path.toFile()), "UTF-8", DerbySlf4jBridge.ijBridge(), "UTF-8");
                 }
 
                 shutdownDatabase();
@@ -263,18 +264,18 @@ public class HibernateConfig extends HibernateDaoConfig {
             Map<String, String> dbConf = getDBConf();
             if (dbConf.get(STATE_KEY).equals(ERROR_STATE)) {
                 shutdownDatabase(); // We need to shutdown DB before encrypting
-                LOGGER.info(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID",
+                LOGGER.info(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID,
                         "IMP : (Re)Encrypting DB started ......");
                 connection = DriverManager.getConnection("jdbc:derby:" + dbPath + ";" + ENCRYPTION_URL_ATTRIBUTES
                         + ";bootPassword=" + dbConf.get(BOOTPWD_KEY), dbConf.get(USERNAME_KEY), dbConf.get(PWD_KEY));
                 SQLWarning sqlWarning = connection.getWarnings();
                 if (sqlWarning != null) {
-                    LOGGER.error(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID",
+                    LOGGER.error(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID,
                             ExceptionUtils.getStackTrace(sqlWarning.getCause()));
                     throw new Exception(sqlWarning.getCause()); // SQLWarning will not be available once connection is
                     // closed.
                 }
-                LOGGER.info(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID", "IMP : (Re)Encrypting DB Done ......");
+                LOGGER.info(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID, "IMP : (Re)Encrypting DB Done ......");
                 dbConf.put(STATE_KEY, SAFE_STATE);
                 saveDbConf(dbConf);
             }
@@ -285,7 +286,7 @@ public class HibernateConfig extends HibernateDaoConfig {
     }
 
     private void setupUserAndPermits() throws Exception {
-        LOGGER.info(LOGGER_CLASS_NAME, "APPLICATION_NAME", "Checking Derby Security properties", "Started ... ");
+        LOGGER.info(LOGGER_CLASS_NAME, APPLICATION_NAME, "Checking Derby Security properties", "Started ... ");
         Connection connection = null;
         try {
             Map<String, String> dbConf = getDBConf();
@@ -293,7 +294,7 @@ public class HibernateConfig extends HibernateDaoConfig {
                     dbConf.get(USERNAME_KEY), dbConf.get(PWD_KEY));
             if (!isUserSetupComplete(connection, dbConf)) {
                 try (Statement statement = connection.createStatement()) {
-                    LOGGER.info(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID",
+                    LOGGER.info(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID,
                             "Started setting up DB user and access permits...");
                     // setting requireAuthentication
                     statement.executeUpdate(
@@ -317,10 +318,10 @@ public class HibernateConfig extends HibernateDaoConfig {
                     // shutdown derby db, for the changes to be applied
                     shutdownDatabase();
                 } catch (Throwable t) {
-                    LOGGER.error(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID", ExceptionUtils.getStackTrace(t));
+                    LOGGER.error(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID, ExceptionUtils.getStackTrace(t));
                     cleanupUserAuthAndPermits(connection, dbConf);
                 }
-                LOGGER.info(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID", "Security setup check completed.");
+                LOGGER.info(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID, "Security setup check completed.");
             }
         } finally {
             if (connection != null)
@@ -338,10 +339,10 @@ public class HibernateConfig extends HibernateDaoConfig {
             isKeySet(statement, "derby.database.fullAccessUsers", dbConf.get(USERNAME_KEY));
             isKeySet(statement, "derby.database.propertiesOnly", "true");
             completed = true;
-            LOGGER.info(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID",
+            LOGGER.info(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID,
                     "Security setup check is complete & success.");
         } catch (Exception regBaseCheckedException) {
-            LOGGER.error(LOGGER_CLASS_NAME, "APPLICATION_NAME", "APPLICATION_ID",
+            LOGGER.error(LOGGER_CLASS_NAME, APPLICATION_NAME, APPLICATION_ID,
                     ExceptionUtils.getStackTrace(regBaseCheckedException));
         }
         return completed;
@@ -369,7 +370,7 @@ public class HibernateConfig extends HibernateDaoConfig {
             statement.executeUpdate(
                     "CALL SYSCS_UTIL.SYSCS_SET_DATABASE_PROPERTY('derby.database.propertiesOnly', 'false')");
         } catch (SQLException sqlException) {
-            LOGGER.error(LOGGER_CLASS_NAME, "APPLICATION_NAME", "Failed to cleanup security properties",
+            LOGGER.error(LOGGER_CLASS_NAME, APPLICATION_NAME, "Failed to cleanup security properties",
                     ExceptionUtils.getStackTrace(sqlException));
         } finally {
             shutdownDatabase();// shutdown derby db, for the changes to be applied
@@ -480,7 +481,7 @@ public class HibernateConfig extends HibernateDaoConfig {
         Path path = Paths.get(ClientCryptoManagerConstant.KEY_PATH, ClientCryptoManagerConstant.KEYS_DIR,
                 ClientCryptoManagerConstant.DB_PWD_FILE);
         if (!path.toFile().exists()) {
-            LOGGER.info("REGISTRATION  - DaoConfig", "APPLICATION_NAME", "APPLICATION_ID",
+            LOGGER.info("REGISTRATION  - DaoConfig", APPLICATION_NAME, APPLICATION_ID,
                     "getDBSecret invoked - DB_PWD_FILE not found !");
 
             StringBuilder dbConf = new StringBuilder();
@@ -534,7 +535,7 @@ public class HibernateConfig extends HibernateDaoConfig {
         try (FileOutputStream fos = new FileOutputStream(Paths.get(ClientCryptoManagerConstant.KEY_PATH,
                 ClientCryptoManagerConstant.KEYS_DIR, ClientCryptoManagerConstant.DB_PWD_FILE).toFile())) {
             fos.write(java.util.Base64.getEncoder().encode(cipher));
-            LOGGER.debug("REGISTRATION  - DaoConfig", "APPLICATION_NAME", "APPLICATION_ID", "Saved DB configuration");
+            LOGGER.debug("REGISTRATION  - DaoConfig", APPLICATION_NAME, APPLICATION_ID, "Saved DB configuration");
         }
     }
 }

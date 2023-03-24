@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import io.micrometer.core.annotation.Timed;
-import org.slf4j.Logger;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.packetuploader.exception.ConnectionException;
 import io.mosip.packet.core.constant.RegistrationConstants;
 import io.mosip.packet.core.dto.ResponseWrapper;

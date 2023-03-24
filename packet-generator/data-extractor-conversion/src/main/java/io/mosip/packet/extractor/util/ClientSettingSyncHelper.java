@@ -13,11 +13,12 @@ import io.mosip.packet.core.constant.RegistrationConstants;
 import io.mosip.packet.core.dto.config.SyncDataBaseDto;
 import io.mosip.packet.core.dto.config.SyncDataResponseDto;
 import io.mosip.packet.core.exception.RegBaseUncheckedException;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.*;
 import io.mosip.kernel.clientcrypto.util.ClientCryptoUtils;
 import org.json.JSONArray;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.kernel.logger.logback.factory.Logfactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -29,7 +30,7 @@ import lombok.NonNull;
 @Component
 public class ClientSettingSyncHelper {
 	
-	private static final Logger LOGGER = LoggerFactory.getLogger(ClientSettingSyncHelper.class);
+	private static final Logger LOGGER = DataProcessLogger.getLogger(ClientSettingSyncHelper.class);
 	
 	private static final String ENTITY_PACKAGE_NAME = "io.mosip.packet.core.entity.";
 	private static final String FIELD_TYPE_DYNAMIC_URL = "dynamic-url";

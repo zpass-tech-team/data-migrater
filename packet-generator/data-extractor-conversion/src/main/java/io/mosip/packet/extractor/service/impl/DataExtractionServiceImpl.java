@@ -13,6 +13,7 @@ import io.mosip.packet.core.dto.mvel.MvelParameter;
 import io.mosip.packet.core.dto.masterdata.DocumentCategoryDto;
 import io.mosip.packet.core.dto.masterdata.DocumentTypeExtnDto;
 import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.util.DateUtils;
 import io.mosip.packet.core.util.QueryFormatter;
 import io.mosip.packet.extractor.service.CustomNativeRepository;
@@ -26,6 +27,7 @@ import io.mosip.packet.uploader.service.PacketUploaderService;
 import org.apache.commons.io.IOUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import io.mosip.kernel.core.logger.spi.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -39,8 +41,13 @@ import java.sql.*;
 import java.util.*;
 import java.util.Date;
 
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
+
 @Service
 public class DataExtractionServiceImpl implements DataExtractionService {
+
+    private static final Logger LOGGER = DataProcessLogger.getLogger(DataExtractionServiceImpl.class);
 
     @Autowired
     private BioConversion bioConversion;
@@ -130,6 +137,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     @Override
     public PacketCreatorResponse createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionServiceImpl :: createPacketFromDataBase():: entry");
         mockDeviceUtil.resetDevices();
         mockDeviceUtil.initDeviceHelpers();
         PacketDto packetDto = null;
@@ -245,7 +253,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
                         packetUploaderService.uploadSyncedPacket(uploadList, response);
                         packetCreatorResponse.getRID().add(info.getId());
-                        System.out.println((new Gson()).toJson(response));
+                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response : "+ (new Gson()).toJson(response));
                     } else {
                         throw new Exception("Identity Mapping JSON File missing");
                     }
@@ -255,6 +263,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             if (conn != null)
                 conn.close();
         }
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploaded List : " + (new Gson()).toJson(packetCreatorResponse));
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionServiceImpl :: createPacketFromDataBase():: exit");
 
         return packetCreatorResponse;
     }
@@ -277,7 +287,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             conn = DriverManager.getConnection("jdbc:sqlserver://" + dbImportRequest.getUrl() + ";sslProtocol=TLSv1.2;databaseName=" + dbImportRequest.getDatabaseName()+ ";Trusted_Connection=True;", dbImportRequest.getUserId(), dbImportRequest.getPassword());
         }
 
-        System.out.println("Database Successfully connected");
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "External DataBase" + dbImportRequest.getUrl() +  "Database Successfully connected");
+        System.out.println("External DataBase " + dbImportRequest.getUrl() + " Successfully connected");
     }
 
     private void populateTableFields(DBImportRequest dbImportRequest) throws Exception {

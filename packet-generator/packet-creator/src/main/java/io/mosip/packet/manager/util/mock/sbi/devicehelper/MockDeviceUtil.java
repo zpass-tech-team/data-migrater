@@ -2,6 +2,7 @@ package io.mosip.packet.manager.util.mock.sbi.devicehelper;
 
 import io.mosip.packet.core.constant.SBIConstant;
 import io.mosip.packet.core.dto.mockmds.*;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.util.mockmds.CryptoUtility;
 import io.mosip.packet.core.util.mockmds.StringHelper;
 import io.mosip.packet.manager.service.mockmds.SBIJsonInfo;
@@ -16,6 +17,7 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
+import io.mosip.kernel.core.logger.spi.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -28,8 +30,13 @@ import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
+
 @Component
 public class MockDeviceUtil {
+
+    private Logger LOGGER = DataProcessLogger.getLogger(MockDeviceUtil.class);
 
     @Autowired
     private SBIFingerSlapHelper sbiFingerSlapHelper;
@@ -51,6 +58,7 @@ public class MockDeviceUtil {
     public BioMetricsDto getBiometricData (String deviceTypeName, CaptureRequestDto requestObject, String bioValue,
                                             String lang, String errorCode) throws JsonGenerationException, JsonMappingException, IOException, NoSuchAlgorithmException, DecoderException
     {
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "MockDeviceUtil :: getBiometricData():: entry");
         SBIDeviceHelper deviceHelper = getDeviceHelper(deviceTypeName);
         DeviceInfo deviceInfo = deviceHelper.getDeviceInfo();
 
@@ -99,6 +107,7 @@ public class MockDeviceUtil {
         System.arraycopy (currentBioDataHash, 0, finalBioDataHash, previousBioDataHash.length, currentBioDataHash.length);
 
         biometric.setHash(toHex (generateHash (finalBioDataHash)));
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "MockDeviceUtil :: getBiometricData():: exit");
 
         return biometric;
     }
@@ -114,14 +123,18 @@ public class MockDeviceUtil {
     }
 
     public void initDeviceHelpers() {
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "MockDeviceUtil :: initDeviceHelpers():: entry");
         this.deviceHelpers.put(SBIConstant.MOSIP_BIOMETRIC_TYPE_FINGER , sbiFingerSlapHelper.getInstance(env));
         this.deviceHelpers.put(SBIConstant.MOSIP_BIOMETRIC_TYPE_IRIS , sbiIrisDoubleHelper.getInstance(env));
         this.deviceHelpers.put(SBIConstant.MOSIP_BIOMETRIC_TYPE_FACE , sbiFaceHelper.getInstance(env));
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "MockDeviceUtil :: initDeviceHelpers():: exit");
     }
 
     public void resetDevices() {
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "MockDeviceUtil :: resetDevices():: entry");
         for(Map.Entry<String, SBIDeviceHelper> entry : this.deviceHelpers.entrySet())
             entry.getValue().resetDevices();
+        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "MockDeviceUtil :: resetDevices():: exit");
     }
 
     public SBIDeviceHelper getDeviceHelper (String deviceTypeName)

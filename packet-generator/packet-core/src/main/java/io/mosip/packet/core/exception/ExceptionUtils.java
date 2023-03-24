@@ -1,8 +1,9 @@
 package io.mosip.packet.core.exception;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.kernel.logger.logback.factory.Logfactory;
+import io.mosip.packet.core.logger.DataProcessLogger;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -17,7 +18,7 @@ import java.io.StringWriter;
  */
 public final class ExceptionUtils {
 
-	private static final Logger logger = LoggerFactory.getLogger(ExceptionUtils.class);
+	private static final Logger logger = DataProcessLogger.getLogger(ExceptionUtils.class);
 
 	private ExceptionUtils() {
 
