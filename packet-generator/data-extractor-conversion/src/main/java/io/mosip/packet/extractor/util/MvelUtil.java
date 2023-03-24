@@ -1,8 +1,8 @@
 package io.mosip.packet.extractor.util;
 
+import org.slf4j.Logger;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import org.mvel2.MVEL;
-import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 import java.io.FileInputStream;
 import java.nio.file.Path;

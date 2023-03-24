@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.slf4j.Logger;
 import io.mosip.packet.core.entity.RegistrationCommonFields;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import org.json.JSONObject;
-import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 import io.mosip.kernel.core.dataaccess.exception.DataAccessLayerException;

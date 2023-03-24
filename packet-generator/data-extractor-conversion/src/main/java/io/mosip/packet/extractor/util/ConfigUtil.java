@@ -81,28 +81,10 @@ public class ConfigUtil {
                 configUtil.machineName = InetAddress.getLocalHost().getHostName().toLowerCase();
                 configUtil.regClientVersion = env.getProperty("mosip.id.regclient.current.version");
                 configUtil.selectedLanguages = env.getProperty("mosip.selected.languages");
-                createDatabase();
                 syncClientSettings();
                 fetchPolicy();
             }
         }
-    }
-
-    public void createDatabase() throws Exception {
-            Connection connection = null;
-            try {
-                connection = DriverManager.getConnection(env.getProperty("spring.datasource.url"), env.getProperty("spring.datasource.username"), env.getProperty("spring.datasource.password"));
-
-                org.apache.derby.tools.ij.runScript(connection, ConfigUtil.class.getClassLoader().getResourceAsStream("initial.sql"), "UTF-8", System.out, "UTF-8");
-
-                Path path = Paths.get(System.getProperty("user.dir"), "external_db.sql");
-                if(path.toFile().exists()) {
-                    org.apache.derby.tools.ij.runScript(connection, new FileInputStream(path.toFile()), "UTF-8", System.out, "UTF-8");
-                }
-            } finally {
-                if (connection != null)
-                    connection.close();
-            }
     }
 
     public static ConfigUtil getConfigUtil() {

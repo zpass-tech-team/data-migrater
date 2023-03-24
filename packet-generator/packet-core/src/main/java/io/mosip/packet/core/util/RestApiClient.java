@@ -11,6 +11,7 @@ import java.util.Iterator;
 
 import javax.net.ssl.SSLContext;
 
+import org.slf4j.Logger;
 import io.mosip.packet.core.constant.LoggerFileConstant;
 import io.mosip.packet.core.dto.PasswordRequest;
 import io.mosip.packet.core.dto.request.Metadata;
@@ -31,7 +32,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.TrustStrategy;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.env.Environment;

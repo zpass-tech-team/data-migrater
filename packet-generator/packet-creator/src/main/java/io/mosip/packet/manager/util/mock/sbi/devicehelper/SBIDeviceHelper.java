@@ -10,9 +10,11 @@ import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Random;
 
+import org.slf4j.Logger;
 import io.mosip.packet.core.constant.SBIConstant;
 import io.mosip.packet.core.dto.mockmds.DeviceInfo;
 import io.mosip.packet.core.dto.mockmds.DigitalId;
+import org.slf4j.LoggerFactory;
 import io.mosip.packet.core.util.mockmds.CryptoUtility;
 import io.mosip.packet.core.util.mockmds.FileHelper;
 import io.mosip.packet.core.util.mockmds.StringHelper;
@@ -20,8 +22,6 @@ import io.mosip.packet.manager.util.mock.sbi.JwtUtility;
 import lombok.Getter;
 import lombok.Setter;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;

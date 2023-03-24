@@ -1,14 +1,14 @@
 package io.mosip.packet.core.util.mockmds;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class FileHelper {
-	private static final Logger LOGGER = LoggerFactory.getLogger(FileHelper.class);	
+	private static final Logger LOGGER = LoggerFactory.getLogger(FileHelper.class);
 
 	public static boolean exists (String filename)
 	{

@@ -2,6 +2,7 @@ package io.mosip.packet.extractor.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.kernel.core.exception.ExceptionUtils;
+import org.slf4j.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.kernel.signature.constant.SignatureConstant;
@@ -12,6 +13,7 @@ import io.mosip.packet.core.constant.MDMError;
 import io.mosip.packet.core.constant.RegistrationConstants;
 
 import io.mosip.packet.core.constant.RegistrationExceptionConstants;
+import org.slf4j.LoggerFactory;
 import org.apache.http.Consts;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -22,8 +24,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

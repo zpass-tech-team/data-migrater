@@ -22,13 +22,13 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
+import org.slf4j.Logger;
 import io.mosip.packet.core.entity.RegistrationCommonFields;
 import io.mosip.packet.core.exception.RegBaseUncheckedException;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.kernel.core.util.EmptyCheckUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.slf4j.Logger;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

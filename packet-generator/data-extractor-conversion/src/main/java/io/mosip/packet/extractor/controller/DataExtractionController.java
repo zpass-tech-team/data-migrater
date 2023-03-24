@@ -1,12 +1,14 @@
 package io.mosip.packet.extractor.controller;
 
 import io.mosip.commons.packet.dto.packet.PacketDto;
+import org.slf4j.Logger;
 import io.mosip.packet.core.dto.RequestWrapper;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.DBImportResponse;
 import io.mosip.packet.core.dto.dbimport.PacketCreatorResponse;
 import io.mosip.packet.core.exception.ServiceError;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.extractor.service.DataExtractionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,8 @@ import java.util.ArrayList;
 @RestController
 @RequestMapping("/dataExtractor")
 public class DataExtractionController {
+
+    Logger LOGGER = DataProcessLogger.getLogger(DataExtractionController.class);
 
     @Autowired
     DataExtractionService dataExtractionService;
@@ -102,7 +106,9 @@ public class DataExtractionController {
         PacketCreatorResponse response = new PacketCreatorResponse();
         try {
             DBImportRequest importRequest = request.getRequest();
+            LOGGER.info("SESSION_ID", "MIGRATOR", importRequest.getProcess(), "DataExtractionController :: importPacketsFromOtherDomain():: entry");
             response = dataExtractionService.createPacketFromDataBase(importRequest);
+            LOGGER.info("SESSION_ID", "MIGRATOR", importRequest.getProcess(), "DataExtractionController :: importPacketsFromOtherDomain():: exit");
         } catch (SQLException e) {
             e.printStackTrace();
             ServiceError error = new ServiceError();

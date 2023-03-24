@@ -1,13 +1,13 @@
 package io.mosip.packet.manager.util.mock.sbi.devicehelper.iris.binacular;
 
 
+import org.slf4j.Logger;
 import io.mosip.packet.core.constant.SBIConstant;
+import org.slf4j.LoggerFactory;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.SBIDeviceHelper;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.finger.slap.SBIFingerSlapHelper;
 import lombok.Getter;
 import lombok.Setter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
