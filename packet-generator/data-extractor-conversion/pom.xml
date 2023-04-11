@@ -190,6 +190,9 @@
                         <resources>
                             <resource>
                                 <directory>src/main/resources/externalsamples</directory>
+                                <excludes>
+                                    <exclude>registration-processor-camel-routes-migrator-default.xml</exclude>
+                                </excludes>
                                 <filtering>false</filtering>
                             </resource>
                             <resource>
@@ -198,6 +201,28 @@
                                     <include>data-extractor-conversion-1.2.0.1-SNAPSHOT.jar</include>
                                 </includes>
                                 <filtering>true</filtering>
+                            </resource>
+                        </resources>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <artifactId>maven-resources-plugin</artifactId>
+            <version>3.3.0</version>
+            <executions>
+                <execution>
+                    <id>copy-resources-1</id>
+                    <phase>validate</phase>
+                    <goals>
+                        <goal>copy-resources</goal>
+                    </goals>
+                    <configuration>
+                        <outputDirectory>${basedir}/target/build/mockmds</outputDirectory>
+                        <resources>
+                            <resource>
+                                <directory>src/main/resources/mockmds</directory>
+                                <filtering>false</filtering>
                             </resource>
                         </resources>
                     </configuration>
