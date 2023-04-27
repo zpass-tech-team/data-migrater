@@ -41,8 +41,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.Date;
 
-import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
-import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
+import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Service
 public class DataExtractionServiceImpl implements DataExtractionService {
@@ -96,7 +95,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
-    private Map<FieldCategory, HashSet<String>> fieldsCategoryMap = new HashMap<>();
+    private Map<String, HashSet<String>> fieldsCategoryMap = new HashMap<>();
 
     @Override
     public LinkedHashMap<String, Object> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
@@ -111,7 +110,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
                     byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
                     byte[] convertedImageData = convertBiometric(resultSet.getString(fieldFormatRequest.getPrimaryField()), fieldFormatRequest, byteVal, localStoreRequired);
-                    biodata.put(resultSet.getString(fieldFormatRequest.getPrimaryField())+ "-" + fieldFormatRequest.getFieldName(),  convertedImageData);
+                    biodata.put(resultSet.getString(fieldFormatRequest.getPrimaryField())+ "-" + fieldFormatRequest.getFieldList().get(0),  convertedImageData);
                 }
             }
         } finally {
@@ -271,8 +270,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     private byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws Exception {
         if (localStoreRequired) {
-            bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
-            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldName(), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat());
+            bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0) , bioValue, fieldFormatRequest.getSrcFormat());
+            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat());
         } else {
             return bioConversion.convertImage(fieldFormatRequest, bioValue);
         }
@@ -293,44 +292,50 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     private void populateTableFields(DBImportRequest dbImportRequest) throws Exception {
         fieldsCategoryMap.clear();
-        fieldsCategoryMap.put(FieldCategory.DEMO, new HashSet<>());
-        fieldsCategoryMap.put(FieldCategory.BIO, new HashSet<>());
-        fieldsCategoryMap.put(FieldCategory.DOC, new HashSet<>());
 
         for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
-            String field = null;
+            String tableName = DEFAULT_TABLE;
             if (fieldFormatRequest.getFieldName().contains(",")) {
                 switch(dbImportRequest.getDbType().toString()) {
                     case "MSSQL":
-                        for (String column : fieldFormatRequest.getFieldName().split(","))
-                            if (field == null)
-                                field = column;
-                            else
-                                field += ", " + column;
-                        field = "CONCAT(" + field + ") AS " +  fieldFormatRequest.getFieldName().replace(",", "");
+                        for (FieldName fieldName : fieldFormatRequest.getFieldList()) {
+                            if(fieldName.getTableName() != null)
+                                tableName = fieldName.getTableName();
+
+                            if (!fieldsCategoryMap.containsKey(tableName))
+                                fieldsCategoryMap.put(tableName, new HashSet<>());
+
+                            fieldsCategoryMap.get(tableName).add(fieldName.getFieldName());
+                        }
                         break;
 
                     default:
                         throw new Exception("Implementation missing for Database to Read Data DBType :" +  dbImportRequest.getDbType().toString());
                 }
             } else {
-                field = fieldFormatRequest.getFieldName();
+                FieldName fieldName = fieldFormatRequest.getFieldList().get(0);
+                if(fieldName.getTableName() != null)
+                    tableName = fieldName.getTableName();
+
+                if (!fieldsCategoryMap.containsKey(tableName))
+                    fieldsCategoryMap.put(tableName, new HashSet<>());
+
+                fieldsCategoryMap.get(tableName).add(fieldName.getFieldName());
             }
 
-            fieldsCategoryMap.get(fieldFormatRequest.getFieldCategory()).add(field);
             if(fieldFormatRequest.getPrimaryField() != null)
-                fieldsCategoryMap.get(fieldFormatRequest.getFieldCategory()).add(fieldFormatRequest.getPrimaryField());
+                fieldsCategoryMap.get(tableName).add(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getPrimaryField()));
             if(fieldFormatRequest.getSrcFieldForQualityScore() != null)
-                fieldsCategoryMap.get(fieldFormatRequest.getFieldCategory()).add(fieldFormatRequest.getSrcFieldForQualityScore());
+                fieldsCategoryMap.get(tableName).add(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore()));
 
             if(fieldFormatRequest.getDocumentAttributes() != null) {
                 DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
-                fieldsCategoryMap.get(fieldFormatRequest.getFieldCategory()).add(documentAttributes.getDocumentRefNoField().contains("STATIC") ? "'" + getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField()) + "' AS STATIC_" +  getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
-                        :  documentAttributes.getDocumentRefNoField());
-                fieldsCategoryMap.get(fieldFormatRequest.getFieldCategory()).add(documentAttributes.getDocumentFormatField().contains("STATIC") ? "'" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField()) + "' AS STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
-                        :  documentAttributes.getDocumentFormatField());
-                fieldsCategoryMap.get(fieldFormatRequest.getFieldCategory()).add(documentAttributes.getDocumentCodeField().contains("STATIC") ? "'" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField()) + "' AS STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
-                        :  documentAttributes.getDocumentCodeField());
+                fieldsCategoryMap.get(tableName).add(documentAttributes.getDocumentRefNoField().contains("STATIC") ? "'" + getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField()) + "' AS STATIC_" +  getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
+                        :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentRefNoField()));
+                fieldsCategoryMap.get(tableName).add(documentAttributes.getDocumentFormatField().contains("STATIC") ? "'" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField()) + "' AS STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
+                        :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentFormatField()));
+                fieldsCategoryMap.get(tableName).add(documentAttributes.getDocumentCodeField().contains("STATIC") ? "'" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField()) + "' AS STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
+                        :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField()));
             }
         }
     }
@@ -351,29 +356,24 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap) throws Exception {
         if (tableRequestDto.getQueryType().equals(QuerySelection.TABLE)) {
-
-            List<FieldCategory> tableMap = Arrays.asList(tableRequestDto.getFieldCategory());
+            String tableName = tableRequestDto.getTableNameWithOutSchema();
 
             String columnNames = null;
 
-            for(FieldCategory category : tableMap) {
-                for(String column : fieldsCategoryMap.get(category)) {
-                    if (columnNames == null)
-                        columnNames = column;
-                    else
-                        columnNames += "," + column;
-                }
+            for(String column : fieldsCategoryMap.get(tableName)) {
+                if (columnNames == null)
+                    columnNames = column;
+                else
+                    columnNames += "," + column;
             }
 
-/*            if (tableRequestDto.getNonIdSchemaFields() != null && tableRequestDto.getNonIdSchemaFields().length > 0) {
-                List<String> nonIdSchemaFields = Arrays.asList(tableRequestDto.getNonIdSchemaFields());
-                for(String column : nonIdSchemaFields) {
+            if(fieldsCategoryMap.containsKey(DEFAULT_TABLE))
+                for(String column : fieldsCategoryMap.get(DEFAULT_TABLE)) {
                     if (columnNames == null)
                         columnNames = column;
                     else
                         columnNames += "," + column;
                 }
-            }*/
 
             if(statement != null)
                 statement.close();
@@ -413,8 +413,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     }
 
     private void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2) throws Exception {
-        List<FieldCategory> availableCategory = Arrays.asList(tableRequestDto.getFieldCategory());
-
         List<Map<String, Object>> resultData = extractResultSet(resultSet);
 
         for(Map<String, Object> result : resultData) {
@@ -429,7 +427,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             }
 
             for (FieldFormatRequest fieldFormatRequest : columnDetails) {
-                dataMapper(availableCategory, fieldFormatRequest, result, dataMap1);
+                dataMapper(fieldFormatRequest, result, dataMap1, tableRequestDto.getTableNameWithOutSchema());
             }
             if(dataMap2 == null)
                 dataMap.add(dataMap1);
@@ -455,14 +453,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         return mapList;
     }
 
-    private void dataMapper(List<FieldCategory> availableCategory, FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2) throws Exception {
+    private void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
 
-        if (availableCategory.contains(fieldFormatRequest.getFieldCategory())) {
-            String fieldName = fieldFormatRequest.getFieldName().contains(",") ? fieldFormatRequest.getFieldName().replace(",", "") : fieldFormatRequest.getFieldName();
-            String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldFormatRequest.getFieldName().toLowerCase();
-            String originalField = fieldFormatRequest.getFieldName();
+        List<FieldName> fieldNames = fieldFormatRequest.getFieldList();
+        String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldNames.get(0).getFieldName().toLowerCase();
+        String originalField = fieldFormatRequest.getFieldName();
 
+        if(!dataMap2.get(fieldFormatRequest.getFieldCategory()).containsKey(originalField))
             if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DEMO)) {
                 Object demoValue = null;
                 if (fieldFormatRequest.getMvelExpressions() != null) {
@@ -483,50 +481,78 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                     demoValue = mvelUtil.processViaMVEL(fieldFormatRequest.getMvelExpressions().getMvelFile(), map);
                 } else {
-                    demoValue = resultSet.get(fieldName);
-                }
+                    demoValue = null;
+                    boolean initialEntry = true;
 
-                if (fieldFormatRequest.getDestFormat() != null) {
-                    if (fieldFormatRequest.getDestFormat().equals(DataFormat.DMY) || fieldFormatRequest.getDestFormat().equals(DataFormat.YMD)) {
-                        Date dateVal = DateUtils.findDateFormat(demoValue.toString());
-                        demoValue = DateUtils.parseDate(dateVal, fieldFormatRequest.getDestFormat().getFormat());
-                    } else {
-                        throw new Exception("Invalid Format for Conversion for Demo Details for Field : " + fieldFormatRequest.getFieldName());
+                    for(FieldName field : fieldNames) {
+                        if(initialEntry)
+                            demoValue = dataMap2.get(fieldFormatRequest.getFieldCategory()).get(fieldMap);
+                        initialEntry=false;
+
+                        if(fieldsCategoryMap.get(tableName).contains(field.getFieldName()))
+                            if(demoValue == null)
+                                demoValue = resultSet.get(field.getFieldName());
+                            else {
+                                if(demoValue.toString().contains("<" + field.getFieldName() + ">"))
+                                    demoValue = demoValue.toString().replace("<" + field.getFieldName() + ">", resultSet.get(field.getFieldName()).toString());
+                                else
+                                    demoValue += " " + resultSet.get(field.getFieldName());
+                            }
+                        else
+                            demoValue += " <" + field.getFieldName() + ">";
                     }
                 }
 
-                dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, demoValue);
-                dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, demoValue);
+                if(demoValue != null) {
+                    if (fieldFormatRequest.getDestFormat() != null) {
+                        if (fieldFormatRequest.getDestFormat().equals(DataFormat.DMY) || fieldFormatRequest.getDestFormat().equals(DataFormat.YMD)) {
+                            Date dateVal = DateUtils.findDateFormat(demoValue.toString());
+                            demoValue = DateUtils.parseDate(dateVal, fieldFormatRequest.getDestFormat().getFormat());
+                        } else {
+                            throw new Exception("Invalid Format for Conversion for Demo Details for Field : " + fieldFormatRequest.getFieldName());
+                        }
+                    }
 
-            } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
-
-                byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldFormatRequest.getFieldName()));
-                byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
-                dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.get(fieldFormatRequest.getSrcFieldForQualityScore()) : ""), convertedImageData);
-            } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
-                Document document = new Document();
-                document.setDocument(convertObjectToByteArray(resultSet.get(fieldFormatRequest.getFieldName())));
-                if(fieldFormatRequest.getDocumentAttributes() != null) {
-                    DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
-                    String refField = documentAttributes.getDocumentRefNoField().contains("STATIC") ? "STATIC_" +  getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
-                            :  documentAttributes.getDocumentRefNoField();
-                    document.setRefNumber(String.valueOf(resultSet.get(refField)));
-                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + refField, document.getRefNumber());
-
-                    String formatField = documentAttributes.getDocumentFormatField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
-                            :  documentAttributes.getDocumentFormatField();
-                    document.setFormat(String.valueOf(resultSet.get(formatField)));
-                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + formatField, document.getFormat());
-
-                    String codeField = documentAttributes.getDocumentCodeField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
-                            :  documentAttributes.getDocumentCodeField();
-                    document.setType(String.valueOf(resultSet.get(codeField)));
-                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + codeField, document.getType());
+                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, demoValue);
+                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, demoValue);
                 }
+            } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
+                String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
+                if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
+                    byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldName));
+                    byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
+                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.get(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore())) : ""), convertedImageData);
+                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, "");
+                }
+            } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
+                String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
 
-                dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, mapper.writeValueAsString(document));
+                if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
+                    Document document = new Document();
+                    document.setDocument(convertObjectToByteArray(resultSet.get(fieldName)));
+                    if(fieldFormatRequest.getDocumentAttributes() != null) {
+                        DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
+                        String refField = documentAttributes.getDocumentRefNoField().contains("STATIC") ? "STATIC_" +  getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
+                                :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentRefNoField());
+                        document.setRefNumber(String.valueOf(resultSet.get(refField)));
+                        dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + refField, document.getRefNumber());
+
+                        String formatField = documentAttributes.getDocumentFormatField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
+                                :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentFormatField());
+                        document.setFormat(String.valueOf(resultSet.get(formatField)));
+                        dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + formatField, document.getFormat());
+
+                        String codeField = documentAttributes.getDocumentCodeField().contains("STATIC") ? "STATIC_" + getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
+                                :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField());
+                        document.setType(String.valueOf(resultSet.get(codeField)));
+                        dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + codeField, document.getType());
+                    }
+
+                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, mapper.writeValueAsString(document));
+                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, "");
+                }
             }
-        }
+
     }
 
     private byte[] convertObjectToByteArray(Object obj) throws IOException {
