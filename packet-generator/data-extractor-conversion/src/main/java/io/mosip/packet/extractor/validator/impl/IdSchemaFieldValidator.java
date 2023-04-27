@@ -21,7 +21,7 @@ public class IdSchemaFieldValidator implements Validator {
 
     List<String> idFields;
 
-    Map<FieldCategory, List<String>> nonIdSchemaFieldsMap;
+    List<String> nonIdSchemaFieldsMap;
 
     private List<String> getIdFields() throws ApisResourceAccessException {
         if (idFields == null) {
@@ -46,15 +46,12 @@ public class IdSchemaFieldValidator implements Validator {
     }
 
     public void populateNonIdSchemaFields(DBImportRequest dbImportRequest) {
-        nonIdSchemaFieldsMap = new HashMap<>();
+        nonIdSchemaFieldsMap = new ArrayList<>();
 
         for (TableRequestDto tableRequestDto: dbImportRequest.getTableDetails()) {
-            List<FieldCategory> fieldCategoryList = Arrays.asList(tableRequestDto.getFieldCategory());
             if(tableRequestDto.getNonIdSchemaFields() != null) {
                 List<String> nonIdSchemaFieldList = Arrays.asList(tableRequestDto.getNonIdSchemaFields());
-
-                for (FieldCategory fieldCategory : fieldCategoryList)
-                    nonIdSchemaFieldsMap.put(fieldCategory, nonIdSchemaFieldList);
+                nonIdSchemaFieldsMap.addAll(nonIdSchemaFieldList);
             }
         }
     }
@@ -64,7 +61,7 @@ public class IdSchemaFieldValidator implements Validator {
         populateNonIdSchemaFields(dbImportRequest);
 
         for(FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
-            if(nonIdSchemaFieldsMap == null || !nonIdSchemaFieldsMap.containsKey(fieldFormatRequest.getFieldCategory()) || !nonIdSchemaFieldsMap.get(fieldFormatRequest.getFieldCategory()).contains(fieldFormatRequest.getFieldToMap()))
+            if(nonIdSchemaFieldsMap == null || (nonIdSchemaFieldsMap != null && nonIdSchemaFieldsMap.size() > 0 && !nonIdSchemaFieldsMap.contains(fieldFormatRequest.getFieldToMap())))
                 if(!idFieldsList.contains(fieldFormatRequest.getFieldToMap()))
                     throw new Exception(fieldFormatRequest.getFieldToMap() + " is not found in Id Schema.");
         }

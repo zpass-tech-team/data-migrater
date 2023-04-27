@@ -15,13 +15,23 @@ public class TableRequestDto implements Comparable<TableRequestDto> {
     private QuerySelection queryType;
     private Integer executionOrderSequence;
     private String tableName;
-    private FieldCategory[] fieldCategory;
     private String sqlQuery;
     private String[] nonIdSchemaFields;
     private List<QueryFilter> filters;
+    private String tableNamewithOutSchema;
 
     @Override
     public int compareTo(TableRequestDto o) {
         return this.executionOrderSequence.compareTo(o.executionOrderSequence);
+    }
+
+    public String getTableNameWithOutSchema() {
+        if(tableNamewithOutSchema == null) {
+            if(tableName.contains("."))
+                tableNamewithOutSchema=tableName.split("\\.")[1];
+            else
+                tableNamewithOutSchema=tableName;
+        }
+        return tableNamewithOutSchema;
     }
 }

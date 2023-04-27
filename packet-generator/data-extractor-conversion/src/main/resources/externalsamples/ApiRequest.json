@@ -14,19 +14,12 @@
         "queryType": "SQL_QUERY",
         "executionOrderSequence": 2,
         "tableName": "dbo.CITIZEN",
-        "fieldCategory": [
-          "DOC"
-        ],
         "sqlQuery": "SELECT poc_dt_id, cit_id, doc_ref_no, 'JPG' AS doc_format, document FROM DBO.POC_DOCUMENTS WHERE cit_id = ${DEMO:CITIZEN_ID}"
       },
       {
         "queryType": "TABLE",
         "executionOrderSequence": 1,
         "tableName": "dbo.CITIZEN",
-        "fieldCategory": [
-          "DEMO",
-          "BIO"
-        ],
         "nonIdSchemaFields": [
           "CITIZEN_ID"
         ],
@@ -51,43 +44,43 @@
     ],
     "columnDetails": [
       {
-        "fieldName": "CITIZEN_ID",
+        "fieldName": "CITIZEN.CITIZEN_ID",
         "fieldCategory": "DEMO",
         "fieldToMap": "CITIZEN_ID"
       },
       {
-        "fieldName": "FIRSTNAME",
+        "fieldName": "CITIZEN.FIRSTNAME",
         "fieldCategory": "DEMO",
         "fieldToMap": "firstName"
       },
       {
-        "fieldName": "MIDDLENAME",
+        "fieldName": "CITIZEN.MIDDLENAME",
         "fieldCategory": "DEMO",
         "fieldToMap": "middleName"
       },
       {
-        "fieldName": "LASTNAME",
+        "fieldName": "CITIZEN.LASTNAME",
         "fieldCategory": "DEMO",
         "fieldToMap": "lastName"
       },
       {
-        "fieldName": "BIRTHDATE",
+        "fieldName": "CITIZEN.BIRTHDATE",
         "fieldCategory": "DEMO",
         "fieldToMap": "dateOfBirth",
         "destFormat": "YMD"
       },
       {
-        "fieldName": "GENDER",
+        "fieldName": "CITIZEN.GENDER",
         "fieldCategory": "DEMO",
         "fieldToMap": "gender"
       },
       {
-        "fieldName": "PHONE_NUMBER",
+        "fieldName": "CITIZEN.PHONE_NUMBER",
         "fieldCategory": "DEMO",
         "fieldToMap": "phone"
       },
       {
-        "fieldName": "NATIONALITY",
+        "fieldName": "CITIZEN.NATIONALITY",
         "fieldCategory": "DEMO",
         "fieldToMap": "residenceStatus",
         "mvelExpressions": {
@@ -96,7 +89,7 @@
             {
               "parameterName": "nationality",
               "parameterType": "STRING",
-              "parameterValue": "${NATIONALITY}"
+              "parameterValue": "${CITIZEN.NATIONALITY}"
             },
             {
               "parameterName": "nationalList",
@@ -107,109 +100,109 @@
         }
       },
       {
-        "fieldName": "RESIDENTIAL_ADDRESS",
+        "fieldName": "CITIZEN.RESIDENTIAL_ADDRESS",
         "fieldCategory": "DEMO",
         "fieldToMap": "addressLine"
       },
       {
-        "fieldName": "PERMANENT_ADDRESS",
+        "fieldName": "CITIZEN.PERMANENT_ADDRESS",
         "fieldCategory": "DEMO",
         "fieldToMap": "permanentAddressLine"
       },
       {
-        "fieldName": "document",
+        "fieldName": "POC_DOCUMENTS.document",
         "fieldCategory": "DOC",
         "fieldToMap": "proofOfAddress",
         "documentAttributes": {
-          "documentRefNoField": "doc_ref_no",
-          "documentFormatField": "doc_format",
-          "documentCodeField": "poc_dt_id"
+          "documentRefNoField": "POC_DOCUMENTS.doc_ref_no",
+          "documentFormatField": "POC_DOCUMENTS.doc_format",
+          "documentCodeField": "POC_DOCUMENTS.poc_dt_id"
         }
       },
       {
-        "fieldName": "LEFT_THUMB",
+        "fieldName": "CITIZEN.LEFT_THUMB",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftThumb"
       },
       {
-        "fieldName": "photo",
+        "fieldName": "CITIZEN.photo",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "JPEG",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_face"
       },
       {
-        "fieldName": "LEFT_INDEX_FINGER",
+        "fieldName": "CITIZEN.LEFT_INDEX_FINGER",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftIndex"
       },
       {
-        "fieldName": "LEFT_MIDDLE_FINGER",
+        "fieldName": "CITIZEN.LEFT_MIDDLE_FINGER",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftMiddle"
       },
       {
-        "fieldName": "LEFT_RING_FINGER",
+        "fieldName": "CITIZEN.LEFT_RING_FINGER",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftRing"
       },
       {
-        "fieldName": "LEFT_LITTLE_FINGER",
+        "fieldName": "CITIZEN.LEFT_LITTLE_FINGER",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftLittle"
       },
       {
-        "fieldName": "RIGHT_THUMB",
+        "fieldName": "CITIZEN.RIGHT_THUMB",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightThumb"
       },
       {
-        "fieldName": "RIGHT_INDEX_FINGER",
+        "fieldName": "CITIZEN.RIGHT_INDEX_FINGER",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightIndex"
       },
       {
-        "fieldName": "RIGHT_MIDDLE_FINGER",
+        "fieldName": "CITIZEN.RIGHT_MIDDLE_FINGER",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightMiddle"
       },
       {
-        "fieldName": "RIGHT_RING_FINGER",
+        "fieldName": "CITIZEN.RIGHT_RING_FINGER",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightRing"
       },
       {
-        "fieldName": "RIGHT_LITTLE_FINGER",
+        "fieldName": "CITIZEN.RIGHT_LITTLE_FINGER",
         "fieldCategory": "BIO",
-        "primaryField": "FIRSTNAME",
+        "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightLittle"
