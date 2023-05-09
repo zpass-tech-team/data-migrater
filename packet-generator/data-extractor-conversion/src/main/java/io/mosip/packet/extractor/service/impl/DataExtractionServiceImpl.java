@@ -57,11 +57,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Value("${mosip.packet.creater.source}")
     private String source;
 
-    @Value("${mosip.packet.creater.max-threadpool-count:5}")
+    @Value("${mosip.packet.creater.max-threadpool-count:1}")
     private Integer maxThreadPoolCount;
 
     @Value("${mosip.packet.creater.max-records-process-per-threadpool:100}")
     private Integer maxRecordsCountPerThreadPool;
+
+    @Value("${mosip.packet.creater.max-thread-execution-count:100}")
+    private Integer maxThreadExecCount;
 
     @Value("${mosip.packet.uploader.enable:true}")
     private boolean enablePaccketUploader;
@@ -169,7 +172,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     }
                 };
 
-                CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool);
+                CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount);
                 for (Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap : dataMap) {
                     String registrationId = commonUtil.generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId());
 

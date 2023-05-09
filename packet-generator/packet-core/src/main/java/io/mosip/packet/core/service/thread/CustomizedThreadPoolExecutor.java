@@ -10,15 +10,16 @@ import java.util.concurrent.TimeUnit;
 
 public class CustomizedThreadPoolExecutor {
     Map<String, ThreadPoolExecutor> poolMap = new HashMap<>();
-    private int MAX_THREAD_EXE_COUNT=10;
+    private int MAX_THREAD_EXE_COUNT;
     private Long DELAY_SECONDS = 10000L;
     private int maxThreadCount;
     private boolean noSlotAvailable=false;
     private long totalTaskCount = 0;
     private long totalCompletedTaskCount = 0;
 
-    public CustomizedThreadPoolExecutor(Integer threadPoolCount, Integer maxThreadCount) {
+    public CustomizedThreadPoolExecutor(Integer threadPoolCount, Integer maxThreadCount, Integer maxThreadExecCount) {
         this.maxThreadCount = maxThreadCount;
+        this.MAX_THREAD_EXE_COUNT = maxThreadExecCount;
         for(int i = 1; i <= threadPoolCount; i++)
             poolMap.put("ThreadPool" + i, (ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
 
