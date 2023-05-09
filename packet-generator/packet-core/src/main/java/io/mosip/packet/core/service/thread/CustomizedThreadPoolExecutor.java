@@ -68,7 +68,7 @@ public class CustomizedThreadPoolExecutor {
         boolean taskAdded = false;
 
         do {
-            if(!noSlotAvailable)
+            if(!noSlotAvailable) {
                 for(Map.Entry<String, ThreadPoolExecutor> entry : poolMap.entrySet()) {
                     threadCount++;
                     if(entry.getValue().getTaskCount() < maxThreadCount) {
@@ -79,7 +79,9 @@ public class CustomizedThreadPoolExecutor {
                         noSlotAvailable = true;
                     }
                 }
-            TimeUnit.SECONDS.sleep(10);
+            } else {
+                TimeUnit.SECONDS.sleep(10);
+            }
         } while (noSlotAvailable || !taskAdded);
     }
 

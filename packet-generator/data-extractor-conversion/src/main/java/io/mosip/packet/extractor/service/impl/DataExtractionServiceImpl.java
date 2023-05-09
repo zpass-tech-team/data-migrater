@@ -63,6 +63,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Value("${mosip.packet.creater.max-records-process-per-threadpool:100}")
     private Integer maxRecordsCountPerThreadPool;
 
+    @Value("${mosip.packet.uploader.enable:true}")
+    private boolean enablePaccketUploader;
+
     @Autowired
     ValidationUtil validationUtil;
 
@@ -169,6 +172,16 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool);
                 for (Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap : dataMap) {
                     String registrationId = commonUtil.generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId());
+
+                    for (int i = 1; i < tableRequestDtoList.size(); i++) {
+                        TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
+                        resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto1, dataHashMap, fieldsCategoryMap);
+
+                        if (resultSet != null) {
+                            dataBaseUtil.populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap);
+                        }
+                    }
+
                     BaseThreadController baseThreadController = new BaseThreadController();
                     baseThreadController.setDataHashMap(dataHashMap);
                     baseThreadController.setRegistrationId(registrationId);
@@ -178,16 +191,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         @Override
                         public void processData(ResultSetter setter, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, String registrationId) {
                             LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + registrationId + " Process Started");
-
-                            for (int i = 1; i < tableRequestDtoList.size(); i++) {
-                                TableRequestDto tableRequestDto  = tableRequestDtoList.get(i);
-                                ResultSet resultSet = null;
-                                resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto, dataHashMap, fieldsCategoryMap);
-
-                                if (resultSet != null) {
-                                    dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap);
-                                }
-                            }
 
                             PacketDto packetDto = new PacketDto();
                             packetDto.setProcess(dbImportRequest.getProcess());
@@ -266,8 +269,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 List<PacketUploadDTO> uploadList = new ArrayList<>();
                                 uploadList.add(uploadDTO);
                                 LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
-                                packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
-                                packetUploaderService.uploadSyncedPacket(uploadList, response);
+
+                                if(enablePaccketUploader) {
+                                    packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
+                                    packetUploaderService.uploadSyncedPacket(uploadList, response);
+                                } else {
+                                    LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploader Disabled : "+ (new Gson()).toJson(response));
+                                }
+
                                 setter.setResult(info.getId());
                                 LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response : "+ (new Gson()).toJson(response));
                             } else {
