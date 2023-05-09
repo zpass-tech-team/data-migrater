@@ -17,7 +17,7 @@ public class PacketCreatorService {
     @Autowired
     private PacketWriter packetWriter;
 
-    public  List<PacketInfo> persistPacket(PacketDto packetDto) {
+    public synchronized List<PacketInfo> persistPacket(PacketDto packetDto) {
         try {
 
             List<PacketInfo> resultField = packetWriter.createPacket(packetDto);
