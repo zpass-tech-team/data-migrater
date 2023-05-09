@@ -35,6 +35,7 @@ import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.kernel.biometrics.entities.BIR;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
+import io.mosip.packet.core.util.CommonUtil;
 import io.mosip.packet.core.util.mockmds.StringHelper;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.MockDeviceUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +63,9 @@ public class PacketCreator {
 
     @Autowired
     private MockDeviceUtil mockDeviceUtil;
+
+    @Autowired
+    private CommonUtil commonUtil;
 
     @Value("${mosip.id.schema.version:0.1}")
     private String version;
@@ -93,21 +97,11 @@ public class PacketCreator {
     @Autowired
     private BlocklistedWordsRepository blocklistedWordsRepository;
 
-    private LinkedHashMap<String, Object> latestIdSchemaMap;
-
     private ObjectMapper mapper = new ObjectMapper();
-
-    public LinkedHashMap<String, Object> getLatestIdSchema() throws ApisResourceAccessException {
-        if (latestIdSchemaMap == null) {
-            ResponseWrapper response= (ResponseWrapper) restApiClient.getApi(ApiName.LATEST_ID_SCHEMA, null, "", "", ResponseWrapper.class);
-            latestIdSchemaMap = (LinkedHashMap<String, Object> ) response.getResponse();
-        }
-        return latestIdSchemaMap;
-    }
 
     public LinkedHashMap<String, String> setDemographic(LinkedHashMap<String, Object> demoDetails, Boolean isBiometricPresent, List ignorableFields) throws Exception {
         LinkedHashMap<String, String> demoMap = new LinkedHashMap<>();
-        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
+        LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
         for(Object obj : (List)idSchema.get("schema")) {
             Map<String, Object> map = (Map<String, Object>) obj;
@@ -156,7 +150,7 @@ public class PacketCreator {
             throws Exception {
 
         LinkedHashMap<String, Document> docMap = new LinkedHashMap<>();
-        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
+        LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
         for(Object obj : (List)idSchema.get("schema")) {
             Map<String, Object> map = (Map<String, Object>) obj;
@@ -205,7 +199,7 @@ public class PacketCreator {
     }
 
     public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap) throws Exception {
-        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
+        LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
 //        LOGGER.debug("Adding Biometrics to packet manager started..");
         LinkedHashMap<String, List<BIR>> capturedBiometrics = new LinkedHashMap<>();

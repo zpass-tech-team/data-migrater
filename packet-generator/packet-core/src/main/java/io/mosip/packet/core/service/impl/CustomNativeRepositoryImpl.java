@@ -1,6 +1,6 @@
-package io.mosip.packet.extractor.service.impl;
+package io.mosip.packet.core.service.impl;
 
-import io.mosip.packet.extractor.service.CustomNativeRepository;
+import io.mosip.packet.core.service.CustomNativeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

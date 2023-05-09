@@ -1,4 +1,4 @@
-package io.mosip.packet.extractor.service;
+package io.mosip.packet.core.service;
 
 public interface CustomNativeRepository {
 

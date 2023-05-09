@@ -1,4 +1,4 @@
-package io.mosip.packet.extractor.util;
+package io.mosip.packet.core.util;
 
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.logger.DataProcessLogger;

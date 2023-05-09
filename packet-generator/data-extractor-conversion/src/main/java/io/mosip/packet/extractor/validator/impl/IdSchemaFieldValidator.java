@@ -5,6 +5,7 @@ import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.dto.dbimport.TableRequestDto;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
+import io.mosip.packet.core.util.CommonUtil;
 import io.mosip.packet.extractor.util.PacketCreator;
 import io.mosip.packet.extractor.validator.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import java.util.*;
 public class IdSchemaFieldValidator implements Validator {
 
     @Autowired
-    private PacketCreator packetCreator;
+    private CommonUtil commonUtil;
 
 
     List<String> idFields;
@@ -26,7 +27,7 @@ public class IdSchemaFieldValidator implements Validator {
     private List<String> getIdFields() throws ApisResourceAccessException {
         if (idFields == null) {
             idFields = new ArrayList<>();
-            LinkedHashMap<String, Object> idSchema = packetCreator.getLatestIdSchema();
+            LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
             for(Object obj : (List)idSchema.get("schema")) {
                 Map<String, Object> map = (Map<String, Object>) obj;
