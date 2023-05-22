@@ -16,9 +16,10 @@ public class BaseThreadController implements Runnable {
     private ResultSetter setter;
     private ThreadProcessor processor;
     private String registrationId;
+    private String trackerColumn;
 
     @Override
     public void run() {
-        processor.processData(setter, dataHashMap, registrationId);
+        processor.processData(setter, dataHashMap, registrationId, trackerColumn);
     }
 }

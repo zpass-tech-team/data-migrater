@@ -2,6 +2,7 @@ package io.mosip.packet.core.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.mosip.commons.packet.dto.Document;
+import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.DBTypes;
 import io.mosip.packet.core.constant.DataFormat;
@@ -29,6 +30,8 @@ public class DataBaseUtil {
     private static final Logger LOGGER = DataProcessLogger.getLogger(DataBaseUtil.class);
     private Connection conn = null;
     private Statement statement = null;
+    private boolean isTrackerSameHost = false;
+    private String trackColumn = null;
 
     @Autowired
     private QueryFormatter formatter;
@@ -37,15 +40,24 @@ public class DataBaseUtil {
     private DataMapperUtil dataMapperUtil;
 
     public void connectDatabase(DBImportRequest dbImportRequest) throws SQLException {
-        if(conn == null) {
-            if (dbImportRequest.getDbType().equals(DBTypes.MSSQL)) {
-                DriverManager.registerDriver(new com.microsoft.sqlserver.jdbc.SQLServerDriver());
-                conn = DriverManager.getConnection("jdbc:sqlserver://" + dbImportRequest.getUrl() + ";sslProtocol=TLSv1.2;databaseName=" + dbImportRequest.getDatabaseName()+ ";Trusted_Connection=True;", dbImportRequest.getUserId(), dbImportRequest.getPassword());
-            }
+        try {
+            if(conn == null) {
+                DBTypes dbType = dbImportRequest.getDbType();
+                Class driverClass = Class.forName(dbType.getDriver());
+                DriverManager.registerDriver((Driver) driverClass.newInstance());
+                String connectionHost = String.format(dbType.getDriverUrl(), dbImportRequest.getUrl(), dbImportRequest.getPort(), dbImportRequest.getDatabaseName());
+                conn = DriverManager.getConnection(connectionHost, dbImportRequest.getUserId(), dbImportRequest.getPassword());
+                if(isTrackerSameHost = TrackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
+                    trackColumn = dbImportRequest.getTrackerInfo().getTrackerColumn();
 
-            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "External DataBase" + dbImportRequest.getUrl() +  "Database Successfully connected");
-            System.out.println("External DataBase " + dbImportRequest.getUrl() + " Successfully connected");
+                LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "External DataBase" + dbImportRequest.getUrl() +  "Database Successfully connected");
+                System.out.println("External DataBase " + dbImportRequest.getUrl() + " Successfully connected");
+            }
+        } catch (Exception e) {
+            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Connecting Database " + ExceptionUtils.getStackTrace(e));
+            System.exit(1);
         }
+
     }
 
     public ResultSet readDataFromDatabase(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashSet<String>> fieldsCategoryMap) throws Exception {
@@ -98,6 +110,19 @@ public class DataBaseUtil {
                     filterCondition += queryFilter.getFilterField() + " " + queryFilter.getFilterCondition().format(queryFilter.getFromValue(), queryFilter.getToValue(), queryFilter.getFieldType());
                 }
 
+                selectSql += filterCondition;
+            }
+
+            filterCondition = "";
+            if(isTrackerSameHost && tableRequestDto.getExecutionOrderSequence().equals(1)) {
+                if (!whereCondition) {
+                    filterCondition = " WHERE ";
+                    whereCondition=true;
+                } else {
+                    filterCondition += " AND ";
+                }
+
+                filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s) ", TRACKER_TABLE_NAME);
                 selectSql += filterCondition;
             }
 

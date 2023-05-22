@@ -21,4 +21,5 @@ public class DBImportRequest {
     private String process;
     private List<FieldFormatRequest> columnDetails;
     private List<String> ignoreIdSchemaFields;
+    private TrackerInfo trackerInfo;
 }

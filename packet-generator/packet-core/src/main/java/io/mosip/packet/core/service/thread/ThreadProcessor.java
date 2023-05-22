@@ -8,5 +8,5 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public interface ThreadProcessor {
-    public void processData(ResultSetter setter, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, String registrationId);
+    public void processData(ResultSetter setter, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, String registrationId, String trackerColumn);
 }

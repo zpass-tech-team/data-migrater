@@ -4,7 +4,7 @@
   "request": {
     "dbType": "MSSQL",
     "url": "localhost\\SQLEXPRESS",
-    "port": "",
+    "port": "55630",
     "databaseName": "MOSIP_NEW",
     "userId": "trialblazerseee",
     "password": "ka09071989",
@@ -208,6 +208,9 @@
         "fieldToMap": "individualBiometrics_rightLittle"
       }
     ]
+  },
+  "trackerInfo" : {
+    "trackerColumn" : "CITIZEN_ID"
   },
   "requesttime": "2018-12-10T06:12:52.994Z",
   "version": "string"
