@@ -50,38 +50,31 @@
       },
       {
         "fieldName": "CITIZEN.FIRSTNAME",
-        "fieldCategory": "DEMO",
         "fieldToMap": "firstName"
       },
       {
         "fieldName": "CITIZEN.MIDDLENAME",
-        "fieldCategory": "DEMO",
         "fieldToMap": "middleName"
       },
       {
         "fieldName": "CITIZEN.LASTNAME",
-        "fieldCategory": "DEMO",
         "fieldToMap": "lastName"
       },
       {
         "fieldName": "CITIZEN.BIRTHDATE",
-        "fieldCategory": "DEMO",
         "fieldToMap": "dateOfBirth",
         "destFormat": "YMD"
       },
       {
         "fieldName": "CITIZEN.GENDER",
-        "fieldCategory": "DEMO",
         "fieldToMap": "gender"
       },
       {
         "fieldName": "CITIZEN.PHONE_NUMBER",
-        "fieldCategory": "DEMO",
         "fieldToMap": "phone"
       },
       {
         "fieldName": "CITIZEN.NATIONALITY",
-        "fieldCategory": "DEMO",
         "fieldToMap": "residenceStatus",
         "mvelExpressions": {
           "mvelFile": "Nationality.mvel",
@@ -101,17 +94,14 @@
       },
       {
         "fieldName": "CITIZEN.RESIDENTIAL_ADDRESS",
-        "fieldCategory": "DEMO",
         "fieldToMap": "addressLine"
       },
       {
         "fieldName": "CITIZEN.PERMANENT_ADDRESS",
-        "fieldCategory": "DEMO",
         "fieldToMap": "permanentAddressLine"
       },
       {
         "fieldName": "POC_DOCUMENTS.document",
-        "fieldCategory": "DOC",
         "fieldToMap": "proofOfAddress",
         "documentAttributes": {
           "documentRefNoField": "POC_DOCUMENTS.doc_ref_no",
@@ -121,7 +111,6 @@
       },
       {
         "fieldName": "CITIZEN.LEFT_THUMB",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
@@ -129,7 +118,6 @@
       },
       {
         "fieldName": "CITIZEN.photo",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "JPEG",
         "destFormat": "JP2",
@@ -137,7 +125,6 @@
       },
       {
         "fieldName": "CITIZEN.LEFT_INDEX_FINGER",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
@@ -145,7 +132,6 @@
       },
       {
         "fieldName": "CITIZEN.LEFT_MIDDLE_FINGER",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
@@ -153,7 +139,6 @@
       },
       {
         "fieldName": "CITIZEN.LEFT_RING_FINGER",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
@@ -161,7 +146,6 @@
       },
       {
         "fieldName": "CITIZEN.LEFT_LITTLE_FINGER",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
@@ -169,7 +153,6 @@
       },
       {
         "fieldName": "CITIZEN.RIGHT_THUMB",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
@@ -177,7 +160,6 @@
       },
       {
         "fieldName": "CITIZEN.RIGHT_INDEX_FINGER",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
@@ -185,7 +167,6 @@
       },
       {
         "fieldName": "CITIZEN.RIGHT_MIDDLE_FINGER",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
@@ -193,7 +174,6 @@
       },
       {
         "fieldName": "CITIZEN.RIGHT_RING_FINGER",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",
@@ -201,7 +181,6 @@
       },
       {
         "fieldName": "CITIZEN.RIGHT_LITTLE_FINGER",
-        "fieldCategory": "BIO",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
         "destFormat": "JP2",

@@ -146,6 +146,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         dataMap.clear();
 
         try {
+            commonUtil.updateFieldCategory(dbImportRequest);
             List<ValidatorEnum> enumList = new ArrayList<>();
             enumList.add(ValidatorEnum.ID_SCHEMA_VALIDATOR);
             enumList.add(ValidatorEnum.FILTER_VALIDATOR);

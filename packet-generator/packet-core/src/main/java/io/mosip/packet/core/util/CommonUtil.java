@@ -2,13 +2,18 @@ package io.mosip.packet.core.util;
 
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import io.mosip.packet.core.constant.ApiName;
+import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.dto.ResponseWrapper;
+import io.mosip.packet.core.dto.dbimport.DBImportRequest;
+import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.service.DataRestClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class CommonUtil {
@@ -35,5 +40,29 @@ public class CommonUtil {
             latestIdSchemaMap = (LinkedHashMap<String, Object> ) response.getResponse();
         }
         return latestIdSchemaMap;
+    }
+
+    public void updateFieldCategory(DBImportRequest dbImportRequest) throws ApisResourceAccessException {
+        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
+        LinkedHashMap<String, FieldCategory> fieldMap = new LinkedHashMap<>();
+
+        for(Object obj : (List)idSchema.get("schema")) {
+            Map<String, Object> map = (Map<String, Object>) obj;
+            String id = map.get("id").toString();
+            String type = map.get("type").toString();
+
+            if(type.equalsIgnoreCase("documentType"))
+                fieldMap.put(id, FieldCategory.DOC);
+            else if(type.equalsIgnoreCase("biometricsType")) {
+                List<String> bioAttributes = (List<String>) map.get("bioAttributes");
+                for(String attribute : bioAttributes)
+                    fieldMap.put(id + "_" + attribute, FieldCategory.BIO);
+            } else
+                fieldMap.put(id, FieldCategory.DEMO);
+        }
+
+        for(FieldFormatRequest request : dbImportRequest.getColumnDetails())
+            if(request.getFieldCategory() == null)
+                request.setFieldCategory(fieldMap.get(request.getFieldToMap()) == null ? FieldCategory.DEMO : fieldMap.get(request.getFieldToMap()));
     }
 }
