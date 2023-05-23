@@ -68,6 +68,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Value("${mosip.packet.uploader.enable:true}")
     private boolean enablePaccketUploader;
 
+    @Value("${mosip.extractor.application.id.column:}")
+    private String applicationIdColumn;
+
     @Autowired
     ValidationUtil validationUtil;
 
@@ -182,8 +185,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                 CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount);
                 for (Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap : dataMap) {
-                    String registrationId = commonUtil.generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId());
-
                     for (int i = 1; i < tableRequestDtoList.size(); i++) {
                         TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
                         resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto1, dataHashMap, fieldsCategoryMap);
@@ -191,6 +192,18 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         if (resultSet != null) {
                             dataBaseUtil.populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap);
                         }
+                    }
+
+                    String registrationId = null;
+                    if(applicationIdColumn != null && !applicationIdColumn.isEmpty()) {
+                        if(dataHashMap.get(FieldCategory.DEMO).containsKey(applicationIdColumn)) {
+                            registrationId = dataHashMap.get(FieldCategory.DEMO).get(applicationIdColumn).toString();
+                        } else {
+                            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Application ID : " + applicationIdColumn + " not found in DataMap");
+                            throw new Exception("Application ID : " + applicationIdColumn + " not found in DataMap");
+                        }
+                    } else {
+                        registrationId = commonUtil.generateRegistrationId(ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId());
                     }
 
                     if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()))) {
