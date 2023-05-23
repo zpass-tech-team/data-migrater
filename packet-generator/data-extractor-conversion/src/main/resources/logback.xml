@@ -25,4 +25,10 @@
 	<root level="ERROR">
 		<appender-ref ref="applicationLog" />
 	</root>
+	<root level="INFO">
+		<appender-ref ref="applicationLog" />
+	</root>
+	<root level="WARN">
+		<appender-ref ref="applicationLog" />
+	</root>
 </configuration>
