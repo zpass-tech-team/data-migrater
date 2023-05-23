@@ -22,4 +22,7 @@
 	<logger name="io.mosip" level="INFO" additivity="false">
 		<appender-ref ref="applicationLog" />
 	</logger>
+	<root level="ERROR">
+		<appender-ref ref="applicationLog" />
+	</root>
 </configuration>
