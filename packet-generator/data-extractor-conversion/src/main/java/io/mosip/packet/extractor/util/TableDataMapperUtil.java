@@ -10,11 +10,14 @@ import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.dto.dbimport.FieldName;
 import io.mosip.packet.core.dto.mvel.MvelParameter;
 import io.mosip.packet.core.service.CustomNativeRepository;
+import io.mosip.packet.core.spi.BioDocApiFactory;
 import io.mosip.packet.core.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Component
@@ -31,6 +34,15 @@ public class TableDataMapperUtil implements DataMapperUtil {
 
     @Autowired
     private CommonUtil commonUtil;
+
+    @Autowired
+    private ObjectStoreHelper objectStoreHelper;
+
+    @Value("${mosip.packet.objectstore.fetch.enabled:false}")
+    private boolean objectStoreFetchEnabled;
+
+    @Autowired
+    private BioDocApiFactory bioDocApiFactory;
 
     @Override
     public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName, Map<String, HashSet<String>> fieldsCategoryMap) throws Exception {
@@ -100,6 +112,9 @@ public class TableDataMapperUtil implements DataMapperUtil {
                 String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
                 if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
                     byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldName));
+                    if(objectStoreFetchEnabled)
+                        byteVal = objectStoreHelper.getBiometricObject(new String(byteVal, StandardCharsets.UTF_8));
+                    byteVal = bioDocApiFactory.getBioData(byteVal, fieldMap);
                     byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.get(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore())) : ""), convertedImageData);
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, "");
@@ -109,7 +124,11 @@ public class TableDataMapperUtil implements DataMapperUtil {
 
                 if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
                     Document document = new Document();
-                    document.setDocument(convertObjectToByteArray(resultSet.get(fieldName)));
+                    byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldName));
+                    if(objectStoreFetchEnabled)
+                        byteVal = objectStoreHelper.getBiometricObject(new String(byteVal, StandardCharsets.UTF_8));
+                    byteVal = bioDocApiFactory.getDocData(byteVal, fieldMap);
+                    document.setDocument(byteVal);
                     if(fieldFormatRequest.getDocumentAttributes() != null) {
                         DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
                         String refField = documentAttributes.getDocumentRefNoField().contains("STATIC") ? "STATIC_" +  commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())

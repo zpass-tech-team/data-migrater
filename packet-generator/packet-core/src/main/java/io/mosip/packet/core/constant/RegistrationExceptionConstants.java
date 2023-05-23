@@ -240,8 +240,9 @@ public enum RegistrationExceptionConstants {
 	REG_FILE_SIGNATURE_ERROR("REG-SIGN-001" ,"Downloaded file signature verification failed"),
 	PRE_REG_PACKET_ENTRIES_THRESHOLD_CROSSED( "PREREG-SYN-001", "Entries count in pre-reg zip greater than limit"),
 	PRE_REG_PACKET_ZIP_SIZE_THRESHOLD_CROSSED( "PREREG-SYN-002", "Pre-reg zip read size is greater than limit"),
-	PRE_REG_PACKET_ZIP_COMPRESSED_RATIO_EXCEEDED( "PREREG-SYN-003", "Pre-reg zip compressed ratio exceeded");
-
+	PRE_REG_PACKET_ZIP_COMPRESSED_RATIO_EXCEEDED( "PREREG-SYN-003", "Pre-reg zip compressed ratio exceeded"),
+	FILE_STORAGE_ACCESS_ERROR("IDR-IDS-004", "Failed to store/retrieve files in Object Store"),
+	FILE_NOT_FOUND("IDR-IDS-006", "File(s) not found in Object Store");
 	/**
 	 * The constructor
 	 */
