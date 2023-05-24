@@ -17,6 +17,18 @@
         <kernel.khazana.version>1.2.0.1-SNAPSHOT</kernel.khazana.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>ossrh</id>
+            <name>CentralRepository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>io.mosip.biometric.util</groupId>
