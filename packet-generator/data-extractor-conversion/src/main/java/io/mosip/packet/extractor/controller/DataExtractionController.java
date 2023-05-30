@@ -108,7 +108,42 @@ public class DataExtractionController {
         try {
             DBImportRequest importRequest = request.getRequest();
             LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: entry");
-            response = dataExtractionService.createPacketFromDataBase(importRequest);
+            response = dataExtractionService.createPacketFromDataBase(importRequest, false);
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: exit");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            ServiceError error = new ServiceError();
+            error.setErrorCode("IX-0001");
+            error.setMessage("Error : " + e.getMessage());
+            responseWrapper.getErrors().add(error);
+            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, error.getErrorCode(), error.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+            ServiceError error = new ServiceError();
+            error.setErrorCode("IX-0001");
+            error.setMessage("Error : " + e.getMessage());
+            responseWrapper.getErrors().add(error);
+            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, error.getErrorCode(), error.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            ServiceError error = new ServiceError();
+            error.setErrorCode("IX-0001");
+            error.setMessage("Error : " + e.getMessage());
+            responseWrapper.getErrors().add(error);
+            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, error.getErrorCode(), error.getMessage());
+        }
+        responseWrapper.setResponse(response);
+        return new ResponseEntity<ResponseWrapper>(responseWrapper, HttpStatus.OK);
+    }
+
+    @PostMapping(value = "/exportBioQualityFromOtherDomain", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseWrapper> exportBioQualityFromOtherDomain(@RequestBody RequestWrapper<DBImportRequest> request) {
+        ResponseWrapper<PacketCreatorResponse> responseWrapper = new ResponseWrapper();
+        PacketCreatorResponse response = new PacketCreatorResponse();
+        try {
+            DBImportRequest importRequest = request.getRequest();
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: entry");
+            response = dataExtractionService.createPacketFromDataBase(importRequest, true);
             LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: exit");
         } catch (SQLException e) {
             e.printStackTrace();

@@ -39,7 +39,7 @@ public class DataBaseUtil {
     @Autowired
     private DataMapperUtil dataMapperUtil;
 
-    public void connectDatabase(DBImportRequest dbImportRequest) throws SQLException {
+    public void connectDatabase(DBImportRequest dbImportRequest, Boolean isOnlyForQualityCheck) throws SQLException {
         try {
             if(conn == null) {
                 DBTypes dbType = dbImportRequest.getDbType();
@@ -47,8 +47,9 @@ public class DataBaseUtil {
                 DriverManager.registerDriver((Driver) driverClass.newInstance());
                 String connectionHost = String.format(dbType.getDriverUrl(), dbImportRequest.getUrl(), dbImportRequest.getPort(), dbImportRequest.getDatabaseName());
                 conn = DriverManager.getConnection(connectionHost, dbImportRequest.getUserId(), dbImportRequest.getPassword());
-                if(isTrackerSameHost = TrackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
-                    trackColumn = dbImportRequest.getTrackerInfo().getTrackerColumn();
+                if(!isOnlyForQualityCheck)
+                    if(isTrackerSameHost = TrackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
+                        trackColumn = dbImportRequest.getTrackerInfo().getTrackerColumn();
 
                 LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "External DataBase" + dbImportRequest.getUrl() +  "Database Successfully connected");
                 System.out.println("External DataBase " + dbImportRequest.getUrl() + " Successfully connected");
@@ -142,6 +143,7 @@ public class DataBaseUtil {
         if (conn != null) {
             try {
                 conn.close();
+                conn = null;
             } catch (SQLException e) {
                 LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Closing Database Connection " + e.getMessage());
             }
@@ -170,7 +172,7 @@ public class DataBaseUtil {
         }
     }
 
-    private List<Map<String, Object>> extractResultSet(ResultSet resultSet) throws SQLException {
+    public List<Map<String, Object>> extractResultSet(ResultSet resultSet) throws SQLException {
         List<Map<String, Object>> mapList = new ArrayList<>();
         LinkedHashMap<String, Object> resultData = new LinkedHashMap<>();
         ResultSetMetaData metadata = resultSet.getMetaData();

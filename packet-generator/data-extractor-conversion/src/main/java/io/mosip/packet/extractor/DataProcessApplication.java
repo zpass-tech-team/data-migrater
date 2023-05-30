@@ -46,7 +46,7 @@ public class DataProcessApplication {
                 ObjectMapper mapper = new ObjectMapper();
                 RequestWrapper<DBImportRequest> request = mapper.readValue(requestJson, new TypeReference<RequestWrapper<DBImportRequest>>() {});
                 System.out.println("Request : " + (new Gson()).toJson(request));
-                PacketCreatorResponse response =  context.getBean(DataExtractionService.class).createPacketFromDataBase(request.getRequest());
+                PacketCreatorResponse response =  context.getBean(DataExtractionService.class).createPacketFromDataBase(request.getRequest(), false);
                 System.out.println("Response : " + (new Gson()).toJson(response));
                 System.exit(0);
             }

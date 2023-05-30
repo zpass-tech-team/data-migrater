@@ -124,7 +124,7 @@ public class TrackerUtil {
         }
     }
 
-    public void closeConnection() {
+    public void closeStatement() {
         if (conn != null) {
             try {
                 if(preparedStatement != null) {
@@ -132,8 +132,6 @@ public class TrackerUtil {
                     preparedStatement.clearBatch();
                     preparedStatement.closeOnCompletion();
                 }
-
-                conn.close();
             } catch (SQLException e) {
                 LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Closing Database Connection " + e.getMessage());
             }

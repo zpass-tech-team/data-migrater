@@ -198,7 +198,7 @@ public class PacketCreator {
         return docMap;
     }
 
-    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap) throws Exception {
+    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap) throws Exception {
         LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
 //        LOGGER.debug("Adding Biometrics to packet manager started..");
@@ -298,6 +298,7 @@ public class PacketCreator {
                                         LinkedHashMap<String, Object> modalityMap = (LinkedHashMap<String, Object>) scoreMap.get(biometricType.toString());
                                         Double score = (Double) modalityMap.get("score");
                                         bir.getBdbInfo().getQuality().setScore(score.longValue());
+                                        csvMap.put(entry.getKey(), score.toString());
                                     } else {
                                         throw new Exception("Error While Calling BIOSDK for Quality Check for Modality " + biometricType.toString() + ", " + bioAttribute);
                                     }

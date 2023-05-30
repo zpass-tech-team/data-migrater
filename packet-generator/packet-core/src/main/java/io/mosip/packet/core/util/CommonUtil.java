@@ -11,6 +11,7 @@ import io.mosip.packet.core.service.DataRestClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,5 +65,23 @@ public class CommonUtil {
         for(FieldFormatRequest request : dbImportRequest.getColumnDetails())
             if(request.getFieldCategory() == null)
                 request.setFieldCategory(fieldMap.get(request.getFieldToMap()) == null ? FieldCategory.DEMO : fieldMap.get(request.getFieldToMap()));
+    }
+
+    public Object[] getBioAttributesforAll() throws ApisResourceAccessException {
+        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
+        List<String> attributes = new ArrayList<>();
+
+        for(Object obj : (List)idSchema.get("schema")) {
+            Map<String, Object> map = (Map<String, Object>) obj;
+            String id = map.get("id").toString();
+            String type = map.get("type").toString();
+
+            if(type.equalsIgnoreCase("biometricsType")) {
+                List<String> bioAttributes = (List<String>) map.get("bioAttributes");
+                for(String attribute : bioAttributes)
+                    attributes.add(id + "_" + attribute);
+            }
+        }
+        return attributes.toArray();
     }
 }
