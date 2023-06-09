@@ -45,7 +45,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
     private BioDocApiFactory bioDocApiFactory;
 
     @Override
-    public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName, Map<String, HashSet<String>> fieldsCategoryMap) throws Exception {
+    public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
 
         List<FieldName> fieldNames = fieldFormatRequest.getFieldList();
@@ -92,6 +92,8 @@ public class TableDataMapperUtil implements DataMapperUtil {
                             }
                         else
                             demoValue += " <" + field.getFieldName() + ">";
+
+                        dataMap2.get(fieldFormatRequest.getFieldCategory()).put(field.getTableName() + "." + field.getFieldName(), resultSet.get(field.getFieldName()));
                     }
                 }
 
@@ -115,7 +117,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
                     if(objectStoreFetchEnabled)
                         byteVal = objectStoreHelper.getBiometricObject(new String(byteVal, StandardCharsets.UTF_8));
                     byteVal = bioDocApiFactory.getBioData(byteVal, fieldMap);
-                    byte[] convertedImageData = convertBiometric(null, fieldFormatRequest, byteVal, false);
+                    byte[] convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, byteVal, localStoreRequired);
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.get(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore())) : ""), convertedImageData);
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, "");
                 }
@@ -159,8 +161,8 @@ public class TableDataMapperUtil implements DataMapperUtil {
 
     public byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws Exception {
         if (localStoreRequired) {
-            bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0) , bioValue, fieldFormatRequest.getSrcFormat());
-            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat());
+            bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
+            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName(), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat());
         } else {
             return bioConversion.convertImage(fieldFormatRequest, bioValue);
         }

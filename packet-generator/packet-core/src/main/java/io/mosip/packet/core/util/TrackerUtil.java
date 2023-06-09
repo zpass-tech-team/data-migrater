@@ -2,17 +2,21 @@ package io.mosip.packet.core.util;
 
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.packet.core.constant.DBTypes;
 import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.constant.QuerySelection;
 import io.mosip.packet.core.constant.tracker.StringType;
 import io.mosip.packet.core.constant.tracker.TimeStampType;
+import io.mosip.packet.core.constant.tracker.TrackerStatus;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.dto.dbimport.QueryFilter;
 import io.mosip.packet.core.dto.dbimport.TableRequestDto;
 import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
+import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
+import io.mosip.packet.core.repository.PacketTrackerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +39,9 @@ public class TrackerUtil {
     private int batchLimit = 2;
     private int batchSize = 0;
     private static String connectionHost = null;
+
+    @Autowired
+    private PacketTrackerRepository packetTrackerRepository;
 
     static {
         try (InputStream configKeys = TrackerUtil.class.getClassLoader().getResourceAsStream("database.properties")) {
@@ -199,5 +206,31 @@ public class TrackerUtil {
             return sb.toString();
         }
 
+    }
+
+    public void addTrackerLocalEntry(String refId, String regNo, TrackerStatus status, String process, String request) {
+        Optional<PacketTracker> optional= packetTrackerRepository.findById(refId);
+
+        PacketTracker packetTracker;
+
+        if(optional.isPresent()) {
+            packetTracker = optional.get();
+            if(regNo != null ) packetTracker.setRegNo(regNo);
+            if(status != null ) packetTracker.setStatus(status.toString());
+            if(process != null ) packetTracker.setProcess(process);
+            if(request != null ) packetTracker.setRequest(request);
+            packetTracker.setUpdBy("BATCH");
+            packetTracker.setUpdDtimes(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
+        } else {
+            packetTracker = new PacketTracker();
+            if(refId != null ) packetTracker.setRefId(refId);
+            if(regNo != null ) packetTracker.setRegNo(regNo);
+            if(status != null ) packetTracker.setStatus(status.toString());
+            if(process != null ) packetTracker.setProcess(process);
+            if(request != null ) packetTracker.setRequest(request);
+            packetTracker.setCrBy("BATCH");
+            packetTracker.setCrDtime(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
+        }
+        packetTrackerRepository.saveAndFlush(packetTracker);
     }
 }

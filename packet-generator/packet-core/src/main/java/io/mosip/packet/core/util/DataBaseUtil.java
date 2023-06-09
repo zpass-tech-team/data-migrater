@@ -150,7 +150,7 @@ public class DataBaseUtil {
         }
     }
 
-    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, List<Map<FieldCategory, LinkedHashMap<String, Object>>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap) throws Exception {
+    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, List<Map<FieldCategory, LinkedHashMap<String, Object>>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
         List<Map<String, Object>> resultData = extractResultSet(resultSet);
 
         for(Map<String, Object> result : resultData) {
@@ -165,7 +165,7 @@ public class DataBaseUtil {
             }
 
             for (FieldFormatRequest fieldFormatRequest : columnDetails) {
-                dataMapperUtil.dataMapper(fieldFormatRequest, result, dataMap1, tableRequestDto.getTableNameWithOutSchema(), fieldsCategoryMap);
+                dataMapperUtil.dataMapper(fieldFormatRequest, result, dataMap1, tableRequestDto.getTableNameWithOutSchema(), fieldsCategoryMap, localStoreRequired);
             }
             if(dataMap2 == null)
                 dataMap.add(dataMap1);

@@ -1,16 +1,21 @@
 package io.mosip.packet.extractor.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.commons.packet.dto.packet.PacketDto;
+import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.packet.core.constant.*;
+import io.mosip.packet.core.constant.tracker.TrackerStatus;
 import io.mosip.packet.core.dto.dbimport.*;
 import io.mosip.packet.core.dto.masterdata.DocumentCategoryDto;
 import io.mosip.packet.core.dto.masterdata.DocumentTypeExtnDto;
 import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
 import io.mosip.packet.core.dto.upload.PacketUploadDTO;
 import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
+import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
+import io.mosip.packet.core.repository.PacketTrackerRepository;
 import io.mosip.packet.core.service.thread.*;
 import io.mosip.packet.core.util.CSVFileWriter;
 import io.mosip.packet.core.util.CommonUtil;
@@ -102,25 +107,49 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Autowired
     private CSVFileWriter csvFileWriter;
 
+    @Autowired
+    private PacketTrackerRepository packetTrackerRepository;
+
     private List<Map<FieldCategory, LinkedHashMap<String, Object>>> dataMap = new ArrayList<>();
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
     private Map<String, HashSet<String>> fieldsCategoryMap = new HashMap<>();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public LinkedHashMap<String, Object> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
         LinkedHashMap<String, Object> biodata = new LinkedHashMap<>();
-
+        dataMap.clear();
         dataBaseUtil.connectDatabase(dbImportRequest, false);
         populateTableFields(dbImportRequest);
-        ResultSet resultSet = dataBaseUtil.readDataFromDatabase(dbImportRequest.getTableDetails().get(0), null, null);
+        commonUtil.updateFieldCategory(dbImportRequest);
 
-        while (resultSet.next()) {
-            for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
-                byte[] byteVal = resultSet.getBinaryStream(fieldFormatRequest.getFieldName()).readAllBytes();
-                byte[] convertedImageData = tableDataMapperUtil.convertBiometric(resultSet.getString(fieldFormatRequest.getPrimaryField()), fieldFormatRequest, byteVal, localStoreRequired);
-                biodata.put(resultSet.getString(fieldFormatRequest.getPrimaryField())+ "-" + fieldFormatRequest.getFieldList().get(0),  convertedImageData);
+        List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
+        Collections.sort(tableRequestDtoList);
+        TableRequestDto tableRequestDto  = tableRequestDtoList.get(0);
+        ResultSet resultSet = null;
+        resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto, null, fieldsCategoryMap);
+
+        if (resultSet != null) {
+            dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null, dataMap, fieldsCategoryMap, localStoreRequired);
+
+            for (Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap : dataMap) {
+                for (int i = 1; i < tableRequestDtoList.size(); i++) {
+                    TableRequestDto tableRequestDto1 = tableRequestDtoList.get(i);
+                    resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto1, dataHashMap, fieldsCategoryMap);
+
+                    if (resultSet != null) {
+                        dataBaseUtil.populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap, localStoreRequired);
+                    }
+
+                    for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
+                        if(fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
+                            byte[] convertedImageData = (byte[]) dataHashMap.get(FieldCategory.BIO).get(fieldFormatRequest.getFieldToMap());
+                            biodata.put(dataHashMap.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField())+ "-" + fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getFieldName()),  convertedImageData);
+                        }
+                    }
+                }
             }
         }
 
@@ -151,6 +180,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
         try {
             commonUtil.updateFieldCategory(dbImportRequest);
+            commonUtil.updateBioDestFormat(dbImportRequest);
             List<ValidatorEnum> enumList = new ArrayList<>();
             enumList.add(ValidatorEnum.ID_SCHEMA_VALIDATOR);
             enumList.add(ValidatorEnum.FILTER_VALIDATOR);
@@ -165,7 +195,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto, null, fieldsCategoryMap);
 
             if (resultSet != null) {
-                dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null, dataMap, fieldsCategoryMap);
+                dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null, dataMap, fieldsCategoryMap, false);
 
                 Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
 
@@ -183,8 +213,13 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         TrackerRequestDto trackerRequestDto = new TrackerRequestDto();
                         trackerRequestDto.setRegNo(resultDto.getRegNo());
                         trackerRequestDto.setRefId(resultDto.getRefId());
-                        trackerRequestDto.setStatus("PROCESSED");
+                        if (enablePaccketUploader) {
+                            trackerRequestDto.setStatus(TrackerStatus.PROCESSED.toString());
+                        } else {
+                            trackerRequestDto.setStatus(TrackerStatus.PROCESSED_WITHOUT_UPLOAD.toString());
+                        }
                         trackerUtil.addTrackerEntry(trackerRequestDto);
+                        trackerUtil.addTrackerLocalEntry(resultDto.getRefId(), null, (enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD), null, enablePaccketUploader ? "" : null);
                     }
                 };
 
@@ -195,7 +230,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto1, dataHashMap, fieldsCategoryMap);
 
                         if (resultSet != null) {
-                            dataBaseUtil.populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap);
+                            dataBaseUtil.populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap, false);
                         }
                     }
 
@@ -238,6 +273,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 LinkedHashMap<String, Object> bioDetails = dataHashMap.get(FieldCategory.BIO);
                                 LinkedHashMap<String, Object> docDetails = dataHashMap.get(FieldCategory.DOC);
 
+                                trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), registrationId, TrackerStatus.STARTED, dbImportRequest.getProcess(), null);
+
                                 LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
 
                                 if (!isOnlyForQualityCheck  && docDetails.size()>0) {
@@ -268,6 +305,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                     packetDto.setOfflineMode(true);
 
                                     List<PacketInfo> infoList = packetCreatorService.persistPacket(packetDto);
+                                    PacketInfo info = infoList.get(0);
+
+                                    trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.CREATED, null, objectMapper.writeValueAsString(demoDetails));
 
                                     Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
 
@@ -296,7 +336,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                             }
                                         }
 
-                                        PacketInfo info = infoList.get(0);
                                         Path path = Paths.get(System.getProperty("user.dir"), "home/" + packetUploadPath);
                                         uploadDTO.setPacketPath(path.toAbsolutePath().toString());
                                         uploadDTO.setRegistrationType(dbImportRequest.getProcess());
@@ -310,6 +349,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                                         if(enablePaccketUploader) {
                                             packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
+                                            trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.SYNCED, null, objectMapper.writeValueAsString(uploadList));
                                             packetUploaderService.uploadSyncedPacket(uploadList, response);
                                         } else {
                                             LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploader Disabled : "+ (new Gson()).toJson(response));

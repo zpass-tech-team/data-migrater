@@ -12,6 +12,7 @@ import io.mosip.packet.extractor.service.DataExtractionService;
 import io.mosip.packet.extractor.util.ConfigUtil;
 import io.mosip.kernel.dataaccess.hibernate.config.HibernateDaoConfig;
 import io.mosip.kernel.dataaccess.hibernate.repository.impl.HibernateRepositoryImpl;
+import io.mosip.packet.extractor.util.Reprocessor;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.MockDeviceUtil;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -39,6 +40,7 @@ public class DataProcessApplication {
             context.getBean(MockDeviceUtil.class).resetDevices();
             context.getBean(MockDeviceUtil.class).initDeviceHelpers();
             context.getBean(ConfigUtil.class).loadConfigDetails();
+            context.getBean(Reprocessor.class).reprocess();
             boolean internal = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.refer.internal.json.file"));
             if(internal) {
                 FileInputStream io = new FileInputStream("./ApiRequest.json");

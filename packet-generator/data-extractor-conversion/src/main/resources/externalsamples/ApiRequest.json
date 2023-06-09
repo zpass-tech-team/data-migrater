@@ -13,7 +13,7 @@
       {
         "queryType": "SQL_QUERY",
         "executionOrderSequence": 2,
-        "tableName": "dbo.CITIZEN",
+        "tableName": "dbo.POC_DOCUMENTS",
         "sqlQuery": "SELECT poc_dt_id, cit_id, doc_ref_no, 'JPG' AS doc_format, document FROM DBO.POC_DOCUMENTS WHERE cit_id = ${DEMO:CITIZEN_ID}"
       },
       {
@@ -45,11 +45,10 @@
     "columnDetails": [
       {
         "fieldName": "CITIZEN.CITIZEN_ID",
-        "fieldCategory": "DEMO",
         "fieldToMap": "CITIZEN_ID"
       },
       {
-        "fieldName": "CITIZEN.FIRSTNAME",
+        "fieldName": "CITIZEN.FIRSTNAME,CITIZEN.MIDDLENAME",
         "fieldToMap": "firstName"
       },
       {
@@ -82,7 +81,7 @@
             {
               "parameterName": "nationality",
               "parameterType": "STRING",
-              "parameterValue": "${CITIZEN.NATIONALITY}"
+              "parameterValue": "${NATIONALITY}"
             },
             {
               "parameterName": "nationalList",
@@ -113,7 +112,6 @@
         "fieldName": "CITIZEN.LEFT_THUMB",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftThumb"
       },
       {
@@ -127,69 +125,60 @@
         "fieldName": "CITIZEN.LEFT_INDEX_FINGER",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftIndex"
       },
       {
         "fieldName": "CITIZEN.LEFT_MIDDLE_FINGER",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftMiddle"
       },
       {
         "fieldName": "CITIZEN.LEFT_RING_FINGER",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftRing"
       },
       {
         "fieldName": "CITIZEN.LEFT_LITTLE_FINGER",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_leftLittle"
       },
       {
         "fieldName": "CITIZEN.RIGHT_THUMB",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightThumb"
       },
       {
         "fieldName": "CITIZEN.RIGHT_INDEX_FINGER",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightIndex"
       },
       {
         "fieldName": "CITIZEN.RIGHT_MIDDLE_FINGER",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightMiddle"
       },
       {
         "fieldName": "CITIZEN.RIGHT_RING_FINGER",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightRing"
       },
       {
         "fieldName": "CITIZEN.RIGHT_LITTLE_FINGER",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "WSQ",
-        "destFormat": "JP2",
         "fieldToMap": "individualBiometrics_rightLittle"
       }
-    ]
-  },
+    ],
   "trackerInfo" : {
     "trackerColumn" : "CITIZEN_ID"
+  }
   },
   "requesttime": "2018-12-10T06:12:52.994Z",
   "version": "string"
