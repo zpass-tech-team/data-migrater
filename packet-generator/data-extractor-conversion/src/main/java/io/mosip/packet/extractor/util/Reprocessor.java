@@ -99,7 +99,7 @@ public class Reprocessor {
             }
         };
 
-        CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount);
+        CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount, "RE-PROCESSOR");
 
         List<String> statusList = Arrays.asList(reprocessStatusList.split(","));
 

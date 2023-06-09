@@ -223,7 +223,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     }
                 };
 
-                CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount);
+                CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount,"PACKET CREATOR");
                 for (Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap : dataMap) {
                     for (int i = 1; i < tableRequestDtoList.size(); i++) {
                         TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
