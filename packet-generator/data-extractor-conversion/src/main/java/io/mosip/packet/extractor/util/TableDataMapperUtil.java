@@ -144,11 +144,14 @@ public class TableDataMapperUtil implements DataMapperUtil {
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
                 String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
                 if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
-                    byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldName));
-                    if(objectStoreFetchEnabled)
-                        byteVal = objectStoreHelper.getBiometricObject(new String(byteVal, StandardCharsets.UTF_8));
-                    byteVal = bioDocApiFactory.getBioData(byteVal, fieldMap);
-                    byte[] convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, byteVal, localStoreRequired);
+                    byte[] convertedImageData = null;
+                    if(resultSet.get(fieldName) != null) {
+                        byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldName));
+                        if(objectStoreFetchEnabled)
+                            byteVal = objectStoreHelper.getBiometricObject(new String(byteVal, StandardCharsets.UTF_8));
+                        byteVal = bioDocApiFactory.getBioData(byteVal, fieldMap);
+                        convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, byteVal, localStoreRequired);
+                    }
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.get(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore())) : ""), convertedImageData);
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, "");
                 }

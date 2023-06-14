@@ -16,6 +16,7 @@ public class BiometricsDto {
 	private String modalityName;
 	private double qualityScore;
 	private boolean isForceCaptured;
+	private boolean isNotAvailable;
 	private int numOfRetries;	
 	private boolean isCaptured;
 	private String subType;
