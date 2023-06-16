@@ -5,5 +5,6 @@ public enum TrackerStatus {
     PROCESSED_WITHOUT_UPLOAD,
     STARTED,
     CREATED,
-    SYNCED
+    SYNCED,
+    FAILED
 }

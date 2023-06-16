@@ -287,6 +287,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                                 if (bioDetails.size()>0) {
                                     packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo, csvMap));
+                                } else {
+                                    trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), registrationId, TrackerStatus.FAILED, dbImportRequest.getProcess(), "Packet have No Biometrics");
                                 }
 
                                 csvMap.put("reg_no", registrationId);
