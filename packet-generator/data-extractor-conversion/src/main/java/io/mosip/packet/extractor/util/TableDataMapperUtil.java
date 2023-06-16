@@ -49,7 +49,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
     @Override
     public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
-
+        DataFormat destFormat = fieldFormatRequest.getDestFormat() != null ? fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1) : null;
         List<FieldName> fieldNames = fieldFormatRequest.getFieldList();
         String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldNames.get(0).getFieldName().toLowerCase();
         String originalField = fieldFormatRequest.getFieldName();
@@ -101,10 +101,10 @@ public class TableDataMapperUtil implements DataMapperUtil {
                 }
 
                 if(demoValue != null) {
-                    if (fieldFormatRequest.getDestFormat() != null) {
-                        if (fieldFormatRequest.getDestFormat().equals(DataFormat.DMY) || fieldFormatRequest.getDestFormat().equals(DataFormat.YMD)) {
+                    if (destFormat != null) {
+                        if (destFormat.equals(DataFormat.DMY) || destFormat.equals(DataFormat.YMD)) {
                             Date dateVal = DateUtils.findDateFormat(demoValue.toString());
-                            demoValue = DateUtils.parseDate(dateVal, fieldFormatRequest.getDestFormat().getFormat());
+                            demoValue = DateUtils.parseDate(dateVal, destFormat.getFormat());
                         } else {
                             throw new Exception("Invalid Format for Conversion for Demo Details for Field : " + fieldFormatRequest.getFieldName());
                         }
@@ -196,7 +196,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
     public byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws Exception {
         if (localStoreRequired) {
             bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
-            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName(), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat());
+            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName(), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
         } else {
             return bioConversion.convertImage(fieldFormatRequest, bioValue);
         }

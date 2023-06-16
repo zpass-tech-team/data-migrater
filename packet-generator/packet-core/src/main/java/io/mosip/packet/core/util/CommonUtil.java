@@ -70,7 +70,7 @@ public class CommonUtil {
 
     public void updateBioDestFormat(DBImportRequest dbImportRequest) throws ApisResourceAccessException {
         LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
-        LinkedHashMap<String, DataFormat> fieldMap = new LinkedHashMap<>();
+        LinkedHashMap<String, List<DataFormat>> fieldMap = new LinkedHashMap<>();
 
         for(Object obj : (List)idSchema.get("schema")) {
             Map<String, Object> map = (Map<String, Object>) obj;
@@ -79,8 +79,12 @@ public class CommonUtil {
 
             if(type.equalsIgnoreCase("biometricsType")) {
                 List<String> bioAttributes = (List<String>) map.get("bioAttributes");
-                for(String attribute : bioAttributes)
-                    fieldMap.put(id + "_" + attribute, DataFormat.ISO);
+                for(String attribute : bioAttributes) {
+                    List<DataFormat> formatList = new ArrayList<>();
+                    formatList.add(DataFormat.JP2);
+                    formatList.add(DataFormat.ISO);
+                    fieldMap.put(id + "_" + attribute, formatList);
+                }
             }
         }
 

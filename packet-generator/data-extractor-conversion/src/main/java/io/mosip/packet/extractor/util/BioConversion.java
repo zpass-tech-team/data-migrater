@@ -13,64 +13,70 @@ import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
 import java.io.*;
+import java.util.List;
 
 @Component
 public class BioConversion {
 
     public byte[] convertImage(FieldFormatRequest fieldFormatRequest, byte[] imageData) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] byteData = new byte[0];
+        byte[] byteData = imageData;
+        List<DataFormat> destFormats = fieldFormatRequest.getDestFormat();
+        DataFormat currentFormat = fieldFormatRequest.getSrcFormat();
 
-        if(fieldFormatRequest.getSrcFormat().equals(DataFormat.JPEG) && !fieldFormatRequest.getDestFormat().equals(DataFormat.JPEG)) {
-            ImageIO.write(ImageIO.read(new ByteArrayInputStream(imageData)), fieldFormatRequest.getDestFormat().getFormat(), baos);
-            byteData = baos.toByteArray();
-        } else if(fieldFormatRequest.getDestFormat().equals(DataFormat.JP2)) {
-            ImageIO.write(ImageIO.read(new ByteArrayInputStream(Jnbis.wsq().decode(imageData).toJpg().asByteArray())), fieldFormatRequest.getDestFormat().getFormat(), baos);
-            byteData = baos.toByteArray();
-        } else if(fieldFormatRequest.getDestFormat().equals(DataFormat.ISO) && (fieldFormatRequest.getSrcFormat().equals(DataFormat.JP2) || fieldFormatRequest.getSrcFormat().equals(DataFormat.WSQ))) {
-            Integer inputImageType = null;
+        for(DataFormat toFormat : destFormats) {
+            if(currentFormat.equals(DataFormat.JPEG) && !toFormat.equals(DataFormat.JPEG)) {
+                ImageIO.write(ImageIO.read(new ByteArrayInputStream(byteData)), toFormat.getFormat(), baos);
+                byteData = baos.toByteArray();
+                currentFormat = toFormat;
+            } else if(currentFormat.equals(DataFormat.WSQ)) {
+                ImageIO.write(ImageIO.read(new ByteArrayInputStream(Jnbis.wsq().decode(byteData).toJpg().asByteArray())), toFormat.getFormat(), baos);
+                byteData = baos.toByteArray();
+                currentFormat = toFormat;
+            } else if(toFormat.equals(DataFormat.ISO) && (currentFormat.equals(DataFormat.JP2) || currentFormat.equals(DataFormat.WSQ))) {
+                Integer inputImageType = null;
 
-            switch(fieldFormatRequest.getSrcFormat().toString()) {
-                case "JP2":
-                    inputImageType = 0;
-                    break;
-                case "WSQ":
-                    inputImageType = 1;
-                    break;
+                switch(currentFormat.toString()) {
+                    case "JP2":
+                        inputImageType = 0;
+                        break;
+                    case "WSQ":
+                        inputImageType = 1;
+                        break;
+                }
+
+                String bioAttribute = fieldFormatRequest.getFieldToMap().split("_")[1];
+                BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
+
+                if (biometricType.equals(BiometricType.FINGER)) {
+                    ConvertRequestDto requestDto = new ConvertRequestDto();
+                    requestDto.setModality("Finger");
+                    requestDto.setPurpose("REGISTRATION");
+                    requestDto.setVersion("ISO19794_4_2011");
+                    requestDto.setImageType(inputImageType);
+                    requestDto.setBiometricSubType("UNKNOWN");
+                    requestDto.setInputBytes(byteData);
+                    byteData = FingerEncoder.convertFingerImageToISO(requestDto);
+                } else if (biometricType.equals(BiometricType.IRIS)) {
+                    ConvertRequestDto requestDto = new ConvertRequestDto();
+                    requestDto.setModality("Iris");
+                    requestDto.setPurpose("REGISTRATION");
+                    requestDto.setVersion("ISO19794_6_2011");
+                    requestDto.setImageType(inputImageType);
+                    requestDto.setBiometricSubType(bioAttribute);
+                    requestDto.setInputBytes(byteData);
+                    byteData = IrisEncoder.convertIrisImageToISO(requestDto);
+                } else if (biometricType.equals(BiometricType.FACE)) {
+                    ConvertRequestDto requestDto = new ConvertRequestDto();
+                    requestDto.setModality("Face");
+                    requestDto.setPurpose("REGISTRATION");
+                    requestDto.setVersion("ISO19794_5_2011");
+                    requestDto.setImageType(inputImageType);
+                    requestDto.setInputBytes(byteData);
+                    byteData = FaceEncoder.convertFaceImageToISO (requestDto);
+                }
+                currentFormat = toFormat;
             }
-
-            String bioAttribute = fieldFormatRequest.getFieldToMap().split("_")[1];
-            BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
-
-            if (biometricType.equals(BiometricType.FINGER)) {
-                ConvertRequestDto requestDto = new ConvertRequestDto();
-                requestDto.setModality("Finger");
-                requestDto.setPurpose("REGISTRATION");
-                requestDto.setVersion("ISO19794_4_2011");
-                requestDto.setImageType(inputImageType);
-                requestDto.setBiometricSubType("UNKNOWN");
-                requestDto.setInputBytes(imageData);
-                byteData = FingerEncoder.convertFingerImageToISO(requestDto);
-            } else if (biometricType.equals(BiometricType.IRIS)) {
-                ConvertRequestDto requestDto = new ConvertRequestDto();
-                requestDto.setModality("Iris");
-                requestDto.setPurpose("REGISTRATION");
-                requestDto.setVersion("ISO19794_6_2011");
-                requestDto.setImageType(inputImageType);
-                requestDto.setBiometricSubType(bioAttribute);
-                requestDto.setInputBytes(imageData);
-                byteData = IrisEncoder.convertIrisImageToISO(requestDto);
-            } else if (biometricType.equals(BiometricType.FACE)) {
-                ConvertRequestDto requestDto = new ConvertRequestDto();
-                requestDto.setModality("Face");
-                requestDto.setPurpose("REGISTRATION");
-                requestDto.setVersion("ISO19794_5_2011");
-                requestDto.setImageType(inputImageType);
-                requestDto.setInputBytes(imageData);
-                byteData = FaceEncoder.convertFaceImageToISO (requestDto);
-            }
-        } else {
-            byteData = imageData;
         }
 
         return byteData;

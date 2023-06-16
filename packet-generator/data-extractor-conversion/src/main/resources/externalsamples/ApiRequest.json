@@ -62,7 +62,8 @@
       {
         "fieldName": "CITIZEN.BIRTHDATE",
         "fieldToMap": "dateOfBirth",
-        "destFormat": "YMD"
+        "destFormat": ["YMD"]
+
       },
       {
         "fieldName": "CITIZEN.GENDER",
@@ -118,7 +119,10 @@
         "fieldName": "CITIZEN.photo",
         "primaryField": "CITIZEN.FIRSTNAME",
         "srcFormat": "JPEG",
-        "destFormat": "JP2",
+        "destFormat": [
+          "JP2",
+          "ISO"
+        ],
         "fieldToMap": "individualBiometrics_face"
       },
       {
