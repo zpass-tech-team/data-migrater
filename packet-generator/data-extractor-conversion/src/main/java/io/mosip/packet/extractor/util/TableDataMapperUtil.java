@@ -10,6 +10,7 @@ import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.dto.dbimport.FieldName;
 import io.mosip.packet.core.dto.mvel.MvelParameter;
 import io.mosip.packet.core.service.CustomNativeRepository;
+import io.mosip.packet.core.spi.BioConvertorApiFactory;
 import io.mosip.packet.core.spi.BioDocApiFactory;
 import io.mosip.packet.core.util.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
     private MvelUtil mvelUtil;
 
     @Autowired
-    private BioConversion bioConversion;
+    private BioConvertorApiFactory bioConvertorApiFactory;
 
     @Autowired
     private CommonUtil commonUtil;
@@ -195,10 +196,10 @@ public class TableDataMapperUtil implements DataMapperUtil {
 
     public byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws Exception {
         if (localStoreRequired) {
-            bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
-            return bioConversion.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName(), bioConversion.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
+            bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
+            return bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName(), bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
         } else {
-            return bioConversion.convertImage(fieldFormatRequest, bioValue);
+            return bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue);
         }
     }
 }

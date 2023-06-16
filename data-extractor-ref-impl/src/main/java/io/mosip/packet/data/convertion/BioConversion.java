@@ -1,4 +1,4 @@
-package io.mosip.packet.extractor.util;
+package io.mosip.packet.data.convertion;
 
 import io.mosip.biometrics.util.ConvertRequestDto;
 import io.mosip.biometrics.util.face.FaceEncoder;
@@ -8,6 +8,7 @@ import io.mosip.commons.packet.constants.Biometric;
 import io.mosip.packet.core.constant.DataFormat;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.kernel.biometrics.constant.BiometricType;
+import io.mosip.packet.core.spi.BioConvertorApiFactory;
 import org.jnbis.api.Jnbis;
 import org.springframework.stereotype.Component;
 
@@ -16,8 +17,9 @@ import java.io.*;
 import java.util.List;
 
 @Component
-public class BioConversion {
+public class BioConversion implements BioConvertorApiFactory {
 
+    @Override
     public byte[] convertImage(FieldFormatRequest fieldFormatRequest, byte[] imageData) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] byteData = imageData;
@@ -82,8 +84,13 @@ public class BioConversion {
         return byteData;
     }
 
+    @Override
     public byte[] writeFile(String fileName, byte[] imageData, DataFormat toFormat) throws IOException {
-        File bioFile = new File("C:/Users/Thamarai.Kannan/Downloads/" + fileName + "."+ toFormat.getFileFormat());
+        File imagePath = new File(System.getProperty("user.dir") + "/Images");
+        if(!imagePath.exists())
+            imagePath.mkdirs();
+
+        File bioFile = new File(imagePath.getAbsolutePath() + "/" + fileName + "."+ toFormat.getFileFormat());
         OutputStream os = new FileOutputStream(bioFile);
         os.write(imageData);
         os.close();
