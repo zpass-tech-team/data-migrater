@@ -287,85 +287,91 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                                 if (bioDetails.size()>0) {
                                     packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo, csvMap));
+
+                                    csvMap.put("reg_no", registrationId);
+                                    csvMap.put("ref_id", demoDetails.get(trackerColumn).toString());
+                                    CSVFileWriter.writeCSVData(csvMap.values().toArray(new String[0]));
+
+                                    if(!isOnlyForQualityCheck) {
+                                        packetDto.setId(registrationId);
+                                        packetDto.setRefId(ConfigUtil.getConfigUtil().getCenterId()+ "_" + ConfigUtil.getConfigUtil().getMachineId());
+                                        packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
+                                        packetDto.setMetaInfo(metaInfo);
+                                        packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
+
+                                        LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
+                                        packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
+                                        packetDto.setOfflineMode(true);
+
+                                        List<PacketInfo> infoList = packetCreatorService.persistPacket(packetDto);
+                                        PacketInfo info = infoList.get(0);
+
+                                        trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.CREATED, null, objectMapper.writeValueAsString(demoDetails));
+
+                                        Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
+
+                                        if (identityFile.toFile().exists()) {
+                                            PacketUploadDTO uploadDTO = new PacketUploadDTO();
+
+                                            JSONParser parser = new JSONParser();
+                                            JSONObject jsonObject = (JSONObject) parser.parse(IOUtils.toString(new FileInputStream(identityFile.toFile()), StandardCharsets.UTF_8));
+                                            JSONObject identityJsonObject = (JSONObject) jsonObject.get("identity");
+                                            for (Object entry : identityJsonObject.keySet()) {
+                                                String val = (String) ((JSONObject)identityJsonObject.get(entry)).get("value");
+                                                if (val.contains(",")) {
+                                                    String[] valList = val.split(",");
+                                                    String fullVal = null;
+
+                                                    for (String val2 : valList) {
+                                                        if(fullVal == null) {
+                                                            fullVal= (String) demoDetails.get(val2);
+                                                        } else {
+                                                            fullVal += " " + demoDetails.get(val2);
+                                                        }
+                                                    }
+                                                    uploadDTO.setValue(entry.toString(), fullVal);
+                                                } else {
+                                                    uploadDTO.setValue(entry.toString(), demoDetails.get(entry));
+                                                }
+                                            }
+
+                                            Path path = Paths.get(System.getProperty("user.dir"), "home/" + packetUploadPath);
+                                            uploadDTO.setPacketPath(path.toAbsolutePath().toString());
+                                            uploadDTO.setRegistrationType(dbImportRequest.getProcess());
+                                            uploadDTO.setPacketId(info.getId());
+                                            uploadDTO.setRegistrationId(info.getId().split("-")[0]);
+                                            uploadDTO.setLangCode(primaryLanguage);
+
+                                            List<PacketUploadDTO> uploadList = new ArrayList<>();
+                                            uploadList.add(uploadDTO);
+                                            LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
+
+                                            if(enablePaccketUploader) {
+                                                packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
+                                                trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.SYNCED, null, objectMapper.writeValueAsString(uploadList));
+                                                packetUploaderService.uploadSyncedPacket(uploadList, response);
+                                            } else {
+                                                LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploader Disabled : "+ (new Gson()).toJson(response));
+                                            }
+
+                                            ResultDto resultDto = new ResultDto();
+                                            resultDto.setRegNo(info.getId());
+                                            resultDto.setRefId(demoDetails.get(trackerColumn).toString());
+                                            setter.setResult(resultDto);
+                                            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response : "+ (new Gson()).toJson(response));
+                                        } else {
+                                            throw new Exception("Identity Mapping JSON File missing");
+                                        }
+                                    }
                                 } else {
+                                    TrackerRequestDto trackerRequestDto = new TrackerRequestDto();
+                                    trackerRequestDto.setRegNo(registrationId);
+                                    trackerRequestDto.setRefId(demoDetails.get(trackerColumn).toString());
+                                    trackerRequestDto.setStatus(TrackerStatus.FAILED.toString());
+                                    trackerUtil.addTrackerEntry(trackerRequestDto);
                                     trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), registrationId, TrackerStatus.FAILED, dbImportRequest.getProcess(), "Packet have No Biometrics");
                                 }
 
-                                csvMap.put("reg_no", registrationId);
-                                csvMap.put("ref_id", demoDetails.get(trackerColumn).toString());
-                                CSVFileWriter.writeCSVData(csvMap.values().toArray(new String[0]));
-
-                                if(!isOnlyForQualityCheck) {
-                                    packetDto.setId(registrationId);
-                                    packetDto.setRefId(ConfigUtil.getConfigUtil().getCenterId()+ "_" + ConfigUtil.getConfigUtil().getMachineId());
-                                    packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
-                                    packetDto.setMetaInfo(metaInfo);
-                                    packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
-
-                                    LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
-                                    packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
-                                    packetDto.setOfflineMode(true);
-
-                                    List<PacketInfo> infoList = packetCreatorService.persistPacket(packetDto);
-                                    PacketInfo info = infoList.get(0);
-
-                                    trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.CREATED, null, objectMapper.writeValueAsString(demoDetails));
-
-                                    Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
-
-                                    if (identityFile.toFile().exists()) {
-                                        PacketUploadDTO uploadDTO = new PacketUploadDTO();
-
-                                        JSONParser parser = new JSONParser();
-                                        JSONObject jsonObject = (JSONObject) parser.parse(IOUtils.toString(new FileInputStream(identityFile.toFile()), StandardCharsets.UTF_8));
-                                        JSONObject identityJsonObject = (JSONObject) jsonObject.get("identity");
-                                        for (Object entry : identityJsonObject.keySet()) {
-                                            String val = (String) ((JSONObject)identityJsonObject.get(entry)).get("value");
-                                            if (val.contains(",")) {
-                                                String[] valList = val.split(",");
-                                                String fullVal = null;
-
-                                                for (String val2 : valList) {
-                                                    if(fullVal == null) {
-                                                        fullVal= (String) demoDetails.get(val2);
-                                                    } else {
-                                                        fullVal += " " + demoDetails.get(val2);
-                                                    }
-                                                }
-                                                uploadDTO.setValue(entry.toString(), fullVal);
-                                            } else {
-                                                uploadDTO.setValue(entry.toString(), demoDetails.get(entry));
-                                            }
-                                        }
-
-                                        Path path = Paths.get(System.getProperty("user.dir"), "home/" + packetUploadPath);
-                                        uploadDTO.setPacketPath(path.toAbsolutePath().toString());
-                                        uploadDTO.setRegistrationType(dbImportRequest.getProcess());
-                                        uploadDTO.setPacketId(info.getId());
-                                        uploadDTO.setRegistrationId(info.getId().split("-")[0]);
-                                        uploadDTO.setLangCode(primaryLanguage);
-
-                                        List<PacketUploadDTO> uploadList = new ArrayList<>();
-                                        uploadList.add(uploadDTO);
-                                        LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
-
-                                        if(enablePaccketUploader) {
-                                            packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
-                                            trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.SYNCED, null, objectMapper.writeValueAsString(uploadList));
-                                            packetUploaderService.uploadSyncedPacket(uploadList, response);
-                                        } else {
-                                            LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploader Disabled : "+ (new Gson()).toJson(response));
-                                        }
-
-                                        ResultDto resultDto = new ResultDto();
-                                        resultDto.setRegNo(info.getId());
-                                        resultDto.setRefId(demoDetails.get(trackerColumn).toString());
-                                        setter.setResult(resultDto);
-                                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response : "+ (new Gson()).toJson(response));
-                                    } else {
-                                        throw new Exception("Identity Mapping JSON File missing");
-                                    }
-                                }
                                 LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + registrationId + " Process Ended");
                             }
                         });
