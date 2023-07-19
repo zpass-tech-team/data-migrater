@@ -18,7 +18,7 @@ public class TableRequestDto implements Comparable<TableRequestDto> {
     private String sqlQuery;
     private String[] nonIdSchemaFields;
     private List<QueryFilter> filters;
-    private String tableNamewithOutSchema;
+    private String tableNameWithOutSchema;
 
     @Override
     public int compareTo(TableRequestDto o) {
@@ -26,12 +26,12 @@ public class TableRequestDto implements Comparable<TableRequestDto> {
     }
 
     public String getTableNameWithOutSchema() {
-        if(tableNamewithOutSchema == null) {
+        if(tableNameWithOutSchema == null) {
             if(tableName.contains("."))
-                tableNamewithOutSchema=tableName.split("\\.")[1];
+                tableNameWithOutSchema=tableName.split("\\.")[1];
             else
-                tableNamewithOutSchema=tableName;
+                tableNameWithOutSchema=tableName;
         }
-        return tableNamewithOutSchema;
+        return tableNameWithOutSchema;
     }
 }
