@@ -16,14 +16,18 @@ public class CustomizedThreadPoolExecutor {
     private boolean noSlotAvailable=false;
     private long totalTaskCount = 0;
     private long totalCompletedTaskCount = 0;
+    private Timer monitor = null;
+    private Timer watch = null;
+    private String NAME;
 
-    public CustomizedThreadPoolExecutor(Integer threadPoolCount, Integer maxThreadCount, Integer maxThreadExecCount) {
+    public CustomizedThreadPoolExecutor(Integer threadPoolCount, Integer maxThreadCount, Integer maxThreadExecCount, String poolName) {
+        this.NAME = poolName;
         this.maxThreadCount = maxThreadCount;
         this.MAX_THREAD_EXE_COUNT = maxThreadExecCount;
         for(int i = 1; i <= threadPoolCount; i++)
             poolMap.put("ThreadPool" + i, (ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
 
-        Timer monitor = new Timer("ThreadPool_Monitor");
+        monitor = new Timer("ThreadPool_Monitor");
         monitor.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -46,7 +50,7 @@ public class CustomizedThreadPoolExecutor {
             }
         }, 0, DELAY_SECONDS);
 
-        Timer watch = new Timer("ThreadPool_Wathcer");
+        watch = new Timer("ThreadPool_Wathcer");
         watch.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -59,7 +63,7 @@ public class CustomizedThreadPoolExecutor {
                     activeCount+= entry.getValue().getActiveCount();
                     completedCount+= entry.getValue().getCompletedTaskCount();
                 }
-                System.out.println("Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+completedCount));
+                System.out.println("Pool Name : " + NAME + "   Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+completedCount));
             }
         }, 0, DELAY_SECONDS);
     }
@@ -97,6 +101,11 @@ public class CustomizedThreadPoolExecutor {
                 }
             }
             TimeUnit.SECONDS.sleep(10);
+        }
+
+        if(isCompleted) {
+            monitor.cancel();
+            watch.cancel();
         }
         return isCompleted;
     }

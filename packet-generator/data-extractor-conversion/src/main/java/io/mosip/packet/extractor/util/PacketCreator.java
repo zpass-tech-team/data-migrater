@@ -223,12 +223,12 @@ public class PacketCreator {
                 bioAttributes.add("unknown");
 
                 for (Map.Entry<String, Object> entry : bioDetails.entrySet()) {
-                    if(!entry.getValue().toString().isEmpty()) {
-                        String[] keyEntries = entry.getKey().split("_");
-                        String fieldId = keyEntries[0];
-                        String bioAttribute = keyEntries[1];
+                    String[] keyEntries = entry.getKey().split("_");
+                    String fieldId = keyEntries[0];
+                    String bioAttribute = keyEntries.length > 1 ? keyEntries[1] : null;
 
-                        if(fieldId.equals(id) && bioAttributes.contains(bioAttribute)) {
+                    if(fieldId.equals(id) && bioAttributes.contains(bioAttribute)) {
+                        if(entry.getValue() != null && !entry.getValue().toString().isEmpty()) {
                             bioAttributes.remove(bioAttribute);
                             String bioQualityScore = keyEntries.length > 2 ? keyEntries[2] : null;
                             String bioType = Biometric.getSingleTypeByAttribute(bioAttribute).value();
@@ -318,6 +318,22 @@ public class PacketCreator {
                                 capturedMetaInfo.put(fieldId, new HashMap<>());
                             }
                             capturedMetaInfo.get(fieldId).put(bioAttribute, new BiometricsMetaInfoDto(1, false, bir.getBdbInfo().getIndex()));
+                        } else {
+                            BiometricsDto biometricDTO = new BiometricsDto(bioAttribute, null, Double.parseDouble("0"));
+                            biometricDTO.setSpecVersion(bioSpecVaersion);
+                            biometricDTO.setCaptured(false);
+                            biometricDTO.setAttributeISO(null);
+                            biometricDTO.setNotAvailable(false);
+                            BIR bir = birBuilder.buildBIR(biometricDTO);
+                            if (!capturedBiometrics.containsKey(id)) {
+                                capturedBiometrics.put(id, new ArrayList<>());
+                            }
+                            capturedBiometrics.get(id).add(bir);
+                            if (!capturedMetaInfo.containsKey(id)) {
+                                capturedMetaInfo.put(id, new HashMap<>());
+                            }
+                            capturedMetaInfo.get(id).put(bioAttribute, new BiometricsMetaInfoDto(1, false, bir.getBdbInfo().getIndex()));
+                            bioAttributes.remove(bioAttribute);
                         }
                     }
                 }
@@ -331,6 +347,7 @@ public class PacketCreator {
                     biometricDTO.setSpecVersion(bioSpecVaersion);
                     biometricDTO.setCaptured(false);
                     biometricDTO.setAttributeISO(null);
+                    biometricDTO.setNotAvailable(true);
                     BIR bir = birBuilder.buildBIR(biometricDTO);
                     if (!capturedBiometrics.containsKey(id)) {
                         capturedBiometrics.put(id, new ArrayList<>());

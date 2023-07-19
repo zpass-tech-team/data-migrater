@@ -20,7 +20,7 @@ public class FieldFormatRequest {
     private FieldCategory fieldCategory;
     private String primaryField;
     private DataFormat srcFormat;
-    private DataFormat destFormat;
+    private List<DataFormat> destFormat;
     private String fieldToMap;
     private String srcFieldForQualityScore;
     private DocumentAttributes documentAttributes;

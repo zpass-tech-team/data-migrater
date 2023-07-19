@@ -2,6 +2,7 @@ package io.mosip.packet.core.util;
 
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import io.mosip.packet.core.constant.ApiName;
+import io.mosip.packet.core.constant.DataFormat;
 import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
@@ -65,6 +66,31 @@ public class CommonUtil {
         for(FieldFormatRequest request : dbImportRequest.getColumnDetails())
             if(request.getFieldCategory() == null)
                 request.setFieldCategory(fieldMap.get(request.getFieldToMap()) == null ? FieldCategory.DEMO : fieldMap.get(request.getFieldToMap()));
+    }
+
+    public void updateBioDestFormat(DBImportRequest dbImportRequest) throws ApisResourceAccessException {
+        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
+        LinkedHashMap<String, List<DataFormat>> fieldMap = new LinkedHashMap<>();
+
+        for(Object obj : (List)idSchema.get("schema")) {
+            Map<String, Object> map = (Map<String, Object>) obj;
+            String id = map.get("id").toString();
+            String type = map.get("type").toString();
+
+            if(type.equalsIgnoreCase("biometricsType")) {
+                List<String> bioAttributes = (List<String>) map.get("bioAttributes");
+                for(String attribute : bioAttributes) {
+                    List<DataFormat> formatList = new ArrayList<>();
+                    formatList.add(DataFormat.JP2);
+                    formatList.add(DataFormat.ISO);
+                    fieldMap.put(id + "_" + attribute, formatList);
+                }
+            }
+        }
+
+        for(FieldFormatRequest request : dbImportRequest.getColumnDetails())
+            if(request.getDestFormat() == null)
+                request.setDestFormat(fieldMap.get(request.getFieldToMap()));
     }
 
     public Object[] getBioAttributesforAll() throws ApisResourceAccessException {

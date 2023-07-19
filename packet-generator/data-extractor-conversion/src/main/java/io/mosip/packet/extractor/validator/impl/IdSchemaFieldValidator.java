@@ -63,8 +63,9 @@ public class IdSchemaFieldValidator implements Validator {
 
         for(FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
             if(nonIdSchemaFieldsMap == null || (nonIdSchemaFieldsMap != null && nonIdSchemaFieldsMap.size() > 0 && !nonIdSchemaFieldsMap.contains(fieldFormatRequest.getFieldToMap())))
-                if(!idFieldsList.contains(fieldFormatRequest.getFieldToMap()))
-                    throw new Exception(fieldFormatRequest.getFieldToMap() + " is not found in Id Schema.");
+                for(String fieldName : fieldFormatRequest.getFieldToMap().split(","))
+                    if(!idFieldsList.contains(fieldName))
+                        throw new Exception(fieldFormatRequest.getFieldToMap() + " is not found in Id Schema.");
         }
         return true;
     }

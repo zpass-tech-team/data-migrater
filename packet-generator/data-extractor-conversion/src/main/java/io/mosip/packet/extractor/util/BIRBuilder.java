@@ -72,6 +72,7 @@ public class BIRBuilder {
 				.withOthers(OtherKey.FORCE_CAPTURED, bioDto.isForceCaptured()+RegistrationConstants.EMPTY)
 				.withOthers(OtherKey.PAYLOAD, payLoad == null ? RegistrationConstants.EMPTY : payLoad)
 				.withOthers(OtherKey.SPEC_VERSION, bioDto.getSpecVersion() == null ? RegistrationConstants.EMPTY : bioDto.getSpecVersion())
+				.withOthers("NOT_AVAILABLE", bioDto.isNotAvailable() ? "true" : "false")
 				.build();
 
 /*		return new BIR.BIRBuilder().withBdb(bioData == null ? new byte[0] : bioData)
