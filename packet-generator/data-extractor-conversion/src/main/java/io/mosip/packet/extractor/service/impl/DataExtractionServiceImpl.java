@@ -132,7 +132,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto, null, fieldsCategoryMap);
 
         if (resultSet != null) {
-            dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null, dataMap, fieldsCategoryMap, localStoreRequired);
+            dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null, dataMap, fieldsCategoryMap, localStoreRequired, false);
 
             for (Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap : dataMap) {
                 for (int i = 1; i < tableRequestDtoList.size(); i++) {
@@ -140,7 +140,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto1, dataHashMap, fieldsCategoryMap);
 
                     if (resultSet != null) {
-                        dataBaseUtil.populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap, localStoreRequired);
+                        dataBaseUtil.populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap, localStoreRequired, false);
                     }
 
                     for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
@@ -195,7 +195,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto, null, fieldsCategoryMap);
 
             if (resultSet != null) {
-                dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null, dataMap, fieldsCategoryMap, false);
+                dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null, dataMap, fieldsCategoryMap, false, isOnlyForQualityCheck);
 
                 Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
 
@@ -230,7 +230,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto1, dataHashMap, fieldsCategoryMap);
 
                         if (resultSet != null) {
-                            dataBaseUtil.populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap, false);
+                            dataBaseUtil.populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, dataMap, fieldsCategoryMap, false, isOnlyForQualityCheck);
                         }
                     }
 
@@ -286,11 +286,11 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 }
 
                                 if (bioDetails.size()>0) {
-                                    packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo, csvMap));
+                                    packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo, csvMap, isOnlyForQualityCheck));
 
                                     csvMap.put("reg_no", registrationId);
                                     csvMap.put("ref_id", demoDetails.get(trackerColumn).toString());
-                                    CSVFileWriter.writeCSVData(csvMap.values().toArray(new String[0]));
+                                    CSVFileWriter.writeCSVData(csvMap);
 
                                     if(!isOnlyForQualityCheck) {
                                         packetDto.setId(registrationId);
@@ -400,6 +400,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             if (fieldFormatRequest.getFieldName().contains(",")) {
                 switch(dbImportRequest.getDbType().toString()) {
                     case "MSSQL":
+                    case "ORACLE":
                         for (FieldName fieldName : fieldFormatRequest.getFieldList()) {
                             if(fieldName.getTableName() != null)
                                 tableName = fieldName.getTableName();

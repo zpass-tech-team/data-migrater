@@ -12,18 +12,17 @@ import io.mosip.commons.packet.dto.packet.DigitalId;
 import io.mosip.commons.packet.dto.packet.DocumentType;
 import io.mosip.commons.packet.dto.packet.PacketDto;
 import io.mosip.kernel.core.util.CryptoUtil;
+import io.mosip.packet.core.config.biosdk.BioSDKConfig;
 import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.constant.RegistrationConstants;
 import io.mosip.packet.core.dto.ResponseWrapper;
-import io.mosip.packet.core.dto.biosdk.BioSDKRequest;
-import io.mosip.packet.core.dto.biosdk.OtherDto;
-import io.mosip.packet.core.dto.biosdk.QualityCheckRequest;
-import io.mosip.packet.core.dto.biosdk.SegmentDto;
+import io.mosip.packet.core.dto.biosdk.*;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.mockmds.BioMetricsDto;
 import io.mosip.packet.core.dto.mockmds.CaptureRequestDeviceDetailDto;
 import io.mosip.packet.core.dto.mockmds.CaptureRequestDto;
 import io.mosip.packet.core.dto.mockmds.RCaptureResponseDataDTO;
+import io.mosip.packet.core.dto.packet.BioData;
 import io.mosip.packet.core.dto.packet.BiometricsDto;
 import io.mosip.packet.core.dto.packet.metadata.BiometricsMetaInfoDto;
 import io.mosip.packet.core.dto.packet.metadata.DocumentMetaInfoDTO;
@@ -35,6 +34,8 @@ import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.kernel.biometrics.entities.BIR;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
+import io.mosip.packet.core.spi.BioDocApiFactory;
+import io.mosip.packet.core.spi.BioSdkApiFactory;
 import io.mosip.packet.core.util.CommonUtil;
 import io.mosip.packet.core.util.mockmds.StringHelper;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.MockDeviceUtil;
@@ -96,6 +97,9 @@ public class PacketCreator {
 
     @Autowired
     private BlocklistedWordsRepository blocklistedWordsRepository;
+
+    @Autowired
+    private BioSDKConfig bioSDKConfig;
 
     private ObjectMapper mapper = new ObjectMapper();
 
@@ -198,7 +202,7 @@ public class PacketCreator {
         return docMap;
     }
 
-    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap) throws Exception {
+    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap, Boolean isOnlyForQualityCheck) throws Exception {
         LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
 //        LOGGER.debug("Adding Biometrics to packet manager started..");
@@ -229,8 +233,9 @@ public class PacketCreator {
 
                     if(fieldId.equals(id) && bioAttributes.contains(bioAttribute)) {
                         if(entry.getValue() != null && !entry.getValue().toString().isEmpty()) {
+                            BioData bioData = (BioData) entry.getValue();
                             bioAttributes.remove(bioAttribute);
-                            String bioQualityScore = keyEntries.length > 2 ? keyEntries[2] : null;
+                            String bioQualityScore = !bioData.getQualityScore().isEmpty() ? bioData.getQualityScore() : null;
                             String bioType = Biometric.getSingleTypeByAttribute(bioAttribute).value();
                             CaptureRequestDto captureRequestDto = new CaptureRequestDto();
                             CaptureRequestDeviceDetailDto captureRequestDeviceDetailDto = new CaptureRequestDeviceDetailDto();
@@ -244,7 +249,7 @@ public class PacketCreator {
                             captureRequestDto.setTransactionId(UUID.randomUUID().toString());
                             captureRequestDto.setBio(captureRequestDeviceDetailDto);
 
-                            BioMetricsDto bioMetricsDto = mockDeviceUtil.getBiometricData(bioType, captureRequestDto, StringHelper.base64UrlEncode((byte[]) entry.getValue()), "en", "0");
+                            BioMetricsDto bioMetricsDto = mockDeviceUtil.getBiometricData(bioType, captureRequestDto, StringHelper.base64UrlEncode((byte[]) bioData.getBioData()), "en", "0");
 
 //                        mosipDeviceSpecificationHelper.validateJWTResponse(bioMetricsDto.getData(), rCaptureTrustDomain);
                             String payLoad = mosipDeviceSpecificationHelper.getPayLoad(bioMetricsDto.getData());
@@ -271,36 +276,46 @@ public class PacketCreator {
                             biometricDTO.setSignature(signature);
                             biometricDTO.setSpecVersion(bioMetricsDto.getSpecVersion());
                             biometricDTO.setCaptured(true);
-                            biometricDTO.setAttributeISO((byte[]) entry.getValue());
+                            biometricDTO.setAttributeISO((byte[]) bioData.getBioData());
                             BIR bir = birBuilder.buildBIR(biometricDTO);
 
                             if (bioQualityScore==null) {
                                 if(biosdkCheckEnabled) {
                                     BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
-                                    SegmentDto segment = new SegmentDto();
-                                    segment.setSegments(new ArrayList<>());
-                                    segment.getSegments().add(bir);
-                                    segment.setOthers(new OtherDto());
-                                    QualityCheckRequest request = new QualityCheckRequest();
-                                    request.setSample(segment);
-                                    request.setModalitiesToCheck(new ArrayList<>());
-                                    request.getModalitiesToCheck().add(biometricType.toString());
-                                    String requestText = (new Gson()).toJson(request);
-                                    String encodedRequest = Base64.getEncoder().encodeToString(requestText.getBytes(StandardCharsets.UTF_8));
-                                    BioSDKRequest bioSDKRequest = new BioSDKRequest();
-                                    bioSDKRequest.setVersion("1.0");
-                                    bioSDKRequest.setRequest(encodedRequest);
-                                    ResponseWrapper response= (ResponseWrapper) restApiClient.postApi(ApiName.BIOSDK_QUALITY_CHECK, null, "", bioSDKRequest, ResponseWrapper.class);
-                                    LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResponse();
-                                    if(bioSDKResponse.get("statusCode").equals(200)) {
-                                        LinkedHashMap<String, Object> resp = (LinkedHashMap<String, Object>) bioSDKResponse.get("response");
-                                        LinkedHashMap<String, Object> scoreMap = (LinkedHashMap<String, Object>) resp.get("scores");
-                                        LinkedHashMap<String, Object> modalityMap = (LinkedHashMap<String, Object>) scoreMap.get(biometricType.toString());
-                                        Double score = (Double) modalityMap.get("score");
-                                        bir.getBdbInfo().getQuality().setScore(score.longValue());
-                                        csvMap.put(entry.getKey(), score.toString());
-                                    } else {
-                                        throw new Exception("Error While Calling BIOSDK for Quality Check for Modality " + biometricType.toString() + ", " + bioAttribute);
+
+                                    BioSDKRequestWrapper requestWrapper = new BioSDKRequestWrapper();
+                                    requestWrapper.setSegments(new ArrayList<>());
+                                    requestWrapper.getSegments().add(bir);
+                                    requestWrapper.setBiometricType(biometricType.toString());
+                                    requestWrapper.setFormat(bioData.getFormat().toString());
+                                    requestWrapper.setInputObject(csvMap);
+                                    requestWrapper.setIsOnlyForQualityCheck(isOnlyForQualityCheck);
+                                    try {
+                                        if(isOnlyForQualityCheck) {
+                                            Map<String, BioSdkApiFactory> bioSdkMap = bioSDKConfig.getBioSDKList().get(biometricType);
+
+                                            for(Map.Entry<String, BioSdkApiFactory> bioSdkEntry : bioSdkMap.entrySet()) {
+                                                requestWrapper.setBiometricField(entry.getKey() + "_" + bioSdkEntry.getKey());
+
+                                                Double score = bioSdkEntry.getValue().calculateBioQuality(requestWrapper);
+                                                String currentVal = csvMap.get(entry.getKey());
+                                                if(bioSDKConfig.getBioSDKList().get(biometricType).size() > 1) {
+                                                    if(currentVal == null)
+                                                        currentVal = bioSdkEntry.getKey() + "(" + score.toString() + ")";
+                                                    else
+                                                        currentVal+= "," + bioSdkEntry.getKey() + "(" + score.toString() + ")";
+                                                } else {
+                                                    currentVal = score.toString();
+                                                }
+                                                csvMap.put(entry.getKey(),  currentVal.toString());
+                                            }
+                                        } else {
+                                            Double score = bioSDKConfig.getDefaultBioSDK().get(biometricType).calculateBioQuality(requestWrapper);
+                                            bir.getBdbInfo().getQuality().setScore(score.longValue());
+                                            csvMap.put(entry.getKey(), score.toString());
+                                        }
+                                    } catch (Exception e) {
+                                        throw new Exception(e.getLocalizedMessage() + " " + biometricType.toString() + ", " + bioAttribute);
                                     }
                                 } else {
                                     bir.getBdbInfo().getQuality().setScore(0L);

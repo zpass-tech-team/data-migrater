@@ -9,6 +9,7 @@ import io.mosip.packet.core.dto.dbimport.DocumentAttributes;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.dto.dbimport.FieldName;
 import io.mosip.packet.core.dto.mvel.MvelParameter;
+import io.mosip.packet.core.dto.packet.BioData;
 import io.mosip.packet.core.service.CustomNativeRepository;
 import io.mosip.packet.core.spi.BioConvertorApiFactory;
 import io.mosip.packet.core.spi.BioDocApiFactory;
@@ -17,8 +18,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.sql.Blob;
+import java.sql.SQLException;
 import java.util.*;
 
 @Component
@@ -42,10 +46,23 @@ public class TableDataMapperUtil implements DataMapperUtil {
     @Value("${mosip.packet.objectstore.fetch.enabled:false}")
     private boolean objectStoreFetchEnabled;
 
+    @Value("${mosip.packet.bio.doc.data.converter.classname:io.mosip.packet.data.convertion.BioDocDataConverter}")
+    private String bioDocApiClassName;
+
     @Autowired
+    private List<BioDocApiFactory> bioDocApiFactoryList;
+
     private BioDocApiFactory bioDocApiFactory;
 
     private String VALUE_SPLITTER = " ";
+
+    @PostConstruct
+    public void loadConfiguration() {
+        for(BioDocApiFactory factory : bioDocApiFactoryList) {
+            if(factory.getClass().getName().equals(bioDocApiClassName))
+                bioDocApiFactory = factory;
+        }
+    }
 
     @Override
     public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
@@ -144,16 +161,25 @@ public class TableDataMapperUtil implements DataMapperUtil {
                 }
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
                 String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
+                Map<String, byte[]> map = new HashMap<>();
                 if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
                     byte[] convertedImageData = null;
                     if(resultSet.get(fieldName) != null) {
                         byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldName));
                         if(objectStoreFetchEnabled)
                             byteVal = objectStoreHelper.getBiometricObject(new String(byteVal, StandardCharsets.UTF_8));
-                        byteVal = bioDocApiFactory.getBioData(byteVal, fieldMap);
-                        convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, byteVal, localStoreRequired);
+                        map = bioDocApiFactory.getBioData(byteVal, fieldMap);
                     }
-                    dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + (fieldFormatRequest.getSrcFieldForQualityScore() != null ? "_" + resultSet.get(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore())) : ""), convertedImageData);
+
+                    for(String field : fieldMap.split(",")) {
+                        byte[] bytes = map.get(field);
+                        convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, bytes, localStoreRequired);
+                        BioData bioData = new BioData();
+                        bioData.setBioData(convertedImageData);
+                        bioData.setFormat(fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
+                        bioData.setQualityScore(fieldFormatRequest.getSrcFieldForQualityScore() != null ? resultSet.get(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore())).toString() : "");
+                        dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, bioData);
+                    }
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, "");
                 }
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
@@ -164,7 +190,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
                     byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldName));
                     if(objectStoreFetchEnabled)
                         byteVal = objectStoreHelper.getBiometricObject(new String(byteVal, StandardCharsets.UTF_8));
-                    byteVal = bioDocApiFactory.getDocData(byteVal, fieldMap);
+                    byteVal = bioDocApiFactory.getDocData(byteVal, fieldMap).get(fieldMap);
                     document.setDocument(byteVal);
                     if(fieldFormatRequest.getDocumentAttributes() != null) {
                         DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
@@ -190,7 +216,15 @@ public class TableDataMapperUtil implements DataMapperUtil {
             }
     }
 
-    private byte[] convertObjectToByteArray(Object obj) throws IOException {
+    private byte[] convertObjectToByteArray(Object obj) throws IOException, SQLException {
+        if (obj instanceof String)
+            return ((String) obj).getBytes(StandardCharsets.UTF_8);
+
+        if (obj instanceof Blob) {
+            Blob blobObj = (Blob) obj;
+            return blobObj.getBytes(1, (int) blobObj.length());
+        }
+
         return (byte[]) obj;
     }
 

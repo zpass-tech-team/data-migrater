@@ -29,7 +29,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 
-@SpringBootApplication(scanBasePackages = { "io.mosip.packet.*", "${mosip.auth.adapter.impl.basepackage}", "io.mosip.kernel.clientcrypto.*", "io.mosip.kernel.dataaccess", "io.mosip.kernel.keymanagerservice.*"}, exclude = {SecurityAutoConfiguration.class, HibernateDaoConfig.class, HibernateJpaAutoConfiguration.class})
+@SpringBootApplication(scanBasePackages = { "io.mosip.packet.*", "${mosip.auth.adapter.impl.basepackage}", "io.mosip.kernel.clientcrypto.*", "io.mosip.kernel.dataaccess", "io.mosip.kernel.keymanagerservice.*", "io.mosip.kernel.biometrics.*","io.mosip.kernel.cbeffutil.*"}, exclude = {SecurityAutoConfiguration.class, HibernateDaoConfig.class, HibernateJpaAutoConfiguration.class})
 @EntityScan(basePackages = {"io.mosip.packet.core.entity", "io.mosip.kernel.idgenerator.rid.entity", "io.mosip.kernel.keymanagerservice.entity"})
 @EnableJpaRepositories(basePackages = {"io.mosip.packet.core.repository", "io.mosip.kernel.idgenerator.rid.repository", "io.mosip.kernel.keymanagerservice.repository"} , repositoryBaseClass = HibernateRepositoryImpl.class)
 public class DataProcessApplication {

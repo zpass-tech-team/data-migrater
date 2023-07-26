@@ -150,7 +150,7 @@ public class DataBaseUtil {
         }
     }
 
-    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, List<Map<FieldCategory, LinkedHashMap<String, Object>>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
+    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, List<Map<FieldCategory, LinkedHashMap<String, Object>>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired, Boolean isOnlyForQualityCheck) throws Exception {
         List<Map<String, Object>> resultData = extractResultSet(resultSet);
 
         for(Map<String, Object> result : resultData) {

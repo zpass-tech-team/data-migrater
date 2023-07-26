@@ -13,6 +13,7 @@ import java.util.function.Function;
 @Component
 public class CSVFileWriter {
     private static CSVWriter WRITER;
+    private static Boolean isHeaderWritten = false;
     private LinkedHashMap<String, String> map = new LinkedHashMap<>();
 
     @Autowired
@@ -30,7 +31,7 @@ public class CSVFileWriter {
             }
 
             WRITER = new CSVWriter(new FileWriter(file));
-
+            isHeaderWritten = false;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -45,15 +46,18 @@ public class CSVFileWriter {
 
             for(Object ob : commonUtil.getBioAttributesforAll())
                 map.put(ob.toString(), null);
-
-            WRITER.writeNext(map.keySet().toArray(new String[0]));
         }
 
         return (HashMap) map.clone();
     }
 
-    public static synchronized void  writeCSVData(String[] list) throws IOException {
-        WRITER.writeNext(list);
+    public static synchronized void  writeCSVData(HashMap<String, String> csvMap) throws IOException {
+        if(!isHeaderWritten) {
+            WRITER.writeNext(csvMap.keySet().toArray(new String[0]));
+            isHeaderWritten = true;
+        }
+        WRITER.writeNext(csvMap.values().toArray(new String[0]));
         WRITER.flush();
+        csvMap.clear();
     }
 }
