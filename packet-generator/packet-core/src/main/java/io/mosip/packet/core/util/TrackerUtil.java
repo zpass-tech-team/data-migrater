@@ -180,7 +180,7 @@ public class TrackerUtil {
             sb = new StringBuilder();
             sb.append(String.format("CREATE TABLE %s (", TRACKER_TABLE_NAME));
             sb.append(addColumn("REF_ID", String.class, 100, true, dbTypes) + ",");
-            sb.append(addColumn("REG_NO", String.class, 100, true, dbTypes) + ",");
+            sb.append(addColumn("REG_NO", String.class, 100, false, dbTypes) + ",");
             sb.append(addColumn("STATUS", String.class, 50, false, dbTypes) + ",");
             sb.append(addColumn("CR_BY", String.class, 50, true, dbTypes) + ",");
             sb.append(addColumn("CR_DTIMES", Timestamp.class, 100, true, dbTypes) + ",");
