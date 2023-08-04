@@ -18,6 +18,7 @@ import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.PacketTrackerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -43,6 +44,8 @@ public class TrackerUtil {
     @Autowired
     private PacketTrackerRepository packetTrackerRepository;
 
+    private static boolean isTrackerRequired = false;
+
     static {
         try (InputStream configKeys = TrackerUtil.class.getClassLoader().getResourceAsStream("database.properties")) {
             keys = new Properties();
@@ -55,7 +58,9 @@ public class TrackerUtil {
         }
 
         try {
-            if(conn == null) {
+        //    isTrackerRequired = keys.getProperty("mosip.packet.creator.tracking.required") == null ? false : Booleankeys.getProperty("mosip.packet.creator.tracking.required");
+
+            if(conn == null && isTrackerRequired) {
                 DBTypes dbType = Enum.valueOf(DBTypes.class, keys.getProperty("spring.datasource.tracker.dbtype"));
 
                 Class driverClass = Class.forName(dbType.getDriver());
@@ -102,19 +107,20 @@ public class TrackerUtil {
     }
 
     public synchronized void addTrackerEntry(TrackerRequestDto trackerRequestDto) {
-        try {
-            batchSize++;
+        if(isTrackerRequired) {
+            try {
+                batchSize++;
 
-            if(batchSize > batchLimit) {
-                preparedStatement.executeBatch();
-                preparedStatement.clearBatch();
-                preparedStatement.closeOnCompletion();
-                preparedStatement = null;
-                batchSize = 1;
-            }
+                if(batchSize > batchLimit) {
+                    preparedStatement.executeBatch();
+                    preparedStatement.clearBatch();
+                    preparedStatement.closeOnCompletion();
+                    preparedStatement = null;
+                    batchSize = 1;
+                }
 
-            if(preparedStatement == null)
-                preparedStatement = conn.prepareStatement(String.format("INSERT INTO %s (REF_ID, REG_NO, STATUS, CR_BY, CR_DTIMES) VALUES (?, ?, ?, ?, ?)", TRACKER_TABLE_NAME));
+                if(preparedStatement == null)
+                    preparedStatement = conn.prepareStatement(String.format("INSERT INTO %s (REF_ID, REG_NO, STATUS, CR_BY, CR_DTIMES) VALUES (?, ?, ?, ?, ?)", TRACKER_TABLE_NAME));
 
                 long timeNow = System.currentTimeMillis();
                 Timestamp timestamp = new Timestamp(timeNow);
@@ -124,46 +130,53 @@ public class TrackerUtil {
                 preparedStatement.setString(4, "MIGRATOR");
                 preparedStatement.setTimestamp(5, timestamp);
                 preparedStatement.addBatch();
-        } catch (SQLException throwables) {
-            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
-                    "Exception encountered during Tracker record insertion - TrackerUtil "
-                            + ExceptionUtils.getStackTrace(throwables));
+            } catch (SQLException throwables) {
+                LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
+                        "Exception encountered during Tracker record insertion - TrackerUtil "
+                                + ExceptionUtils.getStackTrace(throwables));
+            }
         }
     }
 
     public void closeStatement() {
-        if (conn != null) {
-            try {
-                if(preparedStatement != null) {
-                    preparedStatement.executeBatch();
-                    preparedStatement.clearBatch();
-                    preparedStatement.closeOnCompletion();
+        if(isTrackerRequired) {
+            if (conn != null) {
+                try {
+                    if(preparedStatement != null) {
+                        preparedStatement.executeBatch();
+                        preparedStatement.clearBatch();
+                        preparedStatement.closeOnCompletion();
+                    }
+                } catch (SQLException e) {
+                    LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Closing Database Connection " + e.getMessage());
                 }
-            } catch (SQLException e) {
-                LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Closing Database Connection " + e.getMessage());
             }
         }
     }
 
     public boolean isRecordPresent(Object value) throws SQLException {
-        PreparedStatement statement = null;
-        try {
-            statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ?", TRACKER_TABLE_NAME));
-            statement.setString(1, value.toString());
-            ResultSet resultSet = statement.executeQuery();
+        if(isTrackerRequired) {
+            PreparedStatement statement = null;
+            try {
+                statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ?", TRACKER_TABLE_NAME));
+                statement.setString(1, value.toString());
+                ResultSet resultSet = statement.executeQuery();
 
-            if(resultSet.next())
-                return true;
-            else
-                return false;
-        } catch (SQLException throwables) {
-            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
-                    "Exception encountered while checking Tracker Record present - TrackerUtil "
-                            + ExceptionUtils.getStackTrace(throwables));
-            throw throwables;
-        } finally {
-            if(statement != null)
-                statement.close();
+                if(resultSet.next())
+                    return true;
+                else
+                    return false;
+            } catch (SQLException throwables) {
+                LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
+                        "Exception encountered while checking Tracker Record present - TrackerUtil "
+                                + ExceptionUtils.getStackTrace(throwables));
+                throw throwables;
+            } finally {
+                if(statement != null)
+                    statement.close();
+            }
+        } else {
+            return false;
         }
     }
 
