@@ -173,7 +173,9 @@ public class TableDataMapperUtil implements DataMapperUtil {
 
                     for(String field : fieldMap.split(",")) {
                         byte[] bytes = map.get(field);
-                        convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, bytes, localStoreRequired);
+                        if(bytes != null) {
+                            convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, bytes, localStoreRequired);
+                        }
                         BioData bioData = new BioData();
                         bioData.setBioData(convertedImageData);
                         bioData.setFormat(fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));

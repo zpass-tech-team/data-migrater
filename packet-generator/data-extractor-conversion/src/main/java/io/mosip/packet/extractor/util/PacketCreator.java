@@ -234,106 +234,121 @@ public class PacketCreator {
                     if(fieldId.equals(id) && bioAttributes.contains(bioAttribute)) {
                         if(entry.getValue() != null && !entry.getValue().toString().isEmpty()) {
                             BioData bioData = (BioData) entry.getValue();
-                            bioAttributes.remove(bioAttribute);
-                            String bioQualityScore = !bioData.getQualityScore().isEmpty() ? bioData.getQualityScore() : null;
-                            String bioType = Biometric.getSingleTypeByAttribute(bioAttribute).value();
-                            CaptureRequestDto captureRequestDto = new CaptureRequestDto();
-                            CaptureRequestDeviceDetailDto captureRequestDeviceDetailDto = new CaptureRequestDeviceDetailDto();
-                            captureRequestDeviceDetailDto.setType(bioType);
-                            captureRequestDeviceDetailDto.setBioSubType(bioAttribute);
-                            captureRequestDeviceDetailDto.setRequestedScore(Integer.parseInt(requestedScore));
+                            if(bioData.getBioData() != null) {
+                                bioAttributes.remove(bioAttribute);
+                                String bioQualityScore = !bioData.getQualityScore().isEmpty() ? bioData.getQualityScore() : null;
+                                String bioType = Biometric.getSingleTypeByAttribute(bioAttribute).value();
+                                CaptureRequestDto captureRequestDto = new CaptureRequestDto();
+                                CaptureRequestDeviceDetailDto captureRequestDeviceDetailDto = new CaptureRequestDeviceDetailDto();
+                                captureRequestDeviceDetailDto.setType(bioType);
+                                captureRequestDeviceDetailDto.setBioSubType(bioAttribute);
+                                captureRequestDeviceDetailDto.setRequestedScore(Integer.parseInt(requestedScore));
 
-                            captureRequestDto.setEnv(environment);
-                            captureRequestDto.setPurpose(purpose);
-                            captureRequestDto.setSpecVersion(bioSpecVaersion);
-                            captureRequestDto.setTransactionId(UUID.randomUUID().toString());
-                            captureRequestDto.setBio(captureRequestDeviceDetailDto);
+                                captureRequestDto.setEnv(environment);
+                                captureRequestDto.setPurpose(purpose);
+                                captureRequestDto.setSpecVersion(bioSpecVaersion);
+                                captureRequestDto.setTransactionId(UUID.randomUUID().toString());
+                                captureRequestDto.setBio(captureRequestDeviceDetailDto);
 
-                            BioMetricsDto bioMetricsDto = mockDeviceUtil.getBiometricData(bioType, captureRequestDto, StringHelper.base64UrlEncode((byte[]) bioData.getBioData()), "en", "0");
+                                BioMetricsDto bioMetricsDto = mockDeviceUtil.getBiometricData(bioType, captureRequestDto, StringHelper.base64UrlEncode((byte[]) bioData.getBioData()), "en", "0");
 
-//                        mosipDeviceSpecificationHelper.validateJWTResponse(bioMetricsDto.getData(), rCaptureTrustDomain);
-                            String payLoad = mosipDeviceSpecificationHelper.getPayLoad(bioMetricsDto.getData());
-                            String signature = mosipDeviceSpecificationHelper.getSignature(bioMetricsDto.getData());
+                                String payLoad = mosipDeviceSpecificationHelper.getPayLoad(bioMetricsDto.getData());
+                                String signature = mosipDeviceSpecificationHelper.getSignature(bioMetricsDto.getData());
 
-                            String decodedPayLoad = new String(CryptoUtil.decodeURLSafeBase64(payLoad));
+                                String decodedPayLoad = new String(CryptoUtil.decodeURLSafeBase64(payLoad));
+                                RCaptureResponseDataDTO dataDTO = mapper.readValue(decodedPayLoad, RCaptureResponseDataDTO.class);
 
-
-                            RCaptureResponseDataDTO dataDTO = mapper.readValue(decodedPayLoad, RCaptureResponseDataDTO.class);
-
-                            if(!capturedRegisteredDevices.containsKey(dataDTO.getBioType())) {
-                                String decodeddigitalId = mosipDeviceSpecificationHelper.getDigitalId(dataDTO.getDigitalId());
-                                DeviceMetaInfo deviceMetaInfo = new DeviceMetaInfo();
-                                deviceMetaInfo.setDeviceCode(dataDTO.getDeviceCode());
-                                deviceMetaInfo.setDeviceServiceVersion(dataDTO.getDeviceServiceVersion());
-                                DigitalId digitalId = mapper.readValue(Base64.getDecoder().decode(decodeddigitalId), DigitalId.class);
-                                deviceMetaInfo.setDigitalId(digitalId);
-                                capturedRegisteredDevices.put(dataDTO.getBioType(), deviceMetaInfo);
-                            }
-
-                            BiometricsDto biometricDTO = new BiometricsDto(bioAttribute, dataDTO.getDecodedBioValue(),
-                                    Double.parseDouble(dataDTO.getQualityScore()== null ? "0" : dataDTO.getQualityScore()));
-                            biometricDTO.setPayLoad(decodedPayLoad);
-                            biometricDTO.setSignature(signature);
-                            biometricDTO.setSpecVersion(bioMetricsDto.getSpecVersion());
-                            biometricDTO.setCaptured(true);
-                            biometricDTO.setAttributeISO((byte[]) bioData.getBioData());
-                            BIR bir = birBuilder.buildBIR(biometricDTO);
-
-                            if (bioQualityScore==null) {
-                                if(biosdkCheckEnabled) {
-                                    BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
-
-                                    BioSDKRequestWrapper requestWrapper = new BioSDKRequestWrapper();
-                                    requestWrapper.setSegments(new ArrayList<>());
-                                    requestWrapper.getSegments().add(bir);
-                                    requestWrapper.setBiometricType(biometricType.toString());
-                                    requestWrapper.setFormat(bioData.getFormat().toString());
-                                    requestWrapper.setInputObject(csvMap);
-                                    requestWrapper.setIsOnlyForQualityCheck(isOnlyForQualityCheck);
-                                    try {
-                                        if(isOnlyForQualityCheck) {
-                                            Map<String, BioSdkApiFactory> bioSdkMap = bioSDKConfig.getBioSDKList().get(biometricType);
-
-                                            for(Map.Entry<String, BioSdkApiFactory> bioSdkEntry : bioSdkMap.entrySet()) {
-                                                requestWrapper.setBiometricField(entry.getKey() + "_" + bioSdkEntry.getKey());
-
-                                                Double score = bioSdkEntry.getValue().calculateBioQuality(requestWrapper);
-                                                String currentVal = csvMap.get(entry.getKey());
-                                                if(bioSDKConfig.getBioSDKList().get(biometricType).size() > 1) {
-                                                    if(currentVal == null)
-                                                        currentVal = bioSdkEntry.getKey() + "(" + score.toString() + ")";
-                                                    else
-                                                        currentVal+= "," + bioSdkEntry.getKey() + "(" + score.toString() + ")";
-                                                } else {
-                                                    currentVal = score.toString();
-                                                }
-                                                csvMap.put(entry.getKey(),  currentVal.toString());
-                                            }
-                                        } else {
-                                            Double score = bioSDKConfig.getDefaultBioSDK().get(biometricType).calculateBioQuality(requestWrapper);
-                                            bir.getBdbInfo().getQuality().setScore(score.longValue());
-                                            csvMap.put(entry.getKey(), score.toString());
-                                        }
-                                    } catch (Exception e) {
-                                        throw new Exception(e.getLocalizedMessage() + " " + biometricType.toString() + ", " + bioAttribute);
-                                    }
-                                } else {
-                                    bir.getBdbInfo().getQuality().setScore(0L);
+                                if(!capturedRegisteredDevices.containsKey(dataDTO.getBioType())) {
+                                    String decodeddigitalId = mosipDeviceSpecificationHelper.getDigitalId(dataDTO.getDigitalId());
+                                    DeviceMetaInfo deviceMetaInfo = new DeviceMetaInfo();
+                                    deviceMetaInfo.setDeviceCode(dataDTO.getDeviceCode());
+                                    deviceMetaInfo.setDeviceServiceVersion(dataDTO.getDeviceServiceVersion());
+                                    DigitalId digitalId = mapper.readValue(Base64.getDecoder().decode(decodeddigitalId), DigitalId.class);
+                                    deviceMetaInfo.setDigitalId(digitalId);
+                                    capturedRegisteredDevices.put(dataDTO.getBioType(), deviceMetaInfo);
                                 }
 
-                            } else {
-                                bir.getBdbInfo().getQuality().setScore(Long.parseLong(bioQualityScore));
-                            }
+                                BiometricsDto biometricDTO = new BiometricsDto(bioAttribute, dataDTO.getDecodedBioValue(),
+                                        Double.parseDouble(dataDTO.getQualityScore()== null ? "0" : dataDTO.getQualityScore()));
+                                biometricDTO.setPayLoad(decodedPayLoad);
+                                biometricDTO.setSignature(signature);
+                                biometricDTO.setSpecVersion(bioMetricsDto.getSpecVersion());
+                                biometricDTO.setCaptured(true);
+                                biometricDTO.setAttributeISO((byte[]) bioData.getBioData());
+                                BIR bir = birBuilder.buildBIR(biometricDTO);
 
-                            if (!capturedBiometrics.containsKey(fieldId)) {
-                                capturedBiometrics.put(fieldId, new ArrayList<>());
+                                if (bioQualityScore==null) {
+                                    if(biosdkCheckEnabled) {
+                                        BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
+
+                                        BioSDKRequestWrapper requestWrapper = new BioSDKRequestWrapper();
+                                        requestWrapper.setSegments(new ArrayList<>());
+                                        requestWrapper.getSegments().add(bir);
+                                        requestWrapper.setBiometricType(biometricType.toString());
+                                        requestWrapper.setFormat(bioData.getFormat().toString());
+                                        requestWrapper.setInputObject(csvMap);
+                                        requestWrapper.setIsOnlyForQualityCheck(isOnlyForQualityCheck);
+                                        try {
+                                            if(isOnlyForQualityCheck) {
+                                                Map<String, BioSdkApiFactory> bioSdkMap = bioSDKConfig.getBioSDKList().get(biometricType);
+
+                                                for(Map.Entry<String, BioSdkApiFactory> bioSdkEntry : bioSdkMap.entrySet()) {
+                                                    requestWrapper.setBiometricField(entry.getKey() + "_" + bioSdkEntry.getKey());
+
+                                                    Double score = bioSdkEntry.getValue().calculateBioQuality(requestWrapper);
+                                                    String currentVal = csvMap.get(entry.getKey());
+                                                    if(bioSDKConfig.getBioSDKList().get(biometricType).size() > 1) {
+                                                        if(currentVal == null)
+                                                            currentVal = bioSdkEntry.getKey() + "(" + score.toString() + ")";
+                                                        else
+                                                            currentVal+= "," + bioSdkEntry.getKey() + "(" + score.toString() + ")";
+                                                    } else {
+                                                        currentVal = score.toString();
+                                                    }
+                                                    csvMap.put(entry.getKey(),  currentVal.toString());
+                                                }
+                                            } else {
+                                                Double score = bioSDKConfig.getDefaultBioSDK().get(biometricType).calculateBioQuality(requestWrapper);
+                                                bir.getBdbInfo().getQuality().setScore(score.longValue());
+                                                csvMap.put(entry.getKey(), score.toString());
+                                            }
+                                        } catch (Exception e) {
+                                            throw new Exception(e.getLocalizedMessage() + " " + biometricType.toString() + ", " + bioAttribute);
+                                        }
+                                    } else {
+                                        bir.getBdbInfo().getQuality().setScore(0L);
+                                    }
+
+                                } else {
+                                    bir.getBdbInfo().getQuality().setScore(Long.parseLong(bioQualityScore));
+                                }
+
+                                if (!capturedBiometrics.containsKey(fieldId)) {
+                                    capturedBiometrics.put(fieldId, new ArrayList<>());
+                                }
+                                capturedBiometrics.get(fieldId).add(bir);
+                                if (!capturedMetaInfo.containsKey(fieldId)) {
+                                    capturedMetaInfo.put(fieldId, new HashMap<>());
+                                }
+                                capturedMetaInfo.get(fieldId).put(bioAttribute, new BiometricsMetaInfoDto(1, false, bir.getBdbInfo().getIndex()));
+                            } else {
+                                BiometricsDto biometricDTO = new BiometricsDto(bioAttribute, null, Double.parseDouble("0"));
+                                biometricDTO.setSpecVersion(bioSpecVaersion);
+                                biometricDTO.setCaptured(false);
+                                biometricDTO.setAttributeISO(null);
+                                biometricDTO.setNotAvailable(false);
+                                BIR bir = birBuilder.buildBIR(biometricDTO);
+                                if (!capturedBiometrics.containsKey(id)) {
+                                    capturedBiometrics.put(id, new ArrayList<>());
+                                }
+                                capturedBiometrics.get(id).add(bir);
+                                if (!capturedMetaInfo.containsKey(id)) {
+                                    capturedMetaInfo.put(id, new HashMap<>());
+                                }
+                                capturedMetaInfo.get(id).put(bioAttribute, new BiometricsMetaInfoDto(1, false, bir.getBdbInfo().getIndex()));
+                                bioAttributes.remove(bioAttribute);
                             }
-                            capturedBiometrics.get(fieldId).add(bir);
-                            if (!capturedMetaInfo.containsKey(fieldId)) {
-                                capturedMetaInfo.put(fieldId, new HashMap<>());
-                            }
-                            capturedMetaInfo.get(fieldId).put(bioAttribute, new BiometricsMetaInfoDto(1, false, bir.getBdbInfo().getIndex()));
-                        } else {
+                       } else {
                             BiometricsDto biometricDTO = new BiometricsDto(bioAttribute, null, Double.parseDouble("0"));
                             biometricDTO.setSpecVersion(bioSpecVaersion);
                             biometricDTO.setCaptured(false);
