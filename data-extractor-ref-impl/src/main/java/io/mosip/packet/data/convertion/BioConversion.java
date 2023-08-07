@@ -10,9 +10,13 @@ import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.packet.core.spi.BioConvertorApiFactory;
 import org.jnbis.api.Jnbis;
+import org.jnbis.api.model.Bitmap;
+import org.jnbis.internal.WsqDecoder;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.io.*;
 import java.util.List;
 
@@ -34,7 +38,17 @@ public class BioConversion implements BioConvertorApiFactory {
                 byteData = baos.toByteArray();
                 currentFormat = toFormat;
             } else if(currentFormat.equals(DataFormat.WSQ)) {
-                ImageIO.write(ImageIO.read(new ByteArrayInputStream(Jnbis.wsq().decode(byteData).toJpg().asByteArray())), toFormat.getFormat(), baos);
+                WsqDecoder decoder = new WsqDecoder();
+                Bitmap bitmap = decoder.decode(byteData);
+                int width = bitmap.getWidth();
+                int height = bitmap.getHeight();
+                byte[] data = bitmap.getPixels();
+                BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+                WritableRaster raster = image.getRaster();
+                raster.setDataElements(0, 0, width, height, data);
+                ImageIO.write(image, toFormat.getFormat(), baos);
+                System.out.println("Converting Image from " + currentFormat.getFormat() + " to " + toFormat.getFormat());
+
                 byteData = baos.toByteArray();
                 currentFormat = toFormat;
             } else if(toFormat.equals(DataFormat.ISO) && (currentFormat.equals(DataFormat.JP2) || currentFormat.equals(DataFormat.WSQ))) {

@@ -1,7 +1,7 @@
 package io.mosip.packet.data.biosdk.bqat.constant;
 
 public enum BQATFileType {
-    JPEQ("jpeg"),
+    JPEG("jpeg"),
     JPG("jpg"),
     PNG("png"),
     BMP("bmp"),
