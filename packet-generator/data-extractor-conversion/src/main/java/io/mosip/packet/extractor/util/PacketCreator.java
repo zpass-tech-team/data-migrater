@@ -202,7 +202,7 @@ public class PacketCreator {
         return docMap;
     }
 
-    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap, Boolean isOnlyForQualityCheck) throws Exception {
+    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap, Boolean isOnlyForQualityCheck, String trackerColumn) throws Exception {
         LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
 //        LOGGER.debug("Adding Biometrics to packet manager started..");
@@ -313,7 +313,8 @@ public class PacketCreator {
                                                 csvMap.put(entry.getKey(), score.toString());
                                             }
                                         } catch (Exception e) {
-                                            throw new Exception(e.getLocalizedMessage() + " " + biometricType.toString() + ", " + bioAttribute);
+                                            e.printStackTrace();
+                                            throw new Exception(trackerColumn + " Error : " + biometricType.toString() + ", " + bioAttribute + " Error Message :" + e.getLocalizedMessage());
                                         }
                                     } else {
                                         bir.getBdbInfo().getQuality().setScore(0L);

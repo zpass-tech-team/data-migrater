@@ -31,34 +31,39 @@ public class BQATSdkImpl implements BioSdkApiFactory {
     @Override
     public Double calculateBioQuality(BioSDKRequestWrapper bioSDKRequestWrapper) throws Exception {
         BQATRequest request = new BQATRequest();
-        request.setModality(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).getModality());
-        request.setType(BQATFileType.valueOf(bioSDKRequestWrapper.getFormat()).getType());
-        request.setData(Base64.getEncoder().encodeToString(((BIR)bioSDKRequestWrapper.getSegments().get(0)).getBdb()));
-        request.setId(UUID.randomUUID().toString());
-        request.setTimestamp(LocalDateTime.now(ZoneId.of("UTC")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
-        BQATResponse response= (BQATResponse) restApiClient.postApi(ApiName.BQAT_BIOSDK_QUALITY_CHECK, null, "", request, BQATResponse.class);
-        LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResults();
 
-        if(bioSDKResponse != null) {
-            if(bioSDKRequestWrapper.getIsOnlyForQualityCheck()) {
-                HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
-                csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(bioSDKResponse));
-                if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.FACE))
-                    return Double.valueOf(bioSDKResponse.get("quality").toString()) * 10;
-                else if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.IRIS))
-                    return Double.valueOf(bioSDKResponse.get("quality").toString());
-                else
-                    return Double.valueOf(bioSDKResponse.get("NFIQ2").toString());
+        try {
+            request.setModality(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).getModality());
+            request.setType(BQATFileType.valueOf(bioSDKRequestWrapper.getFormat()).getType());
+            request.setData(Base64.getEncoder().encodeToString(((BIR)bioSDKRequestWrapper.getSegments().get(0)).getBdb()));
+            request.setId(UUID.randomUUID().toString());
+            request.setTimestamp(LocalDateTime.now(ZoneId.of("UTC")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
+            BQATResponse response= (BQATResponse) restApiClient.postApi(ApiName.BQAT_BIOSDK_QUALITY_CHECK, null, "", request, BQATResponse.class);
+            LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResults();
+
+            if(bioSDKResponse != null) {
+                if(bioSDKRequestWrapper.getIsOnlyForQualityCheck()) {
+                    HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
+                    csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(bioSDKResponse));
+                    if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.FACE))
+                        return Double.valueOf(bioSDKResponse.get("quality").toString()) * 10;
+                    else if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.IRIS))
+                        return Double.valueOf(bioSDKResponse.get("quality").toString());
+                    else
+                        return Double.valueOf(bioSDKResponse.get("NFIQ2").toString());
+                } else {
+                    if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.FACE))
+                        return Double.valueOf(bioSDKResponse.get("quality").toString()) * 10;
+                    else if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.IRIS))
+                        return Double.valueOf(bioSDKResponse.get("quality").toString());
+                    else
+                        return Double.valueOf(bioSDKResponse.get("NFIQ2").toString());
+                }
             } else {
-                if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.FACE))
-                    return Double.valueOf(bioSDKResponse.get("quality").toString()) * 10;
-                else if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.IRIS))
-                    return Double.valueOf(bioSDKResponse.get("quality").toString());
-                else
-                    return Double.valueOf(bioSDKResponse.get("NFIQ2").toString());
+                throw new Exception("Error While Calling BIOSDK for Quality Check for Modality ");
             }
-        } else {
-            throw new Exception("Error While Calling BIOSDK for Quality Check for Modality ");
+        } catch (Exception e) {
+            throw new Exception("BQAT Tool Error Request " + (new Gson()).toJson(request));
         }
     }
 }
