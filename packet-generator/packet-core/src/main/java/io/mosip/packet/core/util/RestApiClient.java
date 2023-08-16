@@ -71,6 +71,11 @@ public class RestApiClient {
 
 	private static final String AUTHORIZATION = "Authorization=";
 
+	private static Boolean isAuthRequired = true;
+
+	public static void setIsAuthRequired(Boolean isAuthRequired) {
+		RestApiClient.isAuthRequired = isAuthRequired;
+	}
 
 	/**
 	 * Gets the api. *
@@ -275,48 +280,52 @@ public class RestApiClient {
 		String token = System.getProperty("token");
 		boolean isValid = false;
 
-		if (StringUtils.isNotEmpty(token)) {
+		if(isAuthRequired) {
+			if (StringUtils.isNotEmpty(token)) {
 
-			isValid = TokenHandlerUtil.isValidBearerToken(token, environment.getProperty("token.request.issuerUrl"),
-					environment.getProperty("token.request.clientId"));
+				isValid = TokenHandlerUtil.isValidBearerToken(token, environment.getProperty("token.request.issuerUrl"),
+						environment.getProperty("token.request.clientId"));
 
 
-		}
-		if (!isValid) {
-			TokenRequestDTO<SecretKeyRequest> tokenRequestDTO = new TokenRequestDTO<SecretKeyRequest>();
-			tokenRequestDTO.setId(environment.getProperty("token.request.id"));
-			tokenRequestDTO.setMetadata(new Metadata());
-
-			tokenRequestDTO.setRequesttime(DateUtils.getUTCCurrentDateTimeString());
-			// tokenRequestDTO.setRequest(setPasswordRequestDTO());
-			tokenRequestDTO.setRequest(setSecretKeyRequestDTO());
-			tokenRequestDTO.setVersion(environment.getProperty("token.request.version"));
-
-			Gson gson = new Gson();
-			HttpClient httpClient = HttpClientBuilder.create().build();
-			// HttpPost post = new
-			// HttpPost(environment.getProperty("PASSWORDBASEDTOKENAPI"));
-			HttpPost post = new HttpPost(environment.getProperty("KEYBASEDTOKENAPI"));
-			try {
-				StringEntity postingString = new StringEntity(gson.toJson(tokenRequestDTO));
-				post.setEntity(postingString);
-				post.setHeader("Content-type", "application/json");
-				HttpResponse response = httpClient.execute(post);
-				org.apache.http.HttpEntity entity = response.getEntity();
-				String responseBody = EntityUtils.toString(entity, "UTF-8");
-				Header[] cookie = response.getHeaders("Set-Cookie");
-				if (cookie.length == 0)
-					throw new TokenGenerationFailedException();
-				token = response.getHeaders("Set-Cookie")[0].getValue();
-				System.setProperty("token", token.substring(14, token.indexOf(';')));
-				return token.substring(0, token.indexOf(';'));
-			} catch (IOException e) {
-				logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
-						APPLICATION_ID, e.getMessage() + ExceptionUtils.getStackTrace(e));
-				throw e;
 			}
+			if (!isValid) {
+				TokenRequestDTO<SecretKeyRequest> tokenRequestDTO = new TokenRequestDTO<SecretKeyRequest>();
+				tokenRequestDTO.setId(environment.getProperty("token.request.id"));
+				tokenRequestDTO.setMetadata(new Metadata());
+
+				tokenRequestDTO.setRequesttime(DateUtils.getUTCCurrentDateTimeString());
+				// tokenRequestDTO.setRequest(setPasswordRequestDTO());
+				tokenRequestDTO.setRequest(setSecretKeyRequestDTO());
+				tokenRequestDTO.setVersion(environment.getProperty("token.request.version"));
+
+				Gson gson = new Gson();
+				HttpClient httpClient = HttpClientBuilder.create().build();
+				// HttpPost post = new
+				// HttpPost(environment.getProperty("PASSWORDBASEDTOKENAPI"));
+				HttpPost post = new HttpPost(environment.getProperty("KEYBASEDTOKENAPI"));
+				try {
+					StringEntity postingString = new StringEntity(gson.toJson(tokenRequestDTO));
+					post.setEntity(postingString);
+					post.setHeader("Content-type", "application/json");
+					HttpResponse response = httpClient.execute(post);
+					org.apache.http.HttpEntity entity = response.getEntity();
+					String responseBody = EntityUtils.toString(entity, "UTF-8");
+					Header[] cookie = response.getHeaders("Set-Cookie");
+					if (cookie.length == 0)
+						throw new TokenGenerationFailedException();
+					token = response.getHeaders("Set-Cookie")[0].getValue();
+					System.setProperty("token", token.substring(14, token.indexOf(';')));
+					return token.substring(0, token.indexOf(';'));
+				} catch (IOException e) {
+					logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
+							APPLICATION_ID, e.getMessage() + ExceptionUtils.getStackTrace(e));
+					throw e;
+				}
+			}
+			return AUTHORIZATION + token;
+		} else {
+			return null;
 		}
-		return AUTHORIZATION + token;
 	}
 
 	private SecretKeyRequest setSecretKeyRequestDTO() {

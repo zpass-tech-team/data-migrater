@@ -1,5 +1,8 @@
 package io.mosip.packet.core.util;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.constant.DataFormat;
@@ -9,9 +12,20 @@ import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.service.DataRestClientService;
+import org.apache.commons.io.IOUtils;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +42,11 @@ public class CommonUtil {
 
     private LinkedHashMap<String, Object> latestIdSchemaMap;
 
+    @Value("${mosip.extractor.load.local.idschema:false}")
+    private Boolean loadLocalIdSchema;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     public String generateRegistrationId(String centerId, String machineId) {
         return (String) ridGenerator.generateId(centerId, machineId);
     }
@@ -36,15 +55,26 @@ public class CommonUtil {
         return val.substring(val.indexOf(":")+1).trim();
     }
 
-    public LinkedHashMap<String, Object> getLatestIdSchema() throws ApisResourceAccessException {
+    public LinkedHashMap<String, Object> getLatestIdSchema() throws ApisResourceAccessException, IOException, ParseException {
         if (latestIdSchemaMap == null) {
-            ResponseWrapper response= (ResponseWrapper) restApiClient.getApi(ApiName.LATEST_ID_SCHEMA, null, "", "", ResponseWrapper.class);
-            latestIdSchemaMap = (LinkedHashMap<String, Object> ) response.getResponse();
+            ResponseWrapper response= null;
+
+            if(loadLocalIdSchema) {
+                Path identityFile = Paths.get(System.getProperty("user.dir"), "idschema.json");
+                if (identityFile.toFile().exists()) {
+                    JSONParser parser = new JSONParser();
+                    JSONObject jsonObject = (JSONObject) parser.parse(IOUtils.toString(new FileInputStream(identityFile.toFile()), StandardCharsets.UTF_8));
+                    latestIdSchemaMap = objectMapper.readValue(jsonObject.get("response").toString(), new TypeReference<LinkedHashMap<String, Object>>() {});
+                }
+            } else {
+                response= (ResponseWrapper) restApiClient.getApi(ApiName.LATEST_ID_SCHEMA, null, "", "", ResponseWrapper.class);
+                latestIdSchemaMap = (LinkedHashMap<String, Object> ) response.getResponse();
+            }
         }
         return latestIdSchemaMap;
     }
 
-    public void updateFieldCategory(DBImportRequest dbImportRequest) throws ApisResourceAccessException {
+    public void updateFieldCategory(DBImportRequest dbImportRequest) throws ApisResourceAccessException, IOException, ParseException {
         LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
         LinkedHashMap<String, FieldCategory> fieldMap = new LinkedHashMap<>();
 
@@ -68,7 +98,7 @@ public class CommonUtil {
                 request.setFieldCategory(fieldMap.get(request.getFieldToMap()) == null ? FieldCategory.DEMO : fieldMap.get(request.getFieldToMap()));
     }
 
-    public void updateBioDestFormat(DBImportRequest dbImportRequest) throws ApisResourceAccessException {
+    public void updateBioDestFormat(DBImportRequest dbImportRequest) throws ApisResourceAccessException, IOException, ParseException {
         LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
         LinkedHashMap<String, List<DataFormat>> fieldMap = new LinkedHashMap<>();
 
@@ -93,7 +123,7 @@ public class CommonUtil {
                 request.setDestFormat(fieldMap.get(request.getFieldToMap()));
     }
 
-    public Object[] getBioAttributesforAll() throws ApisResourceAccessException {
+    public Object[] getBioAttributesforAll() throws ApisResourceAccessException, IOException, ParseException {
         LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
         List<String> attributes = new ArrayList<>();
 

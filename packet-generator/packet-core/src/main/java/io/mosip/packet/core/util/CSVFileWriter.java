@@ -2,6 +2,7 @@ package io.mosip.packet.core.util;
 
 import com.opencsv.CSVWriter;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +40,7 @@ public class CSVFileWriter {
         }
     }
 
-    public HashMap getCSVDataMap() throws ApisResourceAccessException {
+    public HashMap getCSVDataMap() throws ApisResourceAccessException, IOException, ParseException {
         if(map.size() <= 2) {
             map.put("ref_id", null);
             map.put("reg_no", null);

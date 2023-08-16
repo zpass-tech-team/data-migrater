@@ -9,6 +9,7 @@ import io.mosip.packet.core.dto.dbimport.DBImportResponse;
 import io.mosip.packet.core.dto.dbimport.PacketCreatorResponse;
 import io.mosip.packet.core.exception.ServiceError;
 import io.mosip.packet.core.logger.DataProcessLogger;
+import io.mosip.packet.core.util.RestApiClient;
 import io.mosip.packet.extractor.service.DataExtractionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -138,6 +139,7 @@ public class DataExtractionController {
 
     @PostMapping(value = "/exportBioQualityFromOtherDomain", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ResponseWrapper> exportBioQualityFromOtherDomain(@RequestBody RequestWrapper<DBImportRequest> request) {
+        RestApiClient.setIsAuthRequired(false);
         ResponseWrapper<PacketCreatorResponse> responseWrapper = new ResponseWrapper();
         PacketCreatorResponse response = new PacketCreatorResponse();
         try {
@@ -168,6 +170,7 @@ public class DataExtractionController {
             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, error.getErrorCode(), error.getMessage());
         }
         responseWrapper.setResponse(response);
+        RestApiClient.setIsAuthRequired(true);
         return new ResponseEntity<ResponseWrapper>(responseWrapper, HttpStatus.OK);
     }
 }

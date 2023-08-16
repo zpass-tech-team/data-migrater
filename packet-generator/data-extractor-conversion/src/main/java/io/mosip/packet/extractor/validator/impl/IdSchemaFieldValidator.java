@@ -8,9 +8,11 @@ import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.util.CommonUtil;
 import io.mosip.packet.extractor.util.PacketCreator;
 import io.mosip.packet.extractor.validator.Validator;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.*;
 
 @Component
@@ -24,7 +26,7 @@ public class IdSchemaFieldValidator implements Validator {
 
     List<String> nonIdSchemaFieldsMap;
 
-    private List<String> getIdFields() throws ApisResourceAccessException {
+    private List<String> getIdFields() throws ApisResourceAccessException, IOException, ParseException {
         if (idFields == null) {
             idFields = new ArrayList<>();
             LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
