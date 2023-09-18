@@ -13,25 +13,24 @@ import java.util.function.Function;
 
 @Component
 public class CSVFileWriter {
-    private static CSVWriter WRITER;
+    private static File csvFile;
     private static Boolean isHeaderWritten = false;
-    private LinkedHashMap<String, String> map = new LinkedHashMap<>();
+    private static LinkedHashMap<String, String> map = new LinkedHashMap<>();
 
     @Autowired
     private CommonUtil commonUtil;
 
     static {
         try {
-            File file = new File("./CSVData.csv");
+            csvFile = new File("./CSVData.csv");
 
-            if(!file.exists())
-                file.createNewFile();
+            if(!csvFile.exists())
+                csvFile.createNewFile();
             else {
-                file.renameTo(new File("./CSVData_" + (new SimpleDateFormat("yyyyMMddhhmmss")).format(new Date()) +".csv"));
-                file.createNewFile();
+                csvFile.renameTo(new File("./CSVData_" + (new SimpleDateFormat("yyyyMMddhhmmss")).format(new Date()) +".csv"));
+                csvFile.createNewFile();
             }
 
-            WRITER = new CSVWriter(new FileWriter(file));
             isHeaderWritten = false;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -53,12 +52,29 @@ public class CSVFileWriter {
     }
 
     public static synchronized void  writeCSVData(HashMap<String, String> csvMap) throws IOException {
-        if(!isHeaderWritten) {
-            WRITER.writeNext(csvMap.keySet().toArray(new String[0]));
-            isHeaderWritten = true;
+        CSVWriter WRITER = null;
+        try {
+            WRITER = new CSVWriter(new FileWriter(csvFile));
+
+            if(!isHeaderWritten) {
+                WRITER.writeNext(csvMap.keySet().toArray(new String[0]));
+                isHeaderWritten = true;
+            }
+
+            if(!map.keySet().containsAll(csvMap.keySet())) {
+                map.clear();
+                for(String key : csvMap.keySet())
+                    map.put(key, null);
+            }
+
+            WRITER.writeNext(csvMap.values().toArray(new String[0]));
+            WRITER.flush();
+            csvMap.clear();
+        } finally {
+            if(WRITER != null)
+                WRITER.close();
         }
-        WRITER.writeNext(csvMap.values().toArray(new String[0]));
-        WRITER.flush();
-        csvMap.clear();
+;
+
     }
 }

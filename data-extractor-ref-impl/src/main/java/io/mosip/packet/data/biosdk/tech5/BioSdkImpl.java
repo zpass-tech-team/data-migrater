@@ -12,10 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Date;
-import java.util.LinkedHashMap;
+import java.util.*;
 
 @Component
 public class BioSdkImpl implements BioSdkApiFactory {
@@ -45,6 +42,8 @@ public class BioSdkImpl implements BioSdkApiFactory {
         LOGGER.info("Request Send Time for SDK " + bioSDKRequestWrapper.getBiometricField() + " : " + new Date());
         ResponseWrapper response= (ResponseWrapper) restApiClient.postApi(ApiName.BIOSDK_QUALITY_CHECK, null, "", bioSDKRequest, ResponseWrapper.class);
         LOGGER.info("Response Received Time for SDK " + bioSDKRequestWrapper.getBiometricField() + " : " + new Date());
+        HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
+        csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(response));
         LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResponse();
         if(bioSDKResponse.get("statusCode").equals(200)) {
             LinkedHashMap<String, Object> resp = (LinkedHashMap<String, Object>) bioSDKResponse.get("response");
