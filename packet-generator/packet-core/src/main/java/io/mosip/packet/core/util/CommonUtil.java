@@ -26,10 +26,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class CommonUtil {
@@ -44,6 +41,9 @@ public class CommonUtil {
 
     @Value("${mosip.extractor.load.local.idschema:false}")
     private Boolean loadLocalIdSchema;
+
+    @Value("${mosip.extractor.common.bio.default.formats:JP2,ISO}")
+    private String defaultBioConvertFormat;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -94,8 +94,20 @@ public class CommonUtil {
         }
 
         for(FieldFormatRequest request : dbImportRequest.getColumnDetails())
-            if(request.getFieldCategory() == null)
-                request.setFieldCategory(fieldMap.get(request.getFieldToMap()) == null ? FieldCategory.DEMO : fieldMap.get(request.getFieldToMap()));
+            if(request.getFieldCategory() == null) {
+                HashSet<FieldCategory> availableCategory = new HashSet<>();
+                String[] fields = request.getFieldToMap().split(",");
+
+                for(String field : fields)
+                    availableCategory.add(fieldMap.get(field) == null ? FieldCategory.DEMO : fieldMap.get(field));
+
+                if(availableCategory.contains(FieldCategory.BIO))
+                    request.setFieldCategory(FieldCategory.BIO);
+                else if(availableCategory.contains(FieldCategory.DOC))
+                    request.setFieldCategory(FieldCategory.DOC);
+                else if(availableCategory.contains(FieldCategory.DEMO))
+                    request.setFieldCategory(FieldCategory.DEMO);
+            }
     }
 
     public void updateBioDestFormat(DBImportRequest dbImportRequest) throws ApisResourceAccessException, IOException, ParseException {
@@ -109,10 +121,12 @@ public class CommonUtil {
 
             if(type.equalsIgnoreCase("biometricsType")) {
                 List<String> bioAttributes = (List<String>) map.get("bioAttributes");
+
+                List<DataFormat> formatList = new ArrayList<>();
+                for(String format : defaultBioConvertFormat.split(","))
+                    formatList.add(DataFormat.valueOf(format));
+
                 for(String attribute : bioAttributes) {
-                    List<DataFormat> formatList = new ArrayList<>();
-                    formatList.add(DataFormat.JP2);
-                    formatList.add(DataFormat.ISO);
                     fieldMap.put(id + "_" + attribute, formatList);
                 }
             }
@@ -120,7 +134,7 @@ public class CommonUtil {
 
         for(FieldFormatRequest request : dbImportRequest.getColumnDetails())
             if(request.getDestFormat() == null)
-                request.setDestFormat(fieldMap.get(request.getFieldToMap()));
+                request.setDestFormat(fieldMap.get(request.getFieldToMap().split(",")[0]));
     }
 
     public Object[] getBioAttributesforAll() throws ApisResourceAccessException, IOException, ParseException {

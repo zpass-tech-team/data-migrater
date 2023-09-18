@@ -56,6 +56,9 @@ public class TableDataMapperUtil implements DataMapperUtil {
 
     private String VALUE_SPLITTER = " ";
 
+    @Autowired
+    private QueryFormatter formatter;
+
     @PostConstruct
     public void loadConfiguration() {
         for(BioDocApiFactory factory : bioDocApiFactoryList) {
@@ -72,26 +75,35 @@ public class TableDataMapperUtil implements DataMapperUtil {
         String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldNames.get(0).getFieldName().toLowerCase();
         String originalField = fieldFormatRequest.getFieldName();
 
-        if(!dataMap2.get(fieldFormatRequest.getFieldCategory()).containsKey(originalField))
-            if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DEMO)) {
-                Object demoValue = null;
-                if (fieldFormatRequest.getMvelExpressions() != null) {
-                    Map map = new HashMap();
-                    for (MvelParameter parameter : fieldFormatRequest.getMvelExpressions().getParameters()) {
-                        if (parameter.getParameterType().equals(ParameterType.STRING))
-                            if(parameter.getParameterValue().contains("${")) {
+        if(!dataMap2.get(fieldFormatRequest.getFieldCategory()).containsKey(originalField) && fieldsCategoryMap.get(tableName).contains(fieldNames.get(0).getFieldName())) {
+            String mvelValue = null;
+            if (fieldFormatRequest.getMvelExpressions() != null) {
+                Map map = new HashMap();
+                for (MvelParameter parameter : fieldFormatRequest.getMvelExpressions().getParameters()) {
+                    if (parameter.getParameterType().equals(ParameterType.STRING))
+                        if(parameter.getParameterValue().contains("${")) {
+                            try {
+                                map.put(parameter.getParameterName(), formatter.replaceColumntoDataIfAny(parameter.getParameterValue(), dataMap2));
+                            } catch (Exception e) {
                                 String param = parameter.getParameterValue().replace("${", "").replace("}", "");
                                 map.put(parameter.getParameterName(), resultSet.get(param));
-                            } else {
-                                map.put(parameter.getParameterName(), parameter.getParameterValue());
                             }
-                        else if (parameter.getParameterType().equals(ParameterType.SQL)){
-                            List<Object> list = (List<Object>) customNativeRepository.runNativeQuery(parameter.getParameterValue());
-                            map.put(parameter.getParameterName(), list);
+                        } else {
+                            map.put(parameter.getParameterName(), parameter.getParameterValue());
                         }
+                    else if (parameter.getParameterType().equals(ParameterType.SQL)){
+                        List<Object> list = (List<Object>) customNativeRepository.runNativeQuery(parameter.getParameterValue());
+                        map.put(parameter.getParameterName(), list);
                     }
+                }
 
-                    demoValue = mvelUtil.processViaMVEL(fieldFormatRequest.getMvelExpressions().getMvelFile(), map);
+                mvelValue = mvelUtil.processViaMVEL(fieldFormatRequest.getMvelExpressions().getMvelFile(), map);
+            }
+
+            if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DEMO)) {
+                Object demoValue = null;
+                if(fieldFormatRequest.getMvelExpressions() != null) {
+                    demoValue = mvelValue;
                 } else {
                     demoValue = null;
                     boolean initialEntry = true;
@@ -162,10 +174,19 @@ public class TableDataMapperUtil implements DataMapperUtil {
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
                 String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
                 Map<String, byte[]> map = new HashMap<>();
+
                 if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
                     byte[] convertedImageData = null;
-                    if(resultSet.get(fieldName) != null) {
-                        byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldName));
+                    byte[] byteVal = null;
+                    if(fieldFormatRequest.getMvelExpressions() != null && mvelValue != null) {
+                        byteVal = convertObjectToByteArray(mvelValue);;
+                    } else {
+                        if(resultSet.get(fieldName) != null) {
+                            byteVal = convertObjectToByteArray(resultSet.get(fieldName));
+                        }
+                    }
+
+                    if(byteVal != null) {
                         if(objectStoreFetchEnabled)
                             byteVal = objectStoreHelper.getBiometricObject(new String(byteVal, StandardCharsets.UTF_8));
                         map = bioDocApiFactory.getBioData(byteVal, fieldMap);
@@ -174,13 +195,13 @@ public class TableDataMapperUtil implements DataMapperUtil {
                     for(String field : fieldMap.split(",")) {
                         byte[] bytes = map.get(field);
                         if(bytes != null) {
-                            convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, bytes, localStoreRequired);
+                            convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, bytes, localStoreRequired, field);
                         }
                         BioData bioData = new BioData();
                         bioData.setBioData(convertedImageData);
                         bioData.setFormat(fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
                         bioData.setQualityScore(fieldFormatRequest.getSrcFieldForQualityScore() != null ? resultSet.get(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore())).toString() : "");
-                        dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap, bioData);
+                        dataMap2.get(fieldFormatRequest.getFieldCategory()).put(field, bioData);
                     }
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, "");
                 }
@@ -216,6 +237,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, "");
                 }
             }
+        }
     }
 
     private byte[] convertObjectToByteArray(Object obj) throws IOException, SQLException {
@@ -230,12 +252,12 @@ public class TableDataMapperUtil implements DataMapperUtil {
         return (byte[]) obj;
     }
 
-    public byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired) throws Exception {
+    public byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired, String fieldName) throws Exception {
         if (localStoreRequired) {
             bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
-            return bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName(), bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue), fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
+            return bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName(), bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue, fieldName), fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
         } else {
-            return bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue);
+            return bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue, fieldName);
         }
     }
 }

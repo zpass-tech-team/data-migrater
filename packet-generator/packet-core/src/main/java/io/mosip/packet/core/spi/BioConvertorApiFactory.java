@@ -6,6 +6,6 @@ import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import java.io.IOException;
 
 public interface BioConvertorApiFactory {
-    public byte[] convertImage(FieldFormatRequest fieldFormatRequest, byte[] imageData) throws Exception;
+    public byte[] convertImage(FieldFormatRequest fieldFormatRequest, byte[] imageData, String fieldName) throws Exception;
     public byte[] writeFile(String fileName, byte[] imageData, DataFormat toFormat) throws IOException;
 }

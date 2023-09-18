@@ -9,9 +9,11 @@ import io.mosip.packet.core.constant.DataFormat;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.packet.core.spi.BioConvertorApiFactory;
+import io.mosip.packet.data.convertion.util.BioUtilApplication;
 import org.jnbis.api.Jnbis;
 import org.jnbis.api.model.Bitmap;
 import org.jnbis.internal.WsqDecoder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
@@ -23,8 +25,11 @@ import java.util.List;
 @Component
 public class BioConversion implements BioConvertorApiFactory {
 
+    @Autowired
+    BioUtilApplication bioUtilApplication;
+
     @Override
-    public byte[] convertImage(FieldFormatRequest fieldFormatRequest, byte[] imageData) throws Exception {
+    public byte[] convertImage(FieldFormatRequest fieldFormatRequest, byte[] imageData, String fieldName) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] byteData = imageData;
         List<DataFormat> destFormats = fieldFormatRequest.getDestFormat();
@@ -37,7 +42,7 @@ public class BioConversion implements BioConvertorApiFactory {
                 ImageIO.write(ImageIO.read(new ByteArrayInputStream(byteData)), toFormat.getFormat(), baos);
                 byteData = baos.toByteArray();
                 currentFormat = toFormat;
-            } else if(currentFormat.equals(DataFormat.WSQ)) {
+            } /*else if(currentFormat.equals(DataFormat.WSQ)) {
                 WsqDecoder decoder = new WsqDecoder();
                 Bitmap bitmap = decoder.decode(byteData);
                 int width = bitmap.getWidth();
@@ -51,9 +56,8 @@ public class BioConversion implements BioConvertorApiFactory {
 
                 byteData = baos.toByteArray();
                 currentFormat = toFormat;
-            } else if(toFormat.equals(DataFormat.ISO) && (currentFormat.equals(DataFormat.JP2) || currentFormat.equals(DataFormat.WSQ))) {
+            }*/ else if(currentFormat.equals(DataFormat.JP2) || currentFormat.equals(DataFormat.WSQ) || currentFormat.equals(DataFormat.ISO)) {
                 Integer inputImageType = null;
-
                 switch(currentFormat.toString()) {
                     case "JP2":
                         inputImageType = 0;
@@ -61,38 +65,26 @@ public class BioConversion implements BioConvertorApiFactory {
                     case "WSQ":
                         inputImageType = 1;
                         break;
+                    case "ISO":
+                        inputImageType = 2;
+                        break;
                 }
 
-                String bioAttribute = fieldFormatRequest.getFieldToMap().split("_")[1];
+                Integer convertTo = null;
+                switch(toFormat.toString()) {
+                    case "ISO":
+                        convertTo = 0;
+                        break;
+                    default:
+                        convertTo = 1;
+                        break;
+                }
+
+                String bioAttribute = fieldName.split("_")[1];
                 BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
 
-                if (biometricType.equals(BiometricType.FINGER)) {
-                    ConvertRequestDto requestDto = new ConvertRequestDto();
-                    requestDto.setModality("Finger");
-                    requestDto.setPurpose("REGISTRATION");
-                    requestDto.setVersion("ISO19794_4_2011");
-                    requestDto.setImageType(inputImageType);
-                    requestDto.setBiometricSubType("UNKNOWN");
-                    requestDto.setInputBytes(byteData);
-                    byteData = FingerEncoder.convertFingerImageToISO(requestDto);
-                } else if (biometricType.equals(BiometricType.IRIS)) {
-                    ConvertRequestDto requestDto = new ConvertRequestDto();
-                    requestDto.setModality("Iris");
-                    requestDto.setPurpose("REGISTRATION");
-                    requestDto.setVersion("ISO19794_6_2011");
-                    requestDto.setImageType(inputImageType);
-                    requestDto.setBiometricSubType(bioAttribute);
-                    requestDto.setInputBytes(byteData);
-                    byteData = IrisEncoder.convertIrisImageToISO(requestDto);
-                } else if (biometricType.equals(BiometricType.FACE)) {
-                    ConvertRequestDto requestDto = new ConvertRequestDto();
-                    requestDto.setModality("Face");
-                    requestDto.setPurpose("REGISTRATION");
-                    requestDto.setVersion("ISO19794_5_2011");
-                    requestDto.setImageType(inputImageType);
-                    requestDto.setInputBytes(byteData);
-                    byteData = FaceEncoder.convertFaceImageToISO (requestDto);
-                }
+                byteData = bioUtilApplication.imageConversion(inputImageType, convertTo, "UNKNOWN", biometricType, byteData);
+
                 currentFormat = toFormat;
             }
         }

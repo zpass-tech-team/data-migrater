@@ -56,7 +56,7 @@ public class BioDataCbeffUtil implements BioDocApiFactory {
             List<BIR> data =  cbeffUtil.getBIRDataFromXML(Base64.getUrlDecoder().decode(responseDto.get("data").toString()));
 
             for(String name : fieldName.split(",")) {
-                String[] typeArray = fieldName.split("_");
+                String[] typeArray = name.split("_");
                 BiometricType bioType = Biometric.getSingleTypeByAttribute(typeArray[1]);
                 List<String> subTypeList = getSubTypes(bioType, typeArray[1].toString());
 

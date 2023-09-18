@@ -24,6 +24,7 @@ public class QueryFormatter {
                     if (val == null)
                         throw  new Exception("Missing Value in " + category.toString() + "category for the column " + column);
 
+                    query = query.replace("'${" + columnText + "}'", String.valueOf("'" + val +"'"));
                     query = query.replace("${" + columnText + "}", String.valueOf("'" + val +"'"));
                 }
             } while(query.contains("${"));
