@@ -14,6 +14,7 @@ import io.mosip.packet.data.biosdk.bqat.constant.BQATModalityType;
 import io.mosip.packet.data.biosdk.bqat.dto.BQATRequest;
 import io.mosip.packet.data.biosdk.bqat.dto.BQATResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -27,6 +28,9 @@ public class BQATSdkImpl implements BioSdkApiFactory {
 
     @Autowired
     private DataRestClientService restApiClient;
+
+    @Value("${mosip.biometric.sdk.provider.write.sdk.response:true}")
+    private Boolean writeResponse;
 
     @Override
     public Double calculateBioQuality(BioSDKRequestWrapper bioSDKRequestWrapper) throws Exception {
@@ -42,9 +46,12 @@ public class BQATSdkImpl implements BioSdkApiFactory {
             LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResults();
 
             if(bioSDKResponse != null) {
-                if(bioSDKRequestWrapper.getIsOnlyForQualityCheck()) {
+                if(writeResponse) {
                     HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
                     csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(bioSDKResponse));
+                }
+
+                if(bioSDKRequestWrapper.getIsOnlyForQualityCheck()) {
                     if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.FACE))
                         return Double.valueOf(bioSDKResponse.get("quality").toString()) * 10;
                     else if(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).equals(BQATModalityType.IRIS))

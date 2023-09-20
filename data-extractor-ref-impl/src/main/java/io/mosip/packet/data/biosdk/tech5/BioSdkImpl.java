@@ -9,6 +9,7 @@ import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.core.spi.BioSdkApiFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -19,6 +20,9 @@ public class BioSdkImpl implements BioSdkApiFactory {
 
     @Autowired
     private DataRestClientService restApiClient;
+
+    @Value("${mosip.biometric.sdk.provider.write.sdk.response:true}")
+    private Boolean writeResponse;
 
     private static final Logger LOGGER = DataProcessLogger.getLogger(BioSdkImpl.class);
 
@@ -42,8 +46,10 @@ public class BioSdkImpl implements BioSdkApiFactory {
         LOGGER.info("Request Send Time for SDK " + bioSDKRequestWrapper.getBiometricField() + " : " + new Date());
         ResponseWrapper response= (ResponseWrapper) restApiClient.postApi(ApiName.BIOSDK_QUALITY_CHECK, null, "", bioSDKRequest, ResponseWrapper.class);
         LOGGER.info("Response Received Time for SDK " + bioSDKRequestWrapper.getBiometricField() + " : " + new Date());
-        HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
-        csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(response));
+        if(writeResponse) {
+            HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
+            csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(response));
+        }
         LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResponse();
         if(bioSDKResponse.get("statusCode").equals(200)) {
             LinkedHashMap<String, Object> resp = (LinkedHashMap<String, Object>) bioSDKResponse.get("response");
