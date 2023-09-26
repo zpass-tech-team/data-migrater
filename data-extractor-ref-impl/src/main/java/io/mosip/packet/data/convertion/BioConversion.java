@@ -1,24 +1,15 @@
 package io.mosip.packet.data.convertion;
 
-import io.mosip.biometrics.util.ConvertRequestDto;
-import io.mosip.biometrics.util.face.FaceEncoder;
-import io.mosip.biometrics.util.finger.FingerEncoder;
-import io.mosip.biometrics.util.iris.IrisEncoder;
 import io.mosip.commons.packet.constants.Biometric;
+import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.packet.core.constant.DataFormat;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
-import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.packet.core.spi.BioConvertorApiFactory;
 import io.mosip.packet.data.convertion.util.BioUtilApplication;
-import org.jnbis.api.Jnbis;
-import org.jnbis.api.model.Bitmap;
-import org.jnbis.internal.WsqDecoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.awt.image.WritableRaster;
 import java.io.*;
 import java.util.List;
 
@@ -84,7 +75,6 @@ public class BioConversion implements BioConvertorApiFactory {
                 BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
 
                 byteData = bioUtilApplication.imageConversion(inputImageType, convertTo, "UNKNOWN", biometricType, byteData);
-
                 currentFormat = toFormat;
             }
         }

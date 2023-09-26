@@ -1,0 +1,7 @@
+import java.util.List;
+
+def getBioFile() {
+        String fileId = (String) identity.get('fileId');
+		String uinHash = (String) identity.get('uinHash');
+		return (uinHash.split("_")[1]).replace("'", "") + "/Biometrics/" +  fileId;
+}

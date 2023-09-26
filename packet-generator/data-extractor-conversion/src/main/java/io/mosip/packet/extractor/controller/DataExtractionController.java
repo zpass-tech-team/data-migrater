@@ -1,7 +1,7 @@
 package io.mosip.packet.extractor.controller;
 
-import io.mosip.commons.packet.dto.packet.PacketDto;
 import io.mosip.kernel.core.logger.spi.Logger;
+import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
 import io.mosip.packet.core.dto.RequestWrapper;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
@@ -19,11 +19,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
-import java.io.IOException;
-import java.sql.*;
-import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/dataExtractor")
@@ -106,10 +108,12 @@ public class DataExtractionController {
     public ResponseEntity<ResponseWrapper> createPacketFromOtherDomain(@RequestBody RequestWrapper<DBImportRequest> request) {
         ResponseWrapper<PacketCreatorResponse> responseWrapper = new ResponseWrapper();
         PacketCreatorResponse response = new PacketCreatorResponse();
+        IS_ONLY_FOR_QUALITY_CHECK = false;
+
         try {
             DBImportRequest importRequest = request.getRequest();
             LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: entry");
-            response = dataExtractionService.createPacketFromDataBase(importRequest, false);
+            response = dataExtractionService.createPacketFromDataBase(importRequest);
             LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: exit");
         } catch (SQLException e) {
             e.printStackTrace();
@@ -139,13 +143,14 @@ public class DataExtractionController {
 
     @PostMapping(value = "/exportBioQualityFromOtherDomain", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ResponseWrapper> exportBioQualityFromOtherDomain(@RequestBody RequestWrapper<DBImportRequest> request) {
+        IS_ONLY_FOR_QUALITY_CHECK = true;
         RestApiClient.setIsAuthRequired(false);
         ResponseWrapper<PacketCreatorResponse> responseWrapper = new ResponseWrapper();
         PacketCreatorResponse response = new PacketCreatorResponse();
         try {
             DBImportRequest importRequest = request.getRequest();
             LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: entry");
-            response = dataExtractionService.createPacketFromDataBase(importRequest, true);
+            response = dataExtractionService.createPacketFromDataBase(importRequest);
             LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: exit");
         } catch (SQLException e) {
             e.printStackTrace();

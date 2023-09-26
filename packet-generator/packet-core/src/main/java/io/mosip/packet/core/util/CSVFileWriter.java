@@ -1,21 +1,27 @@
 package io.mosip.packet.core.util;
 
 import com.opencsv.CSVWriter;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
+import javax.annotation.PreDestroy;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.function.Function;
 
 @Component
 public class CSVFileWriter {
     private static File csvFile;
     private static Boolean isHeaderWritten = false;
     private static LinkedHashMap<String, String> map = new LinkedHashMap<>();
+    private static Logger LOGGER = DataProcessLogger.getLogger(CSVFileWriter.class);
 
     @Autowired
     private CommonUtil commonUtil;
@@ -51,10 +57,10 @@ public class CSVFileWriter {
         return (HashMap) map.clone();
     }
 
-    public static synchronized void  writeCSVData(HashMap<String, String> csvMap) throws IOException {
+    public static synchronized void  writeCSVData(HashMap<String, String> csvMap) throws IOException, InterruptedException {
         CSVWriter WRITER = null;
         try {
-            WRITER = new CSVWriter(new FileWriter(csvFile));
+            WRITER = new CSVWriter(new FileWriter(csvFile, true));
 
             if(!isHeaderWritten) {
                 WRITER.writeNext(csvMap.keySet().toArray(new String[0]));
@@ -62,19 +68,47 @@ public class CSVFileWriter {
             }
 
             if(!map.keySet().containsAll(csvMap.keySet())) {
-                map.clear();
                 for(String key : csvMap.keySet())
-                    map.put(key, null);
+                    if(!map.containsKey(key))
+                        map.put(key, null);
             }
 
-            WRITER.writeNext(csvMap.values().toArray(new String[0]));
+            List<String> valuesList = new ArrayList<>();
+            for(String key : map.keySet())
+                valuesList.add(csvMap.get(key));
+
+            WRITER.writeNext(valuesList.toArray(new String[0]));
             WRITER.flush();
             csvMap.clear();
+        } catch (FileNotFoundException e) {
+            LOGGER.warn("File : " + csvFile.getAbsolutePath() + " not found or Opened by someother Program. Request you to close and continue");
+            System.out.println("File : " + csvFile.getAbsolutePath() + " not found or Opened by someother Program. Request you to close and continue");
+            Thread.sleep(10000);
+            writeCSVData(csvMap);
         } finally {
             if(WRITER != null)
                 WRITER.close();
         }
 ;
 
+    }
+
+    @PreDestroy
+    public void destroy() {
+        CSVWriter WRITER = null;
+        try {
+            WRITER = new CSVWriter(new FileWriter(csvFile, true));
+            WRITER.writeNext(map.keySet().toArray(new String[0]));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if(WRITER != null) {
+                try {
+                    WRITER.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

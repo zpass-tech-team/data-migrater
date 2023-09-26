@@ -3,7 +3,6 @@ package io.mosip.packet.extractor.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import io.mosip.commons.packet.constants.Biometric;
 import io.mosip.commons.packet.constants.PacketManagerConstants;
 import io.mosip.commons.packet.dto.Document;
@@ -11,12 +10,13 @@ import io.mosip.commons.packet.dto.packet.DeviceMetaInfo;
 import io.mosip.commons.packet.dto.packet.DigitalId;
 import io.mosip.commons.packet.dto.packet.DocumentType;
 import io.mosip.commons.packet.dto.packet.PacketDto;
+import io.mosip.kernel.biometrics.constant.BiometricType;
+import io.mosip.kernel.biometrics.entities.BIR;
+import io.mosip.kernel.biometrics.entities.BiometricRecord;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.packet.core.config.biosdk.BioSDKConfig;
-import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.constant.RegistrationConstants;
-import io.mosip.packet.core.dto.ResponseWrapper;
-import io.mosip.packet.core.dto.biosdk.*;
+import io.mosip.packet.core.dto.biosdk.BioSDKRequestWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.mockmds.BioMetricsDto;
 import io.mosip.packet.core.dto.mockmds.CaptureRequestDeviceDetailDto;
@@ -28,13 +28,8 @@ import io.mosip.packet.core.dto.packet.metadata.BiometricsMetaInfoDto;
 import io.mosip.packet.core.dto.packet.metadata.DocumentMetaInfoDTO;
 import io.mosip.packet.core.dto.packet.type.IndividualBiometricType;
 import io.mosip.packet.core.dto.packet.type.SimpleType;
-import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.repository.BlocklistedWordsRepository;
 import io.mosip.packet.core.service.DataRestClientService;
-import io.mosip.kernel.biometrics.constant.BiometricType;
-import io.mosip.kernel.biometrics.entities.BIR;
-import io.mosip.kernel.biometrics.entities.BiometricRecord;
-import io.mosip.packet.core.spi.BioDocApiFactory;
 import io.mosip.packet.core.spi.BioSdkApiFactory;
 import io.mosip.packet.core.util.CommonUtil;
 import io.mosip.packet.core.util.mockmds.StringHelper;
@@ -44,11 +39,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
 
 @Component
 public class PacketCreator {
@@ -202,7 +198,7 @@ public class PacketCreator {
         return docMap;
     }
 
-    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap, Boolean isOnlyForQualityCheck, String trackerColumn) throws Exception {
+    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap, String trackerColumn) throws Exception {
         LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
 //        LOGGER.debug("Adding Biometrics to packet manager started..");
@@ -287,9 +283,9 @@ public class PacketCreator {
                                         requestWrapper.setBiometricType(biometricType.toString());
                                         requestWrapper.setFormat(bioData.getFormat().toString());
                                         requestWrapper.setInputObject(csvMap);
-                                        requestWrapper.setIsOnlyForQualityCheck(isOnlyForQualityCheck);
+                                        requestWrapper.setIsOnlyForQualityCheck(IS_ONLY_FOR_QUALITY_CHECK);
                                         try {
-                                            if(isOnlyForQualityCheck) {
+                                            if(IS_ONLY_FOR_QUALITY_CHECK) {
                                                 Map<String, BioSdkApiFactory> bioSdkMap = bioSDKConfig.getBioSDKList().get(biometricType);
 
                                                 for(Map.Entry<String, BioSdkApiFactory> bioSdkEntry : bioSdkMap.entrySet()) {

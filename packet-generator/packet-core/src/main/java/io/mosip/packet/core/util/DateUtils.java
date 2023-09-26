@@ -890,7 +890,7 @@ public final class DateUtils {
 			try {
 				Date date =  dateFormat.parse(value);
 
-				if(value.equals(dateFormat.format(date)))
+				if(value.toLowerCase().equals(dateFormat.format(date).toLowerCase()))
 					return date;
 			} catch (Exception e) {
 				//do nothing

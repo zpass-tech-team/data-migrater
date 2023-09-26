@@ -2,7 +2,6 @@ package io.mosip.packet.core.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.mosip.kernel.core.idgenerator.spi.RidGenerator;
 import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.constant.DataFormat;
@@ -21,7 +20,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;

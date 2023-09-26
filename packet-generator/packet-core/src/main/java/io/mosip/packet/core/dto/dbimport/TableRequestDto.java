@@ -18,6 +18,7 @@ public class TableRequestDto implements Comparable<TableRequestDto> {
     private String sqlQuery;
     private String[] nonIdSchemaFields;
     private List<QueryFilter> filters;
+    private String[] orderBy;
     private String tableNameWithOutSchema;
 
     @Override

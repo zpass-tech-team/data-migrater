@@ -1,29 +1,22 @@
 package io.mosip.packet.core.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.mosip.commons.packet.dto.Document;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.DBTypes;
-import io.mosip.packet.core.constant.DataFormat;
 import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.constant.QuerySelection;
-import io.mosip.packet.core.constant.mvel.ParameterType;
 import io.mosip.packet.core.dto.dbimport.*;
-import io.mosip.packet.core.dto.mvel.MvelParameter;
 import io.mosip.packet.core.logger.DataProcessLogger;
-import io.mosip.packet.core.service.CustomNativeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.*;
-import java.util.Date;
+import java.util.concurrent.PriorityBlockingQueue;
 
+import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
-import static io.mosip.packet.core.constant.RegistrationConstants.DEFAULT_TABLE;
 
 @Component
 public class DataBaseUtil {
@@ -32,6 +25,8 @@ public class DataBaseUtil {
     private Statement statement = null;
     private boolean isTrackerSameHost = false;
     private String trackColumn = null;
+    private PriorityBlockingQueue<DataResult> syncronizedQueue = new PriorityBlockingQueue<>();
+    private ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
     private QueryFormatter formatter;
@@ -39,7 +34,15 @@ public class DataBaseUtil {
     @Autowired
     private DataMapperUtil dataMapperUtil;
 
-    public void connectDatabase(DBImportRequest dbImportRequest, Boolean isOnlyForQualityCheck) throws SQLException {
+    public PriorityBlockingQueue<DataResult> getSyncronizedQueue() {
+        return syncronizedQueue;
+    }
+
+    public void setSyncronizedQueue(PriorityBlockingQueue<DataResult> syncronizedQueue) {
+        this.syncronizedQueue = syncronizedQueue;
+    }
+
+    public void connectDatabase(DBImportRequest dbImportRequest) throws SQLException {
         try {
             if(conn == null) {
                 DBTypes dbType = dbImportRequest.getDbType();
@@ -47,7 +50,7 @@ public class DataBaseUtil {
                 DriverManager.registerDriver((Driver) driverClass.newInstance());
                 String connectionHost = String.format(dbType.getDriverUrl(), dbImportRequest.getUrl(), dbImportRequest.getPort(), dbImportRequest.getDatabaseName());
                 conn = DriverManager.getConnection(connectionHost, dbImportRequest.getUserId(), dbImportRequest.getPassword());
-                if(!isOnlyForQualityCheck)
+                if(!IS_ONLY_FOR_QUALITY_CHECK)
                     if(isTrackerSameHost = TrackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
                         trackColumn = dbImportRequest.getTrackerInfo().getTrackerColumn();
 
@@ -61,9 +64,35 @@ public class DataBaseUtil {
 
     }
 
-    public ResultSet readDataFromDatabase(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashSet<String>> fieldsCategoryMap) throws Exception {
+    public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashSet<String>> fieldsCategoryMap) throws Exception {
+        syncronizedQueue.clear();
+
         if(conn != null) {
-            return getResult(tableRequestDto, dataHashMap, fieldsCategoryMap);
+            List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
+            Collections.sort(tableRequestDtoList);
+            TableRequestDto tableRequestDto  = tableRequestDtoList.get(0);
+            ResultSet resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap);
+
+            if (resultSet != null) {
+                while(resultSet.next()) {
+                    dataHashMap = new HashMap<>();
+                    populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, fieldsCategoryMap, false);
+
+                    for (int i = 1; i < tableRequestDtoList.size(); i++) {
+                        TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
+                        ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap);
+
+                        if (resultSet1 != null && resultSet1.next()) {
+                            populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet1, dataHashMap, fieldsCategoryMap, false);
+                        }
+                    }
+                    DataResult result = new DataResult();
+                    result.setDemoDetails(dataHashMap.get(FieldCategory.DEMO));
+                    result.setBioDetails(dataHashMap.get(FieldCategory.BIO));
+                    result.setDocDetails(dataHashMap.get(FieldCategory.DOC));
+                    syncronizedQueue.put(result);
+                }
+            }
         } else
             throw new SQLException("Unable to Connect With Database. Please check the Configuration");
     }
@@ -88,9 +117,6 @@ public class DataBaseUtil {
                     else
                         columnNames += "," + column;
                 }
-
-            if(statement != null)
-                statement.close();
 
             statement = conn.createStatement();
 
@@ -150,44 +176,32 @@ public class DataBaseUtil {
         }
     }
 
-    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, List<Map<FieldCategory, LinkedHashMap<String, Object>>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired, Boolean isOnlyForQualityCheck) throws Exception {
-        List<Map<String, Object>> resultData = extractResultSet(resultSet);
+    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
+        Map<String, Object> resultData = extractResultSet(resultSet);
 
-        for(Map<String, Object> result : resultData) {
-            Map<FieldCategory, LinkedHashMap<String, Object>> dataMap1 = new HashMap<>();
+        if (dataMap != null && dataMap.size() <= 0) {
+            dataMap.put(FieldCategory.DEMO, new LinkedHashMap<>());
+            dataMap.put(FieldCategory.BIO, new LinkedHashMap<>());
+            dataMap.put(FieldCategory.DOC, new LinkedHashMap<>());
+        }
 
-            if (dataMap != null && dataMap.size() > 0 && dataMap2 != null) {
-                dataMap1 = dataMap2;
-            } else {
-                dataMap1.put(FieldCategory.DEMO, new LinkedHashMap<>());
-                dataMap1.put(FieldCategory.BIO, new LinkedHashMap<>());
-                dataMap1.put(FieldCategory.DOC, new LinkedHashMap<>());
-            }
-
-            for (FieldFormatRequest fieldFormatRequest : columnDetails) {
-                dataMapperUtil.dataMapper(fieldFormatRequest, result, dataMap1, tableRequestDto.getTableNameWithOutSchema(), fieldsCategoryMap, localStoreRequired);
-            }
-            if(dataMap2 == null)
-                dataMap.add(dataMap1);
+        for (FieldFormatRequest fieldFormatRequest : columnDetails) {
+            dataMapperUtil.dataMapper(fieldFormatRequest, resultData, dataMap, tableRequestDto.getTableNameWithOutSchema(), fieldsCategoryMap, localStoreRequired);
         }
     }
 
-    public List<Map<String, Object>> extractResultSet(ResultSet resultSet) throws SQLException {
-        List<Map<String, Object>> mapList = new ArrayList<>();
+    public Map<String, Object> extractResultSet(ResultSet resultSet) throws SQLException {
         LinkedHashMap<String, Object> resultData = new LinkedHashMap<>();
         ResultSetMetaData metadata = resultSet.getMetaData();
         int columnCount = metadata.getColumnCount();
         for (int i = 1; i <= columnCount; i++) {
             resultData.put(metadata.getColumnName(i), null);
         }
-        while (resultSet.next()) {
-            Map<String, Object> resultMap = (LinkedHashMap<String, Object>) resultData.clone();
+        Map<String, Object> resultMap = (LinkedHashMap<String, Object>) resultData.clone();
 
-            for (Map.Entry<String, Object> entry : resultMap.entrySet()) {
-                resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
-            }
-            mapList.add(resultMap);
+        for (Map.Entry<String, Object> entry : resultMap.entrySet()) {
+            resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
         }
-        return mapList;
+        return resultMap;
     }
 }

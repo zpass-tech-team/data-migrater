@@ -9,20 +9,19 @@ import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.core.spi.BioSdkApiFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
+import static io.mosip.packet.core.constant.GlobalConfig.WRITE_RESPONSE_IN_CSV;
 
 @Component
 public class BioSdkImpl implements BioSdkApiFactory {
 
     @Autowired
     private DataRestClientService restApiClient;
-
-    @Value("${mosip.biometric.sdk.provider.write.sdk.response:true}")
-    private Boolean writeResponse;
 
     private static final Logger LOGGER = DataProcessLogger.getLogger(BioSdkImpl.class);
 
@@ -46,7 +45,7 @@ public class BioSdkImpl implements BioSdkApiFactory {
         LOGGER.info("Request Send Time for SDK " + bioSDKRequestWrapper.getBiometricField() + " : " + new Date());
         ResponseWrapper response= (ResponseWrapper) restApiClient.postApi(ApiName.BIOSDK_QUALITY_CHECK, null, "", bioSDKRequest, ResponseWrapper.class);
         LOGGER.info("Response Received Time for SDK " + bioSDKRequestWrapper.getBiometricField() + " : " + new Date());
-        if(writeResponse) {
+        if(WRITE_RESPONSE_IN_CSV) {
             HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
             csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(response));
         }
@@ -57,7 +56,13 @@ public class BioSdkImpl implements BioSdkApiFactory {
             LinkedHashMap<String, Object> modalityMap = (LinkedHashMap<String, Object>) scoreMap.get(bioSDKRequestWrapper.getBiometricType());
             return (Double) modalityMap.get("score");
         } else {
-            throw new Exception("Error While Calling BIOSDK for Quality Check for Modality ");
+            LOGGER.error("Error While Calling BIOSDK for Quality Check for Modality " + (new Gson()).toJson(response));
+
+            if(!IS_ONLY_FOR_QUALITY_CHECK) {
+                throw new Exception("Error While Calling BIOSDK for Quality Check for Modality ");
+            } else {
+                return Double.valueOf(0);
+            }
         }
     }
 }

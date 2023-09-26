@@ -8,7 +8,6 @@ import io.mosip.kernel.biometrics.spi.CbeffUtil;
 import io.mosip.kernel.core.http.RequestWrapper;
 import io.mosip.kernel.core.util.StringUtils;
 import io.mosip.kernel.cryptomanager.dto.CryptomanagerRequestDto;
-import io.mosip.kernel.cryptomanager.dto.CryptomanagerResponseDto;
 import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.service.DataRestClientService;
@@ -18,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Component
@@ -67,7 +65,6 @@ public class BioDataCbeffUtil implements BioDocApiFactory {
                     }
                 }
             }
-            System.out.println("Existing Here");
         }
 
         return map;

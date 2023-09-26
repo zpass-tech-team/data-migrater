@@ -176,7 +176,6 @@ public class TableDataMapperUtil implements DataMapperUtil {
                 Map<String, byte[]> map = new HashMap<>();
 
                 if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
-                    byte[] convertedImageData = null;
                     byte[] byteVal = null;
                     if(fieldFormatRequest.getMvelExpressions() != null && mvelValue != null) {
                         byteVal = convertObjectToByteArray(mvelValue);;
@@ -193,6 +192,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
                     }
 
                     for(String field : fieldMap.split(",")) {
+                        byte[] convertedImageData = null;
                         byte[] bytes = map.get(field);
                         if(bytes != null) {
                             convertedImageData = convertBiometric(dataMap2.get(FieldCategory.DEMO).get(fieldFormatRequest.getPrimaryField()).toString(), fieldFormatRequest, bytes, localStoreRequired, field);
