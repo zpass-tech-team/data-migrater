@@ -1,5 +1,6 @@
 package io.mosip.packet.core.util;
 
+import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.DateUtils;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.sql.rowset.serial.SerialBlob;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -30,6 +32,7 @@ import java.util.*;
 
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
+import static io.mosip.packet.core.constant.GlobalConfig.IS_TRACKER_REQUIRED;
 
 @Component
 public class TrackerUtil {
@@ -44,7 +47,8 @@ public class TrackerUtil {
     @Autowired
     private PacketTrackerRepository packetTrackerRepository;
 
-    private static boolean isTrackerRequired = false;
+    @Autowired
+    private ClientCryptoFacade clientCryptoFacade;
 
     static {
         try (InputStream configKeys = TrackerUtil.class.getClassLoader().getResourceAsStream("database.properties")) {
@@ -60,7 +64,7 @@ public class TrackerUtil {
         try {
         //    isTrackerRequired = keys.getProperty("mosip.packet.creator.tracking.required") == null ? false : Booleankeys.getProperty("mosip.packet.creator.tracking.required");
 
-            if(conn == null && isTrackerRequired) {
+            if(conn == null && IS_TRACKER_REQUIRED) {
                 DBTypes dbType = Enum.valueOf(DBTypes.class, keys.getProperty("spring.datasource.tracker.dbtype"));
 
                 Class driverClass = Class.forName(dbType.getDriver());
@@ -107,7 +111,7 @@ public class TrackerUtil {
     }
 
     public synchronized void addTrackerEntry(TrackerRequestDto trackerRequestDto) {
-        if(isTrackerRequired) {
+        if(IS_TRACKER_REQUIRED) {
             try {
                 batchSize++;
 
@@ -120,7 +124,7 @@ public class TrackerUtil {
                 }
 
                 if(preparedStatement == null)
-                    preparedStatement = conn.prepareStatement(String.format("INSERT INTO %s (REF_ID, REG_NO, STATUS, CR_BY, CR_DTIMES) VALUES (?, ?, ?, ?, ?)", TRACKER_TABLE_NAME));
+                    preparedStatement = conn.prepareStatement(String.format("INSERT INTO %s (REF_ID, REG_NO, STATUS, CR_BY, CR_DTIMES, SESSION_KEY, ACTIVITY, PROCESS, COMMENTS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", TRACKER_TABLE_NAME));
 
                 long timeNow = System.currentTimeMillis();
                 Timestamp timestamp = new Timestamp(timeNow);
@@ -129,6 +133,10 @@ public class TrackerUtil {
                 preparedStatement.setString(3, trackerRequestDto.getStatus());
                 preparedStatement.setString(4, "MIGRATOR");
                 preparedStatement.setTimestamp(5, timestamp);
+                preparedStatement.setString(6, trackerRequestDto.getSessionKey());
+                preparedStatement.setString(7, trackerRequestDto.getActivity());
+                preparedStatement.setString(8, trackerRequestDto.getProcess());
+                preparedStatement.setString(9, trackerRequestDto.getComments());
                 preparedStatement.addBatch();
             } catch (SQLException throwables) {
                 LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
@@ -139,7 +147,7 @@ public class TrackerUtil {
     }
 
     public void closeStatement() {
-        if(isTrackerRequired) {
+        if(IS_TRACKER_REQUIRED) {
             if (conn != null) {
                 try {
                     if(preparedStatement != null) {
@@ -154,12 +162,13 @@ public class TrackerUtil {
         }
     }
 
-    public boolean isRecordPresent(Object value) throws SQLException {
-        if(isTrackerRequired) {
+    public boolean isRecordPresent(Object value, String activity) throws SQLException {
+        if(IS_TRACKER_REQUIRED) {
             PreparedStatement statement = null;
             try {
-                statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ?", TRACKER_TABLE_NAME));
+                statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ? AND ACTIVITY = ?", TRACKER_TABLE_NAME));
                 statement.setString(1, value.toString());
+                statement.setString(2, activity);
                 ResultSet resultSet = statement.executeQuery();
 
                 if(resultSet.next())
@@ -192,16 +201,20 @@ public class TrackerUtil {
         public DBCreator(DBTypes dbTypes) throws Exception {
             sb = new StringBuilder();
             sb.append(String.format("CREATE TABLE %s (", TRACKER_TABLE_NAME));
+            sb.append(addColumn("SESSION_KEY", String.class, 100, true, dbTypes) + ",");
             sb.append(addColumn("REF_ID", String.class, 100, true, dbTypes) + ",");
             sb.append(addColumn("REG_NO", String.class, 100, false, dbTypes) + ",");
+            sb.append(addColumn("ACTIVITY", String.class, 50, false, dbTypes) + ",");
             sb.append(addColumn("STATUS", String.class, 50, false, dbTypes) + ",");
+            sb.append(addColumn("PROCESS", String.class, 50, true, dbTypes) + ",");
+            sb.append(addColumn("COMMENTS", String.class, 3000, false, dbTypes) + ",");
             sb.append(addColumn("CR_BY", String.class, 50, true, dbTypes) + ",");
             sb.append(addColumn("CR_DTIMES", Timestamp.class, 100, true, dbTypes) + ",");
             sb.append(addColumn("UPD_BY", String.class, 100, false, dbTypes) + ",");
             sb.append(addColumn("UPD_DTIMES", Timestamp.class, 100, false, dbTypes));
             sb.append(");");
 
-            sb.append(String.format("ALTER TABLE %s ADD PRIMARY KEY (REF_ID);", TRACKER_TABLE_NAME));
+            sb.append(String.format("ALTER TABLE %s ADD PRIMARY KEY (SESSION_KEY, REF_ID);", TRACKER_TABLE_NAME));
         }
 
         private String addColumn(String columnName, Class columnType, Integer length, boolean isNotNull, DBTypes dbTypes) throws Exception {
@@ -221,8 +234,18 @@ public class TrackerUtil {
 
     }
 
-    public void addTrackerLocalEntry(String refId, String regNo, TrackerStatus status, String process, String request) {
+    public void addTrackerLocalEntry(String refId, String regNo, TrackerStatus status, String process, Object request, String sessionKey, String activity) throws SQLException, IOException {
         Optional<PacketTracker> optional= packetTrackerRepository.findById(refId);
+        byte[] requestValue = null;
+
+        if(request != null) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(request);
+            requestValue = clientCryptoFacade.encrypt(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), bos.toByteArray());
+            oos.close();
+            bos.close();
+        }
 
         PacketTracker packetTracker;
 
@@ -231,7 +254,9 @@ public class TrackerUtil {
             if(regNo != null ) packetTracker.setRegNo(regNo);
             if(status != null ) packetTracker.setStatus(status.toString());
             if(process != null ) packetTracker.setProcess(process);
-            if(request != null ) packetTracker.setRequest(request);
+            if(request != null ) packetTracker.setRequest(new SerialBlob(requestValue));
+            if(activity != null ) packetTracker.setActivity(activity);
+            packetTracker.setSessionKey(sessionKey);
             packetTracker.setUpdBy("BATCH");
             packetTracker.setUpdDtimes(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
         } else {
@@ -240,7 +265,9 @@ public class TrackerUtil {
             if(regNo != null ) packetTracker.setRegNo(regNo);
             if(status != null ) packetTracker.setStatus(status.toString());
             if(process != null ) packetTracker.setProcess(process);
-            if(request != null ) packetTracker.setRequest(request);
+            if(request != null ) packetTracker.setRequest(new SerialBlob(requestValue));
+            if(activity != null ) packetTracker.setActivity(activity);
+            packetTracker.setSessionKey(sessionKey);
             packetTracker.setCrBy("BATCH");
             packetTracker.setCrDtime(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
         }

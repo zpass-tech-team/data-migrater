@@ -12,6 +12,7 @@ import io.mosip.packet.extractor.service.DataExtractionService;
 import io.mosip.packet.extractor.util.ConfigUtil;
 import io.mosip.packet.extractor.util.Reprocessor;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.MockDeviceUtil;
+import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -25,9 +26,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
-import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
-import static io.mosip.packet.core.constant.GlobalConfig.WRITE_RESPONSE_IN_CSV;
-
+import static io.mosip.packet.core.constant.GlobalConfig.*;
 
 @SpringBootApplication(scanBasePackages = { "io.mosip.packet.*", "${mosip.auth.adapter.impl.basepackage}", "io.mosip.kernel.clientcrypto.*", "io.mosip.kernel.dataaccess", "io.mosip.kernel.keymanagerservice.*", "io.mosip.kernel.biometrics.*","io.mosip.kernel.cbeffutil.*"}, exclude = {SecurityAutoConfiguration.class, HibernateDaoConfig.class, HibernateJpaAutoConfiguration.class})
 @EntityScan(basePackages = {"io.mosip.packet.core.entity", "io.mosip.kernel.idgenerator.rid.entity", "io.mosip.kernel.keymanagerservice.entity"})
@@ -46,6 +45,9 @@ public class DataProcessApplication {
                 IS_ONLY_FOR_QUALITY_CHECK = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.extractor.enable.quality.check.only"));
             if(context.getEnvironment().getProperty("mosip.biometric.sdk.provider.write.sdk.response") != null)
                 WRITE_RESPONSE_IN_CSV = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.biometric.sdk.provider.write.sdk.response"));
+            if(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required") != null)
+                IS_TRACKER_REQUIRED = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required"));
+            SESSION_KEY = RandomStringUtils.randomAlphanumeric(20);
 
             if(internal) {
                 System.out.println("Current Flow Enabled for  " + (IS_ONLY_FOR_QUALITY_CHECK ? "Quality Calculation" : "Packet Creation") + " . Do you want to Continue (Y-Yes, N-No)");

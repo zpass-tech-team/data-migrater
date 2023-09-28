@@ -3,9 +3,7 @@ package io.mosip.packet.extractor.util;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.kernel.core.logger.spi.Logger;
-import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.constant.tracker.TrackerStatus;
 import io.mosip.packet.core.dto.dbimport.PacketCreatorResponse;
 import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
@@ -18,6 +16,7 @@ import io.mosip.packet.core.service.thread.*;
 import io.mosip.packet.core.util.TrackerUtil;
 import io.mosip.packet.extractor.service.impl.DataExtractionServiceImpl;
 import io.mosip.packet.uploader.service.PacketUploaderService;
+import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -27,7 +26,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -82,6 +80,7 @@ public class Reprocessor {
         packetCreatorResponse.setRID(new ArrayList<>());
 
         ResultSetter setter = new ResultSetter() {
+            @SneakyThrows
             @Override
             public void setResult(Object obj) {
                 ResultDto resultDto = (ResultDto) obj;
@@ -95,7 +94,7 @@ public class Reprocessor {
                     trackerRequestDto.setStatus(TrackerStatus.PROCESSED_WITHOUT_UPLOAD.toString());
                 }
                 trackerUtil.addTrackerEntry(trackerRequestDto);
-                trackerUtil.addTrackerLocalEntry(resultDto.getRefId(), null, (enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD), null, enablePaccketUploader ? "" : null);
+                trackerUtil.addTrackerLocalEntry(resultDto.getRefId(), null, (enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD), null, enablePaccketUploader ? null : null, null, null);
             }
         };
 
@@ -113,7 +112,7 @@ public class Reprocessor {
                 @Override
                 public void processData(PacketTracker packetTracker) throws Exception {
                     if(packetTracker.getStatus().equals(TrackerStatus.CREATED.toString()) || packetTracker.getStatus().equals(TrackerStatus.PROCESSED_WITHOUT_UPLOAD.toString())) {
-                        LinkedHashMap<String, Object> demoDetails = objectMapper.readValue(packetTracker.getRequest(), new TypeReference<LinkedHashMap<String, Object>>() {});
+                        LinkedHashMap<String, Object> demoDetails = objectMapper.readValue(packetTracker.getRequest().toString(), new TypeReference<LinkedHashMap<String, Object>>() {});
 
                         Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
 
@@ -155,7 +154,7 @@ public class Reprocessor {
 
                             if(enablePaccketUploader) {
                                 packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
-                                trackerUtil.addTrackerLocalEntry(packetTracker.getRefId(), packetTracker.getRegNo(), TrackerStatus.SYNCED, null, objectMapper.writeValueAsString(uploadList));
+                                trackerUtil.addTrackerLocalEntry(packetTracker.getRefId(), packetTracker.getRegNo(), TrackerStatus.SYNCED, null, objectMapper.writeValueAsBytes(uploadList), null, null);
                                 packetUploaderService.uploadSyncedPacket(uploadList, response);
                             } else {
                                 LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploader Disabled : "+ (new Gson()).toJson(response));
@@ -170,7 +169,7 @@ public class Reprocessor {
                             throw new Exception("Identity Mapping JSON File missing");
                         }
                     } else if(packetTracker.getStatus().equals(TrackerStatus.SYNCED.toString())) {
-                        List<PacketUploadDTO> uploadList = objectMapper.readValue(packetTracker.getRequest(), new TypeReference<List<PacketUploadDTO>>() {});
+                        List<PacketUploadDTO> uploadList = objectMapper.readValue(packetTracker.getRequest().toString(), new TypeReference<List<PacketUploadDTO>>() {});
                         LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
 
                         if(enablePaccketUploader) {
