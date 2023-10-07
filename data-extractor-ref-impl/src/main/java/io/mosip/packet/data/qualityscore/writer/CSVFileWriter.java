@@ -1,9 +1,11 @@
-package io.mosip.packet.core.util;
+package io.mosip.packet.data.qualityscore.writer;
 
 import com.opencsv.CSVWriter;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.logger.DataProcessLogger;
+import io.mosip.packet.core.spi.QualityWriterFactory;
+import io.mosip.packet.core.util.CommonUtil;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -17,7 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Component
-public class CSVFileWriter {
+public class CSVFileWriter implements QualityWriterFactory {
     private static File csvFile;
     private static Boolean isHeaderWritten = false;
     private static LinkedHashMap<String, String> map = new LinkedHashMap<>();
@@ -45,7 +47,7 @@ public class CSVFileWriter {
         }
     }
 
-    public HashMap getCSVDataMap() throws ApisResourceAccessException, IOException, ParseException {
+    public HashMap getDataMap() throws ApisResourceAccessException, IOException, ParseException {
         if(map.size() <= 2) {
             map.put("ref_id", null);
             map.put("reg_no", null);
@@ -57,7 +59,7 @@ public class CSVFileWriter {
         return (HashMap) map.clone();
     }
 
-    public static synchronized void  writeCSVData(HashMap<String, String> csvMap) throws IOException, InterruptedException {
+    public synchronized void  writeQualityData(HashMap<String, String> csvMap) throws IOException, InterruptedException {
         CSVWriter WRITER = null;
         try {
             WRITER = new CSVWriter(new FileWriter(csvFile, true));
@@ -84,13 +86,11 @@ public class CSVFileWriter {
             LOGGER.warn("File : " + csvFile.getAbsolutePath() + " not found or Opened by someother Program. Request you to close and continue");
             System.out.println("File : " + csvFile.getAbsolutePath() + " not found or Opened by someother Program. Request you to close and continue");
             Thread.sleep(10000);
-            writeCSVData(csvMap);
+            writeQualityData(csvMap);
         } finally {
             if(WRITER != null)
                 WRITER.close();
         }
-;
-
     }
 
     @PreDestroy

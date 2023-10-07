@@ -16,7 +16,7 @@ import io.mosip.packet.core.dto.upload.PacketUploadDTO;
 import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.thread.*;
-import io.mosip.packet.core.util.CSVFileWriter;
+import io.mosip.packet.core.spi.QualityWriterFactory;
 import io.mosip.packet.core.util.CommonUtil;
 import io.mosip.packet.core.util.DataBaseUtil;
 import io.mosip.packet.core.util.TrackerUtil;
@@ -34,9 +34,9 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.FileInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -104,14 +104,27 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Autowired
     private TrackerUtil trackerUtil;
 
-    @Autowired
-    private CSVFileWriter csvFileWriter;
+    private QualityWriterFactory qualityWriterFactory;
 
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
     private Map<String, HashSet<String>> fieldsCategoryMap = new HashMap<>();
     private ObjectMapper objectMapper = new ObjectMapper();
     private boolean backendProcess = false;
+
+    @Value("${mosip.data.quality.writer.classname:io.mosip.packet.data.quality.writer.CSVFileWriter}")
+    private String qualityWriterClassName;
+
+    @Autowired
+    private List<QualityWriterFactory> qualityWriterFactoryList;
+
+    @PostConstruct
+    public void loadConfiguration() {
+        for(QualityWriterFactory factory : qualityWriterFactoryList) {
+            if(factory.getClass().getName().equals(qualityWriterClassName))
+                qualityWriterFactory = factory;
+        }
+    }
 
     @Override
     public LinkedHashMap<String, Object> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
@@ -289,15 +302,15 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 baseThreadController.setProcessor(new ThreadProcessor() {
                     @Override
                     public void processData(ResultSetter setter, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, String registrationId, String trackerColumn) {
-                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + registrationId + " Process Started");
                         LinkedHashMap<String, Object> demoDetails = dataHashMap.get(FieldCategory.DEMO);
                         LinkedHashMap<String, Object> bioDetails = dataHashMap.get(FieldCategory.BIO);
                         LinkedHashMap<String, Object> docDetails = dataHashMap.get(FieldCategory.DOC);
+                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + (registrationId == null ? demoDetails.get(trackerColumn).toString() : registrationId) + " Process Started");
 
                         try {
                             trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), registrationId, TrackerStatus.STARTED, dbImportRequest.getProcess(), dataHashMap, SESSION_KEY, getActivityName());
 
-                            HashMap<String, String> csvMap = csvFileWriter.getCSVDataMap();
+                            HashMap<String, String> csvMap = qualityWriterFactory.getDataMap();
                             LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
 
                             PacketDto packetDto = new PacketDto();
@@ -322,7 +335,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                             csvMap.put("reg_no", registrationId);
                             csvMap.put("ref_id", demoDetails.get(trackerColumn).toString());
-                            CSVFileWriter.writeCSVData(csvMap);
+                            qualityWriterFactory.writeQualityData(csvMap);
 
                             if (!IS_ONLY_FOR_QUALITY_CHECK) {
                                 packetDto.setId(registrationId);
@@ -413,7 +426,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                             resultDto.setStatus(TrackerStatus.FAILED);
                             setter.setResult(resultDto);
                         }
-                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + registrationId + " Process Ended");
+                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + (registrationId == null ? demoDetails.get(trackerColumn).toString() : registrationId) + " Process Ended");
                     }
                 });
                 return true;

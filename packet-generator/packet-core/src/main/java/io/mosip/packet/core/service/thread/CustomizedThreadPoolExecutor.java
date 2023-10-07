@@ -63,7 +63,10 @@ public class CustomizedThreadPoolExecutor {
                     activeCount+= entry.getValue().getActiveCount();
                     completedCount+= entry.getValue().getCompletedTaskCount();
                 }
-                System.out.println("Pool Name : " + NAME + "   Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+completedCount));
+
+                if(totalTaskCount > 0 || totalCount > 0) {
+                    System.out.println("Pool Name : " + NAME + "   Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+completedCount));
+                }
             }
         }, 0, DELAY_SECONDS);
     }

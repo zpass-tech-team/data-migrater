@@ -7,7 +7,7 @@ public class GlobalConfig {
 
     public static Boolean IS_ONLY_FOR_QUALITY_CHECK = false;
 
-    public static Boolean WRITE_RESPONSE_IN_CSV = false;
+    public static Boolean WRITE_BIOSDK_RESPONSE = false;
 
     public static String SESSION_KEY;
 

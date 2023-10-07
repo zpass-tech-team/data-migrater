@@ -24,7 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.UUID;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
-import static io.mosip.packet.core.constant.GlobalConfig.WRITE_RESPONSE_IN_CSV;
+import static io.mosip.packet.core.constant.GlobalConfig.WRITE_BIOSDK_RESPONSE;
 
 @Component
 public class BQATSdkImpl implements BioSdkApiFactory {
@@ -70,7 +70,7 @@ public class BQATSdkImpl implements BioSdkApiFactory {
                 else
                     return Double.valueOf(0);
             } finally {
-                if(WRITE_RESPONSE_IN_CSV) {
+                if(WRITE_BIOSDK_RESPONSE) {
                     HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
                     csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(bioSDKResponse));
                 }

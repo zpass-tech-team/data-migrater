@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
-import static io.mosip.packet.core.constant.GlobalConfig.WRITE_RESPONSE_IN_CSV;
+import static io.mosip.packet.core.constant.GlobalConfig.WRITE_BIOSDK_RESPONSE;
 
 @Component
 public class BioSdkImpl implements BioSdkApiFactory {
@@ -45,7 +45,7 @@ public class BioSdkImpl implements BioSdkApiFactory {
         LOGGER.info("Request Send Time for SDK " + bioSDKRequestWrapper.getBiometricField() + " : " + new Date());
         ResponseWrapper response= (ResponseWrapper) restApiClient.postApi(ApiName.BIOSDK_QUALITY_CHECK, null, "", bioSDKRequest, ResponseWrapper.class);
         LOGGER.info("Response Received Time for SDK " + bioSDKRequestWrapper.getBiometricField() + " : " + new Date());
-        if(WRITE_RESPONSE_IN_CSV) {
+        if(WRITE_BIOSDK_RESPONSE) {
             HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
             csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(response));
         }

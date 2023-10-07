@@ -5,34 +5,28 @@ import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.packet.core.constant.DBTypes;
-import io.mosip.packet.core.constant.FieldCategory;
-import io.mosip.packet.core.constant.QuerySelection;
 import io.mosip.packet.core.constant.tracker.StringType;
 import io.mosip.packet.core.constant.tracker.TimeStampType;
 import io.mosip.packet.core.constant.tracker.TrackerStatus;
-import io.mosip.packet.core.dto.dbimport.DBImportRequest;
-import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
-import io.mosip.packet.core.dto.dbimport.QueryFilter;
-import io.mosip.packet.core.dto.dbimport.TableRequestDto;
 import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
 import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.PacketTrackerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.sql.rowset.serial.SerialBlob;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.sql.*;
-import java.util.*;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Scanner;
 
-import static io.mosip.packet.core.constant.RegistrationConstants.*;
-import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
 import static io.mosip.packet.core.constant.GlobalConfig.IS_TRACKER_REQUIRED;
+import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Component
 public class TrackerUtil {
@@ -265,7 +259,7 @@ public class TrackerUtil {
             if(regNo != null ) packetTracker.setRegNo(regNo);
             if(status != null ) packetTracker.setStatus(status.toString());
             if(process != null ) packetTracker.setProcess(process);
-            if(request != null ) packetTracker.setRequest(new SerialBlob(requestValue));
+            if(request != null ) packetTracker.setRequest(requestValue != null ? null : new SerialBlob(requestValue));
             if(activity != null ) packetTracker.setActivity(activity);
             packetTracker.setSessionKey(sessionKey);
             packetTracker.setCrBy("BATCH");

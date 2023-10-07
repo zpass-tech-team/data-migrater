@@ -44,7 +44,7 @@ public class DataProcessApplication {
             if(context.getEnvironment().getProperty("mosip.extractor.enable.quality.check.only") != null)
                 IS_ONLY_FOR_QUALITY_CHECK = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.extractor.enable.quality.check.only"));
             if(context.getEnvironment().getProperty("mosip.biometric.sdk.provider.write.sdk.response") != null)
-                WRITE_RESPONSE_IN_CSV = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.biometric.sdk.provider.write.sdk.response"));
+                WRITE_BIOSDK_RESPONSE = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.biometric.sdk.provider.write.sdk.response"));
             if(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required") != null)
                 IS_TRACKER_REQUIRED = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required"));
             SESSION_KEY = RandomStringUtils.randomAlphanumeric(20);
