@@ -6,10 +6,14 @@ import io.mosip.packet.core.constant.DataFormat;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.spi.BioConvertorApiFactory;
 import io.mosip.packet.data.convertion.util.BioUtilApplication;
+import org.jnbis.api.model.Bitmap;
+import org.jnbis.internal.WsqDecoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.io.*;
 import java.util.List;
 
@@ -33,7 +37,7 @@ public class BioConversion implements BioConvertorApiFactory {
                 ImageIO.write(ImageIO.read(new ByteArrayInputStream(byteData)), toFormat.getFormat(), baos);
                 byteData = baos.toByteArray();
                 currentFormat = toFormat;
-            } /*else if(currentFormat.equals(DataFormat.WSQ)) {
+            } else if(currentFormat.equals(DataFormat.WSQ)) {
                 WsqDecoder decoder = new WsqDecoder();
                 Bitmap bitmap = decoder.decode(byteData);
                 int width = bitmap.getWidth();
@@ -43,11 +47,10 @@ public class BioConversion implements BioConvertorApiFactory {
                 WritableRaster raster = image.getRaster();
                 raster.setDataElements(0, 0, width, height, data);
                 ImageIO.write(image, toFormat.getFormat(), baos);
-                System.out.println("Converting Image from " + currentFormat.getFormat() + " to " + toFormat.getFormat());
 
                 byteData = baos.toByteArray();
                 currentFormat = toFormat;
-            }*/ else if(currentFormat.equals(DataFormat.JP2) || currentFormat.equals(DataFormat.WSQ) || currentFormat.equals(DataFormat.ISO)) {
+            } else if(currentFormat.equals(DataFormat.JP2) || currentFormat.equals(DataFormat.WSQ) || currentFormat.equals(DataFormat.ISO)) {
                 Integer inputImageType = null;
                 switch(currentFormat.toString()) {
                     case "JP2":

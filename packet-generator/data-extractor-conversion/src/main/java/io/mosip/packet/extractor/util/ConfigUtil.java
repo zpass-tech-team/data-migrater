@@ -31,6 +31,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.*;
 
+import static io.mosip.packet.core.constant.GlobalConfig.IS_NETWORK_AVAILABLE;
+import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
+
 @Component
 @Getter
 public class ConfigUtil {
@@ -82,7 +85,17 @@ public class ConfigUtil {
                 configUtil.regClientVersion = env.getProperty("mosip.id.regclient.current.version");
                 configUtil.selectedLanguages = env.getProperty("mosip.selected.languages");
                 syncClientSettings();
-                fetchPolicy();
+                if(IS_NETWORK_AVAILABLE)
+                    fetchPolicy();
+                else {
+                    System.out.println("Nerwork Not available for Host : " + env.getProperty("mosip.internal.host") + "  Do you want to Continue (Y-Yes, N-No)");
+                    Scanner scanner = new Scanner(System.in);
+                    String option = scanner.next();
+
+                    if(option.equalsIgnoreCase("n")) {
+                        System.exit(1);
+                    }
+                }
             }
         }
     }
@@ -95,34 +108,39 @@ public class ConfigUtil {
     private void syncClientSettings() throws Exception {
         ResponseWrapper masterSyncResponse = null;
 
-        ResponseWrapper response = (ResponseWrapper) restApiClient.getApi(ApiName.MASTER_VALIDATOR_SERVICE_NAME, null, "keyindex", configUtil.keyIndex, ResponseWrapper.class);
+        try {
+            ResponseWrapper response = (ResponseWrapper) restApiClient.getApi(ApiName.MASTER_VALIDATOR_SERVICE_NAME, null, "keyindex", configUtil.keyIndex, ResponseWrapper.class);
+            IS_NETWORK_AVAILABLE = true;
+            String message = getErrorMessage(getErrorList(response));
 
-        String message = getErrorMessage(getErrorList(response));
+            if (null != response.getResponse()) {
+                saveClientSettings((LinkedHashMap<String, Object>)response.getResponse());
+            } else {
+                throw new Exception("Machine Not Configured in MOSIP " + message);
+            }
 
-        if (null != response.getResponse()) {
-            saveClientSettings((LinkedHashMap<String, Object>)response.getResponse());
-        } else {
-            throw new Exception("Machine Not Configured in MOSIP " + message);
+            List<MachineMaster> machineMasters = machineMasterRepository.findAll();
+
+            if (machineMasters.size() > 0) {
+                configUtil.machineSerialNum = machineMasters.get(0).getSerialNum();
+                configUtil.machineId = machineMasters.get(0).getId();
+                configUtil.centerId = machineMasters.get(0).getRegCenterId();
+            } else {
+                throw new Exception("Machine Details Fetching from MOSIP Failed");
+            }
+
+            if (!configUtil.machineName.equalsIgnoreCase(machineMasters.get(0).getName()))
+                throw new Exception("Machine Name '" + configUtil.machineName + "' not Matching with the MOSIP Configuration");
+
+            if (configUtil.machineId == null || configUtil.machineId.isEmpty())
+                throw new Exception("Machine Name '" + configUtil.machineName + "' not Configured in MOSIP System");
+
+            if (configUtil.centerId == null || configUtil.centerId.isEmpty())
+                throw new Exception("Registration Center not Configured for Machine Name '" + configUtil.machineName + "' in MOSIP System");
+        } catch (Exception e) {
+            if(!IS_ONLY_FOR_QUALITY_CHECK)
+                throw e;
         }
-
-        List<MachineMaster> machineMasters = machineMasterRepository.findAll();
-
-        if (machineMasters.size() > 0) {
-            configUtil.machineSerialNum = machineMasters.get(0).getSerialNum();
-            configUtil.machineId = machineMasters.get(0).getId();
-            configUtil.centerId = machineMasters.get(0).getRegCenterId();
-        } else {
-            throw new Exception("Machine Details Fetching from MOSIP Failed");
-        }
-
-        if (!configUtil.machineName.equalsIgnoreCase(machineMasters.get(0).getName()))
-            throw new Exception("Machine Name '" + configUtil.machineName + "' not Matching with the MOSIP Configuration");
-
-        if (configUtil.machineId == null || configUtil.machineId.isEmpty())
-            throw new Exception("Machine Name '" + configUtil.machineName + "' not Configured in MOSIP System");
-
-        if (configUtil.centerId == null || configUtil.centerId.isEmpty())
-            throw new Exception("Registration Center not Configured for Machine Name '" + configUtil.machineName + "' in MOSIP System");
     }
 
     private void saveClientSettings(LinkedHashMap<String, Object> masterSyncResponse) throws Exception {
@@ -181,7 +199,7 @@ public class ConfigUtil {
     private boolean validate(String centerId, String machineId)
             throws Exception {
         if (centerId == null || machineId == null)
-            throw new Exception("Machine ID & Center ID are Empty");
+                throw new Exception("Machine ID & Center ID are Empty");
 
         return true;
     }

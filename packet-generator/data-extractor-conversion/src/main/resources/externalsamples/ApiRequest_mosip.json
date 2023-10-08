@@ -17,23 +17,30 @@
         "nonIdSchemaFields": [
           "uin_ref_id",
           "uin_hash"
+        ],
+        "filters" : [{
+          "filterField" : "uin_ref_id",
+          "fieldType": "VARCHAR",
+          "fromValue" : "2f556ba2-7cde-593b-a8b5-c8710e9846ef",
+          "filterCondition" : "EQUAL"
+        }
         ]
       },
       {
-        "queryType": "TABLE",
-        "executionOrderSequence": 2,
-        "tableName": "idrepo.uin_biometric",
-        "nonIdSchemaFields": [
-          "uin_ref_id"
-        ],
-        "filters" : [
-          {
-            "filterField" : "uin_ref_id",
-            "fieldType" : "VARCHAR",
-            "fromValue" : "${DEMO:uin_ref_id}",
-            "filterCondition" : "EQUAL"
-          }
-        ]
+              "queryType": "TABLE",
+              "executionOrderSequence": 2,
+              "tableName": "idrepo.uin_biometric",
+              "nonIdSchemaFields": [
+                "uin_ref_id"
+              ],
+              "filters" : [
+                {
+                  "filterField" : "uin_ref_id",
+                  "fieldType" : "VARCHAR",
+                  "fromValue" : "${DEMO:uin_ref_id}",
+                  "filterCondition" : "EQUAL"
+                }
+              ]
       }
     ],
     "ignoreIdSchemaFields": [
@@ -61,12 +68,12 @@
     ],
     "columnDetails": [
       {
-        "fieldName": "uin.uin_ref_id",
-        "fieldToMap": "uin_ref_id"
+	    "fieldName": "uin.uin_ref_id",
+	    "fieldToMap": "uin_ref_id"
       },
       {
-        "fieldName": "uin.uin_hash",
-        "fieldToMap": "uin_hash"
+	    "fieldName": "uin.uin_hash",
+	    "fieldToMap": "uin_hash"
       },
       {
         "fieldName": "uin_biometric.bio_file_id",
@@ -74,25 +81,25 @@
         "primaryField" : "uin.uin_ref_id",
         "fieldToMap": "individualBiometrics_leftThumb,individualBiometrics_face,individualBiometrics_leftIndex,individualBiometrics_leftMiddle,individualBiometrics_leftRing,individualBiometrics_leftLittle,individualBiometrics_rightThumb,individualBiometrics_rightIndex,individualBiometrics_rightMiddle,individualBiometrics_rightRing,individualBiometrics_rightLittle",
         "mvelExpressions" : {
-          "mvelFile" : "BioFile.mvel",
-          "parameters" : [
-            {
-              "parameterName":"fileId",
-              "parameterType" : "STRING",
-              "parameterValue" : "${bio_file_id}"
-            },
-            {
-              "parameterName":"uinHash",
-              "parameterType" : "STRING",
-              "parameterValue" : "${DEMO:uin_hash}"
-            }
-          ]
+        	"mvelFile" : "BioFile.mvel",
+        	"parameters" : [
+			{
+				"parameterName":"fileId",
+				"parameterType" : "STRING",
+				"parameterValue" : "${bio_file_id}"
+			},
+			{
+				"parameterName":"uinHash",
+				"parameterType" : "STRING",
+				"parameterValue" : "${DEMO:uin_hash}"
+			}
+        	]
         }
       }
     ],
-    "trackerInfo" : {
-      "trackerColumn" : "uin_ref_id"
-    }
+  "trackerInfo" : {
+    "trackerColumn" : "uin_ref_id"
+  }
   },
   "requesttime": "2018-12-10T06:12:52.994Z",
   "version": "string"

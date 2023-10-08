@@ -22,7 +22,6 @@ import static io.mosip.packet.core.constant.RegistrationConstants.*;
 public class DataBaseUtil {
     private static final Logger LOGGER = DataProcessLogger.getLogger(DataBaseUtil.class);
     private Connection conn = null;
-    private Statement statement = null;
     private boolean isTrackerSameHost = false;
     private String trackColumn = null;
     private PriorityBlockingQueue<DataResult> syncronizedQueue = new PriorityBlockingQueue<>();
@@ -67,37 +66,50 @@ public class DataBaseUtil {
     public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashSet<String>> fieldsCategoryMap) throws Exception {
         syncronizedQueue.clear();
 
-        if(conn != null) {
-            List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
-            Collections.sort(tableRequestDtoList);
-            TableRequestDto tableRequestDto  = tableRequestDtoList.get(0);
-            ResultSet resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap);
+        Statement statement1 = conn.createStatement();
+        try {
+            if(conn != null) {
+                List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
+                Collections.sort(tableRequestDtoList);
+                TableRequestDto tableRequestDto  = tableRequestDtoList.get(0);
+                ResultSet resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1);
 
-            if (resultSet != null) {
-                while(resultSet.next()) {
-                    dataHashMap = new HashMap<>();
-                    populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, fieldsCategoryMap, false);
+                if (resultSet != null) {
+                    while(resultSet.next()) {
+                        dataHashMap = new HashMap<>();
+                        populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, fieldsCategoryMap, false);
 
-                    for (int i = 1; i < tableRequestDtoList.size(); i++) {
-                        TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
-                        ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap);
+                        for (int i = 1; i < tableRequestDtoList.size(); i++) {
+                            Statement statement2 = conn.createStatement();
+                            try {
+                                TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
+                                ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2);
 
-                        if (resultSet1 != null && resultSet1.next()) {
-                            populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet1, dataHashMap, fieldsCategoryMap, false);
+                                if (resultSet1 != null && resultSet1.next()) {
+                                    populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet1, dataHashMap, fieldsCategoryMap, false);
+                                }
+                            } finally {
+                                if(statement2 != null)
+                                    statement2.close();
+                            }
                         }
+                        DataResult result = new DataResult();
+                        result.setDemoDetails(dataHashMap.get(FieldCategory.DEMO));
+                        result.setBioDetails(dataHashMap.get(FieldCategory.BIO));
+                        result.setDocDetails(dataHashMap.get(FieldCategory.DOC));
+                        syncronizedQueue.put(result);
                     }
-                    DataResult result = new DataResult();
-                    result.setDemoDetails(dataHashMap.get(FieldCategory.DEMO));
-                    result.setBioDetails(dataHashMap.get(FieldCategory.BIO));
-                    result.setDocDetails(dataHashMap.get(FieldCategory.DOC));
-                    syncronizedQueue.put(result);
                 }
-            }
-        } else
-            throw new SQLException("Unable to Connect With Database. Please check the Configuration");
+            } else
+                throw new SQLException("Unable to Connect With Database. Please check the Configuration");
+        } finally {
+            if(statement1 != null)
+                statement1.close();
+        }
+
     }
 
-    private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap) throws Exception {
+    private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Statement statement) throws Exception {
         if (tableRequestDto.getQueryType().equals(QuerySelection.TABLE)) {
             String tableName = tableRequestDto.getTableNameWithOutSchema();
 
@@ -117,8 +129,6 @@ public class DataBaseUtil {
                     else
                         columnNames += "," + column;
                 }
-
-            statement = conn.createStatement();
 
             String filterCondition = null;
             boolean whereCondition= false;
@@ -155,11 +165,6 @@ public class DataBaseUtil {
 
             return statement.executeQuery(formatter.replaceColumntoDataIfAny(selectSql, dataMap));
         } else if (tableRequestDto.getQueryType().equals(QuerySelection.SQL_QUERY)) {
-            if(statement != null)
-                statement.close();
-
-            statement = conn.createStatement();
-
             return statement.executeQuery(formatter.replaceColumntoDataIfAny(tableRequestDto.getSqlQuery(), dataMap));
         } else
             return null;

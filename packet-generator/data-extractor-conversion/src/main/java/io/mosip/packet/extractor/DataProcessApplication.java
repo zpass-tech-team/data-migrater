@@ -36,10 +36,6 @@ public class DataProcessApplication {
     public static void main(String[] args) {
         ConfigurableApplicationContext context = SpringApplication.run(DataProcessApplication.class, args);
         try {
-            context.getBean(MockDeviceUtil.class).resetDevices();
-            context.getBean(MockDeviceUtil.class).initDeviceHelpers();
-            context.getBean(ConfigUtil.class).loadConfigDetails();
-            context.getBean(Reprocessor.class).reprocess();
             boolean internal = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.refer.internal.json.file"));
             if(context.getEnvironment().getProperty("mosip.extractor.enable.quality.check.only") != null)
                 IS_ONLY_FOR_QUALITY_CHECK = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.extractor.enable.quality.check.only"));
@@ -48,6 +44,11 @@ public class DataProcessApplication {
             if(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required") != null)
                 IS_TRACKER_REQUIRED = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required"));
             SESSION_KEY = RandomStringUtils.randomAlphanumeric(20);
+
+            context.getBean(MockDeviceUtil.class).resetDevices();
+            context.getBean(MockDeviceUtil.class).initDeviceHelpers();
+            context.getBean(ConfigUtil.class).loadConfigDetails();
+            context.getBean(Reprocessor.class).reprocess();
 
             if(internal) {
                 System.out.println("Current Flow Enabled for  " + (IS_ONLY_FOR_QUALITY_CHECK ? "Quality Calculation" : "Packet Creation") + " . Do you want to Continue (Y-Yes, N-No)");

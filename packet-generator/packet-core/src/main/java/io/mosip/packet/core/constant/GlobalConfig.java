@@ -12,4 +12,6 @@ public class GlobalConfig {
     public static String SESSION_KEY;
 
     public static Boolean IS_TRACKER_REQUIRED = true;
+
+    public static Boolean IS_NETWORK_AVAILABLE = false;
 }

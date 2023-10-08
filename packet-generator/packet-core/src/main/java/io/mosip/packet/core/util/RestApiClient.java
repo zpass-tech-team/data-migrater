@@ -47,6 +47,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+
+import static io.mosip.packet.core.constant.GlobalConfig.IS_NETWORK_AVAILABLE;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 import com.google.gson.Gson;
@@ -248,7 +250,8 @@ public class RestApiClient {
 	@SuppressWarnings("unchecked")
 	private HttpEntity<Object> setRequestHeader(Object requestType, MediaType mediaType) throws IOException {
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
-		headers.add("Cookie", getToken());
+		if(IS_NETWORK_AVAILABLE)
+			headers.add("Cookie", getToken());
 		if (mediaType != null) {
 			headers.add("Content-Type", mediaType.toString());
 		}
