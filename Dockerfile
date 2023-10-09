@@ -43,7 +43,8 @@ RUN apt-get -y update \
 && useradd -u ${container_user_uid} -g ${container_user_group} -s /bin/sh -m ${container_user}
 
 # set working directory for the user
-WORKDIR /home/${container_user}
+#WORKDIR /home/${container_user}
+WORKDIR /
 
 ENV work_dir=/home/${container_user}
 
