@@ -55,6 +55,8 @@ ENV loader_path_env=${loader_path}
 
 CMD [“echo”, “hello”]
 CMD [“echo”, ls]
+RUN dir -s
+
 COPY ./target/build/data-extractor-conversion-*.jar data-extractor-conversion.jar
 
 # change permissions of file inside working dir
