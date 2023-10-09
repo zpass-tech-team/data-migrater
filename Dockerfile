@@ -44,7 +44,7 @@ RUN apt-get -y update \
 
 # set working directory for the user
 #WORKDIR /home/${container_user}
-WORKDIR /var/lib/docker/tmp/buildkit-mount2456896752/
+WORKDIR ./target/
 RUN dir
 WORKDIR /var/lib/docker/tmp/buildkit-mount2456896752/target/
 RUN dir
