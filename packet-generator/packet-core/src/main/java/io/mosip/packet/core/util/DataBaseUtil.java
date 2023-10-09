@@ -33,6 +33,9 @@ public class DataBaseUtil {
     @Autowired
     private DataMapperUtil dataMapperUtil;
 
+    @Autowired
+    private TrackerUtil trackerUtil;
+
     public PriorityBlockingQueue<DataResult> getSyncronizedQueue() {
         return syncronizedQueue;
     }
@@ -50,7 +53,7 @@ public class DataBaseUtil {
                 String connectionHost = String.format(dbType.getDriverUrl(), dbImportRequest.getUrl(), dbImportRequest.getPort(), dbImportRequest.getDatabaseName());
                 conn = DriverManager.getConnection(connectionHost, dbImportRequest.getUserId(), dbImportRequest.getPassword());
                 if(!IS_ONLY_FOR_QUALITY_CHECK)
-                    if(isTrackerSameHost = TrackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
+                    if(isTrackerSameHost = trackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
                         trackColumn = dbImportRequest.getTrackerInfo().getTrackerColumn();
 
                 LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "External DataBase" + dbImportRequest.getUrl() +  "Database Successfully connected");

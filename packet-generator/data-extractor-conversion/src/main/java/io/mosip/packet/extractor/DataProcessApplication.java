@@ -43,6 +43,10 @@ public class DataProcessApplication {
                 WRITE_BIOSDK_RESPONSE = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.biometric.sdk.provider.write.sdk.response"));
             if(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required") != null)
                 IS_TRACKER_REQUIRED = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required"));
+            if(context.getEnvironment().getProperty("mosip.packet.creator.run.as.batch.execution") != null)
+                IS_RUNNING_AS_BATCH = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.run.as.batch.execution"));
+
+
             SESSION_KEY = RandomStringUtils.randomAlphanumeric(20);
 
             context.getBean(MockDeviceUtil.class).resetDevices();
@@ -52,8 +56,14 @@ public class DataProcessApplication {
 
             if(internal) {
                 System.out.println("Current Flow Enabled for  " + (IS_ONLY_FOR_QUALITY_CHECK ? "Quality Calculation" : "Packet Creation") + " . Do you want to Continue (Y-Yes, N-No)");
-                Scanner scanner = new Scanner(System.in);
-                String option = scanner.next();
+                String option = "";
+
+                if(!IS_RUNNING_AS_BATCH) {
+                    Scanner scanner = new Scanner(System.in);
+                    option = scanner.next();
+                } else {
+                    option = "Y";
+                }
 
                 if(option.equalsIgnoreCase("Y")) {
                     FileInputStream io = new FileInputStream("./ApiRequest.json");

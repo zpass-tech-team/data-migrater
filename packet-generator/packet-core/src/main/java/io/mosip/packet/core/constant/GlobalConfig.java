@@ -14,4 +14,6 @@ public class GlobalConfig {
     public static Boolean IS_TRACKER_REQUIRED = true;
 
     public static Boolean IS_NETWORK_AVAILABLE = false;
+
+    public static Boolean IS_RUNNING_AS_BATCH = false;
 }

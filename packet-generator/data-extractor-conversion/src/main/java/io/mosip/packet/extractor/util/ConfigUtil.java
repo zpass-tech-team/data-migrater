@@ -31,8 +31,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.*;
 
-import static io.mosip.packet.core.constant.GlobalConfig.IS_NETWORK_AVAILABLE;
-import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
+import static io.mosip.packet.core.constant.GlobalConfig.*;
 
 @Component
 @Getter
@@ -89,8 +88,14 @@ public class ConfigUtil {
                     fetchPolicy();
                 else {
                     System.out.println("Nerwork Not available for Host : " + env.getProperty("mosip.internal.host") + "  Do you want to Continue (Y-Yes, N-No)");
-                    Scanner scanner = new Scanner(System.in);
-                    String option = scanner.next();
+                    String option = "Y";
+
+                    if(!IS_RUNNING_AS_BATCH) {
+                        Scanner scanner = new Scanner(System.in);
+                        option = scanner.next();
+                    } else {
+                        option ="Y";
+                    }
 
                     if(option.equalsIgnoreCase("n")) {
                         System.exit(1);

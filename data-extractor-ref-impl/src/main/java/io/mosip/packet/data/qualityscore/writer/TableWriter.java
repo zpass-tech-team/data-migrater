@@ -9,24 +9,27 @@ import io.mosip.packet.core.constant.tracker.TimeStampType;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.spi.QualityWriterFactory;
 import io.mosip.packet.core.util.CommonUtil;
-import io.mosip.packet.core.util.TrackerUtil;
 import io.mosip.packet.data.qualityscore.writer.constant.TableWriterConstant;
 import io.mosip.packet.data.qualityscore.writer.constant.TableWriterQuery;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.InputStream;
 import java.sql.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Scanner;
 
+import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
 
 @Component
 public class TableWriter implements QualityWriterFactory {
     private static final Logger LOGGER = DataProcessLogger.getLogger(TableWriter.class);
-    private static Properties keys;
     private static Connection conn = null;
     private static String connectionHost = null;
     private static String WRITER_TABLE_NAME = "TB_T_QUALITY_SCORE";
@@ -42,28 +45,24 @@ public class TableWriter implements QualityWriterFactory {
     @Autowired
     private TableWriterQuery tableWriterQuery;
 
-    static {
+    @Autowired
+    private Environment env;
+
+    @PostConstruct
+    public void initialize(){
         columnMap.put("REF_ID", String.class);
         columnMap.put("REG_NO", String.class);
 
-        try (InputStream configKeys = TrackerUtil.class.getClassLoader().getResourceAsStream("database.properties")) {
-            keys = new Properties();
-            keys.load(configKeys);
-        } catch (Exception e) {
-            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
-                    "Exception encountered during context initialization - TableWriter "
-                            + ExceptionUtils.getStackTrace(e));
-            System.exit(0);
-        }
-
         try {
+            IS_RUNNING_AS_BATCH = env.getProperty("mosip.packet.creator.run.as.batch.execution") == null ? false : Boolean.valueOf(env.getProperty("mosip.packet.creator.run.as.batch.execution"));
+
             if(conn == null) {
-                DBTypes dbType = Enum.valueOf(DBTypes.class, keys.getProperty("spring.datasource.tracker.dbtype"));
+                DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
                 Class driverClass = Class.forName(dbType.getDriver());
                 DriverManager.registerDriver((Driver) driverClass.newInstance());
-                connectionHost = String.format(dbType.getDriverUrl(), keys.getProperty("spring.datasource.tracker.host"), keys.getProperty("spring.datasource.tracker.port"), keys.getProperty("spring.datasource.tracker.database"));
-                conn = DriverManager.getConnection(connectionHost, keys.getProperty("spring.datasource.tracker.username"), keys.getProperty("spring.datasource.tracker.password"));
+                connectionHost = String.format(dbType.getDriverUrl(), env.getProperty("spring.datasource.tracker.host"), env.getProperty("spring.datasource.tracker.port"), env.getProperty("spring.datasource.tracker.database"));
+                conn = DriverManager.getConnection(connectionHost, env.getProperty("spring.datasource.tracker.username"), env.getProperty("spring.datasource.tracker.password"));
                 conn.setAutoCommit(true);
 
                 Statement statement = null;
@@ -74,17 +73,27 @@ public class TableWriter implements QualityWriterFactory {
 
                         if(ifTablePresent) {
                             System.out.println("Table : " + WRITER_TABLE_NAME +  " Do you want to clear Table ? Y-Yes, N-No");
-                            Scanner scanner = new Scanner(System.in);
-                            String option = scanner.next();
+                            String option ="";
+                            if(!IS_RUNNING_AS_BATCH) {
+                                Scanner scanner = new Scanner(System.in);
+                                option = scanner.next();
+                            } else {
+                                option = "Y";
+                            }
 
                             if(option.equalsIgnoreCase("y")) {
                                 statement.execute("TRUNCATE TABLE " + WRITER_TABLE_NAME);
                             }
                         }
                     } catch (Exception e) {
-                        System.out.println("Table " + WRITER_TABLE_NAME +  " not Present in DB " + keys.getProperty("spring.datasource.tracker.host") +  ". Do you want to create ? Y-Yes, N-No");
-                        Scanner scanner = new Scanner(System.in);
-                        String option = scanner.next();
+                        System.out.println("Table " + WRITER_TABLE_NAME +  " not Present in DB " + env.getProperty("spring.datasource.tracker.host") +  ". Do you want to create ? Y-Yes, N-No");
+                        String option ="";
+                        if(!IS_RUNNING_AS_BATCH) {
+                            Scanner scanner = new Scanner(System.in);
+                            option = scanner.next();
+                        } else {
+                            option = "Y";
+                        }
 
                         if(option.equalsIgnoreCase("y")) {
                             try {
@@ -134,7 +143,7 @@ public class TableWriter implements QualityWriterFactory {
             if(initialLoad) {
                 statement = conn.createStatement();
                 TableWriter.DBCreator dbCreator = new TableWriter.DBCreator();
-                DBTypes dbType = Enum.valueOf(DBTypes.class, keys.getProperty("spring.datasource.tracker.dbtype"));
+                DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
                 for(Object ob : commonUtil.getBioAttributesforAll()) {
                     statement.execute("ALTER TABLE " + ANALYZER_TABLE_NAME + " ADD " + dbCreator.addColumn(ob.toString().toUpperCase(), Number.class, 6,0, false, dbType));
@@ -175,7 +184,7 @@ public class TableWriter implements QualityWriterFactory {
         try {
             if(!map.keySet().containsAll(csvMap.keySet())) {
                 TableWriter.DBCreator dbCreator = new TableWriter.DBCreator();
-                DBTypes dbType = Enum.valueOf(DBTypes.class, keys.getProperty("spring.datasource.tracker.dbtype"));
+                DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
                 for(String key : csvMap.keySet())
                     if(!map.containsKey(key)) {

@@ -13,8 +13,10 @@ import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.PacketTrackerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.sql.rowset.serial.SerialBlob;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,6 +27,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Scanner;
 
+import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
 import static io.mosip.packet.core.constant.GlobalConfig.IS_TRACKER_REQUIRED;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
@@ -33,7 +36,6 @@ public class TrackerUtil {
     private static final Logger LOGGER = DataProcessLogger.getLogger(TrackerUtil.class);
     private static Connection conn = null;
     private PreparedStatement preparedStatement = null;
-    private static Properties keys;
     private int batchLimit = 2;
     private int batchSize = 0;
     private static String connectionHost = null;
@@ -44,27 +46,22 @@ public class TrackerUtil {
     @Autowired
     private ClientCryptoFacade clientCryptoFacade;
 
-    static {
-        try (InputStream configKeys = TrackerUtil.class.getClassLoader().getResourceAsStream("database.properties")) {
-            keys = new Properties();
-            keys.load(configKeys);
-        } catch (Exception e) {
-            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
-                    "Exception encountered during context initialization - TrackerUtil "
-                            + ExceptionUtils.getStackTrace(e));
-            System.exit(0);
-        }
+    @Autowired
+    private Environment env;
 
+    @PostConstruct
+    public void initialize(){
         try {
-        //    isTrackerRequired = keys.getProperty("mosip.packet.creator.tracking.required") == null ? false : Booleankeys.getProperty("mosip.packet.creator.tracking.required");
+            IS_TRACKER_REQUIRED = env.getProperty("mosip.packet.creator.tracking.required") == null ? false : Boolean.valueOf(env.getProperty("mosip.packet.creator.tracking.required"));
+            IS_RUNNING_AS_BATCH = env.getProperty("mosip.packet.creator.run.as.batch.execution") == null ? false : Boolean.valueOf(env.getProperty("mosip.packet.creator.run.as.batch.execution"));
 
             if(conn == null && IS_TRACKER_REQUIRED) {
-                DBTypes dbType = Enum.valueOf(DBTypes.class, keys.getProperty("spring.datasource.tracker.dbtype"));
+                DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
                 Class driverClass = Class.forName(dbType.getDriver());
                 DriverManager.registerDriver((Driver) driverClass.newInstance());
-                connectionHost = String.format(dbType.getDriverUrl(), keys.getProperty("spring.datasource.tracker.host"), keys.getProperty("spring.datasource.tracker.port"), keys.getProperty("spring.datasource.tracker.database"));
-                conn = DriverManager.getConnection(connectionHost, keys.getProperty("spring.datasource.tracker.username"), keys.getProperty("spring.datasource.tracker.password"));
+                connectionHost = String.format(dbType.getDriverUrl(), env.getProperty("spring.datasource.tracker.host"), env.getProperty("spring.datasource.tracker.port"), env.getProperty("spring.datasource.tracker.database"));
+                conn = DriverManager.getConnection(connectionHost, env.getProperty("spring.datasource.tracker.username"), env.getProperty("spring.datasource.tracker.password"));
                 conn.setAutoCommit(true);
 
                 Statement statement = null;
@@ -72,9 +69,14 @@ public class TrackerUtil {
                     statement = conn.createStatement();
                     statement.execute("SELECT COUNT(*) FROM " + TRACKER_TABLE_NAME);
                 } catch (Exception e) {
-                    System.out.println("Table " + TRACKER_TABLE_NAME +  " not Present in DB " + keys.getProperty("spring.datasource.tracker.jdbcurl") +  ". Do you want to create ? Y-Yes, N-No");
-                    Scanner scanner = new Scanner(System.in);
-                    String option = scanner.next();
+                    System.out.println("Table " + TRACKER_TABLE_NAME +  " not Present in DB " + env.getProperty("spring.datasource.tracker.jdbcurl") +  ". Do you want to create ? Y-Yes, N-No");
+                    String option ="";
+                    if(!IS_RUNNING_AS_BATCH) {
+                        Scanner scanner = new Scanner(System.in);
+                        option = scanner.next();
+                    } else {
+                        option = "Y";
+                    }
 
                     if(option.equalsIgnoreCase("y")) {
                         try {
@@ -183,8 +185,8 @@ public class TrackerUtil {
         }
     }
 
-    public static boolean isTrackerHostSame(String sourceHost, String databaseName) {
-        return connectionHost != null && connectionHost.equalsIgnoreCase(sourceHost) && databaseName.equalsIgnoreCase(keys.getProperty("spring.datasource.tracker.database"));
+    public boolean isTrackerHostSame(String sourceHost, String databaseName) {
+        return connectionHost != null && connectionHost.equalsIgnoreCase(sourceHost) && databaseName.equalsIgnoreCase(env.getProperty("spring.datasource.tracker.database"));
     }
 
 
