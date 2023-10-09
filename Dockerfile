@@ -55,7 +55,7 @@ ENV loader_path_env=${loader_path}
 
 CMD [“echo”, “hello”]
 CMD [“echo”, ls]
-RUN dir -s
+RUN dir
 
 COPY ./target/build/data-extractor-conversion-*.jar data-extractor-conversion.jar
 
