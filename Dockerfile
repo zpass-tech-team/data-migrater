@@ -44,8 +44,10 @@ RUN apt-get -y update \
 
 # set working directory for the user
 #WORKDIR /home/${container_user}
-WORKDIR /
-
+WORKDIR /var/lib/docker/tmp/buildkit-mount2456896752/
+RUN dir
+WORKDIR /var/lib/docker/tmp/buildkit-mount2456896752/target/
+RUN dir
 ENV work_dir=/home/${container_user}
 
 ARG loader_path=${work_dir}/additional_jars/
