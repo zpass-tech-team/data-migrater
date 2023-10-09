@@ -51,12 +51,12 @@
             <artifactId>kernel-biometrics-api</artifactId>
             <version>1.2.0.1-B1</version>
         </dependency>
-        <!--  https://mvnrepository.com/artifact/io.mosip.commons/commons-packet-manager -->
+        <!--  https://mvnrepository.com/artifact/io.mosip.commons/commons-packet-manager
          <dependency>
              <groupId>io.mosip.commons</groupId>
              <artifactId>commons-packet-manager</artifactId>
              <version>1.2.0.1-B1</version>
-         </dependency>
+         </dependency>-->
         <!-- https://mvnrepository.com/artifact/io.mosip.kernel/kernel-core -->
         <dependency>
             <groupId>io.mosip.kernel</groupId>

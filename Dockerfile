@@ -56,11 +56,7 @@ RUN mkdir -p ${loader_path}
 
 ENV loader_path_env=${loader_path}
 
-CMD [“echo”, “hello”]
-CMD [“echo”, ls]
-RUN dir
-
-COPY ./target/build/data-extractor-conversion-*.jar data-extractor-conversion.jar
+COPY ./target/data-extractor-conversion-*.jar data-extractor-conversion.jar
 
 # change permissions of file inside working dir
 RUN chown -R ${container_user}:${container_user} /home/${container_user}
