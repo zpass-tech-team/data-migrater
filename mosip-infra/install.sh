@@ -34,13 +34,13 @@ echo Installing Migrator
 #  ./postgres-init-db/init_db.sh
 
   kubectl create configmap property-config
-    --from-file=./packet-generator/data-extractor-conversion/src/main/resources/externalsamples/ApiRequest.json
-    --from-file=./packet-generator/data-extractor-conversion/src/main/resources/externalsamples/application-default.properties
-    --from-file=./packet-generator/data-extractor-conversion/src/main/resources/externalsamples/BioFile.mvel
-    --from-file=./packet-generator/data-extractor-conversion/src/main/resources/externalsamples/cbeff.xsd
-    --from-file=./packet-generator/data-extractor-conversion/src/main/resources/externalsamples/external_db.sql
-    --from-file=./packet-generator/data-extractor-conversion/src/main/resources/externalsamples/identity.json
-    --from-file=./packet-generator/data-extractor-conversion/src/main/resources/externalsamples/idschema.json
+    --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/ApiRequest.json
+    --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/application-default.properties
+    --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/BioFile.mvel
+    --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/cbeff.xsd
+    --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/external_db.sql
+    --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/identity.json
+    --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/idschema.json
 
   echo Installing data-migrator service
   helm -n $NS install data-migrator helm/ --wait --version $CHART_VERSION -f migrator.yaml
