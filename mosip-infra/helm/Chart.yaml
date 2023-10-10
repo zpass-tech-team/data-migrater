@@ -1,6 +1,6 @@
 apiVersion: v2
 name: data-migrator
-description: A Helm chart for sample Simple Mpesa Service
+description: A Helm chart for sample Data Migrator Service
 type: application
 version: 12.0.1
 appVersion: ""

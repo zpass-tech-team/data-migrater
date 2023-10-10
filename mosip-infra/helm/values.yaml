@@ -341,7 +341,7 @@ metrics:
   podAnnotations:
     prometheus.io/scrape: "true"
 
-  endpointPath: /v1/migrator/actuator/prometheus
+  endpointPath: /v1/datamigrator/actuator/prometheus
 
   ## Prometheus Service Monitor
   ## ref: https://github.com/coreos/prometheus-operator
@@ -395,6 +395,4 @@ istio:
   enabled: true
   gateways:
     - istio-system/internal
-  prefix: /v1/datamigrator/
-  rewrite:
-    uri: /
+  prefix: /datamigrator/v1
