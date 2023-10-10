@@ -33,6 +33,8 @@ echo Installing Migrator
 #  echo Creating Database in Postgres mosip_mpesa
 #  ./postgres-init-db/init_db.sh
 
+  kubectl create configmap property-config --from-file=./packet-generator/data-extractor-conversion/src/main/resources/externalsamples/
+
   echo Installing data-migrator service
   helm -n $NS install data-migrator helm/ --wait --version $CHART_VERSION -f migrator.yaml
   return 0
