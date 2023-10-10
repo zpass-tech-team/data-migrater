@@ -55,7 +55,7 @@ RUN mkdir -p ${loader_path}
 ENV loader_path_env=${loader_path}
 
 #COPY ./target/build/data-extractor-conversion-*.jar data-extractor-conversion.jar
-COPY ./target/build/* /
+COPY ./target/build/* /home/mosip/
 RUN dir -s
 
 # change permissions of file inside working dir
