@@ -56,7 +56,7 @@ ENV loader_path_env=${loader_path}
 
 #COPY ./target/build/data-extractor-conversion-*.jar data-extractor-conversion.jar
 COPY ./target/build/* /home/mosip/
-RUN dir -s
+RUN dir
 
 # change permissions of file inside working dir
 RUN chown -R ${container_user}:${container_user} /home/${container_user}
