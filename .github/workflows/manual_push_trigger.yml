@@ -54,7 +54,7 @@ jobs:
           name: release
           path: ./release.zip
 
-      - name: Build Migration Utility image
+    - name: Build Migration Utility image
       run: |
             # The Mosip Stage Executor is not packaged as part of release.zip
             cd "./$SERVICE_LOCATION"
