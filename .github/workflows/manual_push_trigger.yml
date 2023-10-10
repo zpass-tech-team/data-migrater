@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NAMESPACE: ${{ secrets.dev_namespace_docker_hub }}
-      SERVICE_NAME: data-extractor-conversion
+      SERVICE_NAME: packet-generator/data-extractor-conversion
 
     steps:
     - uses: actions/checkout@v2
