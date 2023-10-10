@@ -34,7 +34,7 @@ echo Installing Migrator
 #  ./postgres-init-db/init_db.sh
 
   echo Installing data-migrator service
-  helm -n $NS install data-migrator helm/ --wait --version $CHART_VERSION -f migrator.yaml
+  helm -n $NS install data-migrator-service helm/ --wait --version $CHART_VERSION -f migrator.yaml
   return 0
 }
 
