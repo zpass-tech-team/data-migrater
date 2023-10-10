@@ -1,28 +1,28 @@
 {{/*
 Return the proper  image name
 */}}
-{{- define "simple-mpesa.image" -}}
+{{- define "data-migrator.image" -}}
 {{ include "common.images.image" (dict "imageRoot" .Values.image "global" .Values.global) }}
 {{- end -}}
 
 {{/*
 Return the proper image name (for the init container volume-permissions image)
 */}}
-{{- define "simple-mpesa.volumePermissions.image" -}}
+{{- define "data-migrator.volumePermissions.image" -}}
 {{- include "common.images.image" ( dict "imageRoot" .Values.volumePermissions.image "global" .Values.global ) -}}
 {{- end -}}
 
 {{/*
 Return the proper Docker Image Registry Secret Names
 */}}
-{{- define "simple-mpesa.imagePullSecrets" -}}
+{{- define "data-migrator.imagePullSecrets" -}}
 {{- include "common.images.pullSecrets" (dict "images" (list .Values.image .Values.volumePermissions.image) "global" .Values.global) -}}
 {{- end -}}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "simple-mpesa.serviceAccountName" -}}
+{{- define "data-migrator.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
     {{ default (printf "%s" (include "common.names.fullname" .)) .Values.serviceAccount.name }}
 {{- else -}}
@@ -33,10 +33,10 @@ Create the name of the service account to use
 {{/*
 Compile all warnings into a single message.
 */}}
-{{- define "simple-mpesa.validateValues" -}}
+{{- define "data-migrator.validateValues" -}}
 {{- $messages := list -}}
-{{- $messages := append $messages (include "simple-mpesa.validateValues.foo" .) -}}
-{{- $messages := append $messages (include "simple-mpesa.validateValues.bar" .) -}}
+{{- $messages := append $messages (include "data-migrator.validateValues.foo" .) -}}
+{{- $messages := append $messages (include "data-migrator.validateValues.bar" .) -}}
 {{- $messages := without $messages "" -}}
 {{- $message := join "\n" $messages -}}
 
@@ -48,7 +48,7 @@ Compile all warnings into a single message.
 {{/*
 Return podAnnotations
 */}}
-{{- define "simple-mpesa.podAnnotations" -}}
+{{- define "data-migrator.podAnnotations" -}}
 {{- if .Values.podAnnotations }}
 {{ include "common.tplvalues.render" (dict "value" .Values.podAnnotations "context" $) }}
 {{- end }}

@@ -1,5 +1,5 @@
 apiVersion: v2
-name: simple-mpesa
+name: data-migrator
 description: A Helm chart for sample Simple Mpesa Service
 type: application
 version: 12.0.1
@@ -13,8 +13,7 @@ dependencies:
 home: https://mosip.io
 keywords:
   - mosip
-  - simple-mpesa
-  - mpesa
+  - data-migrator
 maintainers:
   - email: info@mosip.io
     name: MOSIP

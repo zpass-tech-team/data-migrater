@@ -6,7 +6,7 @@ Helm chart for installing sample Simple-Mpesa service module. This is a referenc
 
 ```console
 $ helm repo add mosip https://mosip.github.io
-$ helm install my-release mosip/simple-mpesa
+$ helm install my-release mosip/data-migrator
 ```
 ## Prerequisites
 

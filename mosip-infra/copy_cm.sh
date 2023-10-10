@@ -4,7 +4,7 @@
 
 function copying_cm() {
   COPY_UTIL=../../utils/copy_cm_func.sh
-  DST_NS=simple-mpesa
+  DST_NS=data-migrator
 
   $COPY_UTIL configmap global default $DST_NS
 

@@ -4,7 +4,7 @@
 
 function copying_secret() {
   COPY_UTIL=../../utils/copy_cm_func.sh
-  DST_NS=simple-mpesa
+  DST_NS=data-migrator
 
   $COPY_UTIL secret postgres-postgresql postgres $DST_NS
   $COPY_UTIL secret db-common-secrets postgres $DST_NS
