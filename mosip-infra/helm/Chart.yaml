@@ -1,0 +1,20 @@
+apiVersion: v2
+name: simple-mpesa
+description: A Helm chart for sample Simple Mpesa Service
+type: application
+version: 12.0.1
+appVersion: ""
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - bitnami-common
+    version: 1.x.x
+home: https://mosip.io
+keywords:
+  - mosip
+  - simple-mpesa
+  - mpesa
+maintainers:
+  - email: info@mosip.io
+    name: MOSIP
