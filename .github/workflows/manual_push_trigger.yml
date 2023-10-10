@@ -78,7 +78,7 @@ jobs:
         echo VERSION=$VERSION
         docker tag $SERVICE_NAME $IMAGE_ID:$VERSION
         docker push $IMAGE_ID:$VERSION
-        env:
-          NAMESPACE: ${{ secrets.dev_namespace_docker_hub }}
-          SERVICE_NAME: data-extractor-conversion
-          SERVICE_LOCATION: packet-generator/data-extractor-conversion
+      env:
+        NAMESPACE: ${{ secrets.dev_namespace_docker_hub }}
+        SERVICE_NAME: data-extractor-conversion
+        SERVICE_LOCATION: packet-generator/data-extractor-conversion
