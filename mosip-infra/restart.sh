@@ -1,5 +1,5 @@
 #!/bin/bash
-# Restart the mpesa services
+# Restart the migrator services
 ## Usage: ./restart.sh [kubeconfig]
 
 if [ $# -ge 1 ] ; then

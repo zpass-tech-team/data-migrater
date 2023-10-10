@@ -14,7 +14,7 @@ spec:
     hosts:
       {{- include "common.tplvalues.render" ( dict "value" .Values.istio.hosts "context" $ ) | nindent 6 }}
   - port:
-      number: {{ .Values.ports.mpesa }}
+      number: {{ .Values.ports.migrator }}
       name: core
       protocol: TCP
     hosts:

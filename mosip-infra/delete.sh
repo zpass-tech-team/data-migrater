@@ -9,7 +9,7 @@ fi
 function deleting_migrator() {
   NS=data-migrator
   while true; do
-      read -p "Are you sure you want to delete mpesa helm chart?(Y/n) " yn
+      read -p "Are you sure you want to delete Migrator helm chart?(Y/n) " yn
       if [ $yn = "Y" ]
         then
           helm -n $NS delete data-migrator

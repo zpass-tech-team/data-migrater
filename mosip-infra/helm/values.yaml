@@ -341,7 +341,7 @@ metrics:
   podAnnotations:
     prometheus.io/scrape: "true"
 
-  endpointPath: /v1/mpesa/actuator/prometheus
+  endpointPath: /v1/migrator/actuator/prometheus
 
   ## Prometheus Service Monitor
   ## ref: https://github.com/coreos/prometheus-operator
@@ -389,7 +389,7 @@ metrics:
     rules: []
 
 ports:
-  mpesa: 6700
+  migrator: 9001
 ## Partner management needs public access.
 istio:
   enabled: true
