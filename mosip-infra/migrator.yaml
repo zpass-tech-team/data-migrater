@@ -1,7 +1,7 @@
 image:
   registry: docker.io
-  repository: trialblazerseee/print
-  tag: iiitb
+  repository: trialblazerseee/data-extractor-conversion
+  tag: develop
 
 istio:
   enabled: true
