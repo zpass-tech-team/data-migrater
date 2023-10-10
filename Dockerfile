@@ -43,11 +43,8 @@ RUN apt-get -y update \
 && useradd -u ${container_user_uid} -g ${container_user_group} -s /bin/sh -m ${container_user}
 
 # set working directory for the user
-#WORKDIR /home/${container_user}
-WORKDIR ./target/
-RUN dir
-WORKDIR /var/lib/docker/tmp/buildkit-mount2456896752/target/
-RUN dir
+WORKDIR /home/${container_user}
+
 ENV work_dir=/home/${container_user}
 
 ARG loader_path=${work_dir}/additional_jars/
@@ -56,7 +53,9 @@ RUN mkdir -p ${loader_path}
 
 ENV loader_path_env=${loader_path}
 
-COPY ./target/data-extractor-conversion-*.jar data-extractor-conversion.jar
+COPY ./target/* /
+
+RUN dir -s
 
 # change permissions of file inside working dir
 RUN chown -R ${container_user}:${container_user} /home/${container_user}
