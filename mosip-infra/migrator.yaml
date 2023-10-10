@@ -6,7 +6,7 @@ image:
 istio:
   enabled: true
   hosts:
-    - api-internal.mec.mosip.net
+    - api-internal.mecdev.mosip.net
   ## Associate with either public or internal ingress controllers
   ingressController:
     name: ingressgateway-internal
