@@ -1,4 +1,4 @@
-name: Manual trigger for maven install
+name: Migration Tool trigger for maven install
 
 on: workflow_dispatch
   
@@ -6,10 +6,6 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    env:
-      NAMESPACE: ${{ secrets.dev_namespace_docker_hub }}
-      SERVICE_NAME: packet-generator/data-extractor-conversion
-
     steps:
     - uses: actions/checkout@v2
     - name: Set up JDK 11
@@ -29,8 +25,8 @@ jobs:
       run: |
         # Strip git ref prefix from version
         echo ${{ env.BRANCH_NAME }}
-        echo ${{ env.GPG_TTY }}
-        sudo apt-get --yes install gnupg2
+      #        echo ${{ env.GPG_TTY }}
+      #        sudo apt-get --yes install gnupg2
 #        gpg2 --import ./.github/keys/mosipgpgkey_pub.gpg
 #        gpg2 --quiet --batch --passphrase=${{secrets.gpg_secret}}  --allow-secret-key-import --import ./.github/keys/mosipgpgkey_sec.gpg
      
@@ -42,20 +38,30 @@ jobs:
           ${{ runner.os }}-maven-${{ env.BRANCH_NAME }}
     
     - name: Setup the settings file for ossrh server
-      run: echo "<settings> <servers>  <server>  <id>ossrh</id>    <username>${{secrets.ossrh_user}}</username> <password>${{secrets.ossrh_secret}}</password> </server> </servers> <profiles> <profile>     <id>ossrh</id> <activation> <activeByDefault>true</activeByDefault> </activation>  <properties> <gpg.executable>gpg2</gpg.executable> <gpg.passphrase>${{secrets.gpg_secret}}</gpg.passphrase> </properties> </profile> <profile> <id>allow-snapshots</id>       <activation><activeByDefault>true</activeByDefault></activation> <repositories> <repository>        <id>snapshots-repo</id> <url>https://oss.sonatype.org/content/repositories/snapshots</url> <releases><enabled>false</enabled></releases> <snapshots><enabled>true</enabled></snapshots> </repository>  <repository>         <id>releases-repo</id>  <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>         <releases><enabled>true</enabled></releases>         <snapshots><enabled>false</enabled></snapshots> </repository> <repository> <id>danubetech-maven-public</id> <url>https://repo.danubetech.com/repository/maven-public/</url> </repository></repositories>  </profile> <profile> <id>sonar</id> <properties>  <sonar.sources>.</sonar.sources> <sonar.host.url>https://sonarcloud.io</sonar.host.url>  </properties> <activation> <activeByDefault>false</activeByDefault> </activation> </profile> </profiles> </settings>" > $GITHUB_WORKSPACE/settings.xml
-
+        run: echo "<settings> <servers>  <server>  <id>ossrh</id>    <username>${{secrets.ossrh_user}}</username> <password>${{secrets.ossrh_secret}}</password> </server> </servers> <profiles> <profile>     <id>ossrh</id> <activation> <activeByDefault>true</activeByDefault> </activation>  <properties> <gpg.executable>gpg2</gpg.executable> <gpg.passphrase>${{secrets.gpg_secret}}</gpg.passphrase> </properties> </profile> <profile> <id>allow-snapshots</id>       <activation><activeByDefault>true</activeByDefault></activation> <repositories> <repository>        <id>snapshots-repo</id> <url>https://oss.sonatype.org/content/repositories/snapshots</url> <releases><enabled>false</enabled></releases> <snapshots><enabled>true</enabled></snapshots> </repository>  <repository>         <id>releases-repo</id>  <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>         <releases><enabled>true</enabled></releases>         <snapshots><enabled>false</enabled></snapshots> </repository> </repositories>  </profile> <profile> <id>sonar</id> <properties>  <sonar.sources>.</sonar.sources> <sonar.host.url>https://sonarcloud.io</sonar.host.url>  </properties> <activation> <activeByDefault>false</activeByDefault> </activation> </profile> </profiles> </settings>" > $GITHUB_WORKSPACE/settings.xml
 
     - name: Build with Maven
       run: |
-        mvn clean install -U -s $GITHUB_WORKSPACE/settings.xml -DskipTests -Dgpg.skip=true --file pom.xml
+          mvn -B package -s $GITHUB_WORKSPACE/settings.xml -DskipTests -Dgpg.skip=true --file pom.xml
 
-    - name: Removing target jars
-      run: |
-        rm -rf $(find -name '*.jar' ! -executable -type f)
+      - name: Ready the springboot artifacts
+        run: find -name '*.jar' -executable -type f  -exec zip release.zip {} +
 
-    - name: Build image
+
+      - name: Upload the springboot jars
+        uses: actions/upload-artifact@v1
+        with:
+          name: release
+          path: ./release.zip
+
+      - name: Build Migration Utility image
       run: |
-        docker build . --file Dockerfile --tag ${{ env.SERVICE_NAME }}
+            # The Mosip Stage Executor is not packaged as part of release.zip
+            cd "./$SERVICE_LOCATION"
+            docker build . --build-arg SOURCE=mosip --build-arg COMMIT_HASH=$(git rev-parse HEAD) --build-arg COMMIT_ID=$(git rev-parse --short HEAD) --build-arg BUILD_TIME=${{steps.date.outputs.date}} --file Dockerfile --tag $SERVICE_NAME
+        env:
+          SERVICE_NAME: data-extractor-conversion
+          SERVICE_LOCATION: packet-generator/data-extractor-conversion
 
     - name: Log into registry
       run: echo "${{ secrets.release_docker_hub }}" | docker login -u ${{ secrets.actor_docker_hub }} --password-stdin
@@ -72,3 +78,7 @@ jobs:
         echo VERSION=$VERSION
         docker tag $SERVICE_NAME $IMAGE_ID:$VERSION
         docker push $IMAGE_ID:$VERSION
+        env:
+          NAMESPACE: ${{ secrets.dev_namespace_docker_hub }}
+          SERVICE_NAME: data-extractor-conversion
+          SERVICE_LOCATION: packet-generator/data-extractor-conversion
