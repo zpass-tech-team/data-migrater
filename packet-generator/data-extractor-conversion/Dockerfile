@@ -56,6 +56,8 @@ RUN mkdir -p ${loader_path}
 ENV loader_path_env=${loader_path}
 
 COPY ./target/build/data-extractor-conversion-*.jar data-extractor-conversion.jar
+COPY ./target/build/mockmds.zip mockmds.zip
+COPY ./target/build/cbeff.xsd cbeff.xsd
 
 # change permissions of file inside working dir
 RUN chown -R ${container_user}:${container_user} /home/${container_user}
