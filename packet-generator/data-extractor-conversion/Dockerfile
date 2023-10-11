@@ -60,12 +60,12 @@ COPY ./target/build/data-extractor-conversion-*.jar data-extractor-conversion.ja
 # change permissions of file inside working dir
 RUN chown -R ${container_user}:${container_user} /home/${container_user}
 
-RUN unzip '/home/mosip/mockmds.zip' -d /home/mosip/ && rm /home/mosip/mockmds.zip
-
 # select container user for all tasks
 USER ${container_user_uid}:${container_user_gid}
 
 EXPOSE 8099
+
+RUN unzip '/home/mosip/mockmds.zip' -d /home/mosip/ && rm /home/mosip/mockmds.zip
 
 CMD ["java","-Dspring.cloud.config.label=${spring_config_label_env}","-Dspring.profiles.active=${active_profile_env}","-Dspring.cloud.config.uri=${spring_config_url_env}","-jar","data-extractor-conversion.jar"]
 
