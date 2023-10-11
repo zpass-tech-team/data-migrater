@@ -251,7 +251,7 @@ public class TableWriter implements QualityWriterFactory {
             sb = new StringBuilder();
             sb.append(String.format("CREATE TABLE %s (", TableName));
             sb.append(addColumn("REF_ID", String.class, 100, 0, true, dbTypes) + ",");
-            sb.append(addColumn("REG_NO", String.class, 100, 0, false, dbTypes) + ",");
+            sb.append(addColumn("REG_NO", String.class, 100, 0, false, dbTypes));
 
             sb.append(");");
 

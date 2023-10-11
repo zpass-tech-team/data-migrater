@@ -123,7 +123,7 @@ containerSecurityContext:
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
 ##
 podSecurityContext:
-  enabled: true
+  enabled: false
   fsGroup: 1001
 
 ## Pod affinity preset
