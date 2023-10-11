@@ -142,6 +142,7 @@ public class ConfigUtil {
             if (configUtil.centerId == null || configUtil.centerId.isEmpty())
                 throw new Exception("Registration Center not Configured for Machine Name '" + configUtil.machineName + "' in MOSIP System");
         } catch (Exception e) {
+            e.printStackTrace();
             IS_NETWORK_AVAILABLE = false;
             if(!IS_ONLY_FOR_QUALITY_CHECK)
                 throw e;
