@@ -115,7 +115,6 @@ public class ConfigUtil {
 
         try {
             ResponseWrapper response = (ResponseWrapper) restApiClient.getApi(ApiName.MASTER_VALIDATOR_SERVICE_NAME, null, "keyindex", configUtil.keyIndex, ResponseWrapper.class);
-            IS_NETWORK_AVAILABLE = true;
             String message = getErrorMessage(getErrorList(response));
 
             if (null != response.getResponse()) {
@@ -143,6 +142,7 @@ public class ConfigUtil {
             if (configUtil.centerId == null || configUtil.centerId.isEmpty())
                 throw new Exception("Registration Center not Configured for Machine Name '" + configUtil.machineName + "' in MOSIP System");
         } catch (Exception e) {
+            IS_NETWORK_AVAILABLE = false;
             if(!IS_ONLY_FOR_QUALITY_CHECK)
                 throw e;
         }
