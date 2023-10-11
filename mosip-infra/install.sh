@@ -33,7 +33,7 @@ echo Installing Migrator
 #  echo Creating Database in Postgres mosip_mpesa
 #  ./postgres-init-db/init_db.sh
 
-  kubectl delete configmap property-config -n $NS
+  kubectl delete configmap property-config -n $NS --ignore-not-found=true
   kubectl create configmap property-config  \
     --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/ApiRequest.json \
     --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/application-default.properties \
