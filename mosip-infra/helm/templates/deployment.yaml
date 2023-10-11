@@ -91,6 +91,11 @@ spec:
           env:
             - name: container_user
               value: {{ .Values.containerSecurityContext.runAsUser }}
+            - name: config_files
+              valueFrom:
+                configMapKeyRef:
+                  name: property-config
+                  key: ApiRequest.json
             - name: JDK_JAVA_OPTIONS
               value: {{ .Values.additionalResources.javaOpts }}
             {{- if .Values.extraEnvVars }}
@@ -110,9 +115,9 @@ spec:
             {{- end }}
             {{- end }}
           volumeMounts:
-            - name: apiRequest-file
-              mountPath: /home/mosip/ApiRequest.json
-              subPath: ApiRequest.json
+            - name: config
+              mountPath: /home/mosip/
+              readOnly: true
           ports:
             - name: spring-service
               containerPort: {{ .Values.springServicePort }}
@@ -138,9 +143,9 @@ spec:
         {{- include "common.tplvalues.render" ( dict "value" .Values.sidecars "context" $) | nindent 8 }}
         {{- end }}
       volumes:
-        - name: apiRequest-file
+        - name: config
           configMap:
-            name: { { template "common.names.fullname" . } }
+            name: property-config
             items:
               - key: ApiRequest.json
                 path: ApiRequest.json
