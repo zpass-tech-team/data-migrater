@@ -84,9 +84,7 @@ public class ConfigUtil {
                 configUtil.regClientVersion = env.getProperty("mosip.id.regclient.current.version");
                 configUtil.selectedLanguages = env.getProperty("mosip.selected.languages");
                 syncClientSettings();
-                if(IS_NETWORK_AVAILABLE)
-                    fetchPolicy();
-                else {
+                if(!IS_NETWORK_AVAILABLE) {
                     System.out.println("Nerwork Not available for Host : " + env.getProperty("mosip.internal.host") + "  Do you want to Continue (Y-Yes, N-No)");
                     String option = "Y";
 
@@ -147,6 +145,8 @@ public class ConfigUtil {
 
             if (configUtil.centerId == null || configUtil.centerId.isEmpty())
                 throw new Exception("Registration Center not Configured for Machine Name '" + configUtil.machineName + "' in MOSIP System");
+
+            fetchPolicy();
         } catch (Exception e) {
             e.printStackTrace();
             if(!IS_ONLY_FOR_QUALITY_CHECK)
