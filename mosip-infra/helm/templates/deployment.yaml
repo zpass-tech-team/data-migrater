@@ -136,6 +136,9 @@ spec:
             - name: biofile-config
               mountPath: /home/mosip/BioFile.mvel
               subPath: BioFile.mvel
+            - name: mockmds-config
+              mountPath: /home/mosip/mockmds.zip
+              subPath: mockmds.zip
           ports:
             - name: spring-service
               containerPort: {{ .Values.springServicePort }}
@@ -203,3 +206,9 @@ spec:
             items:
               - key: idschema.json
                 path: idschema.json
+        - name: mockmds-config
+          configMap:
+            name: property-config
+            items:
+              - key: mockmds.zip
+                path: mockmds.zip

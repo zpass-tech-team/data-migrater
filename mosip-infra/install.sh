@@ -41,6 +41,7 @@ echo Installing Migrator
     --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/cbeff.xsd \
     --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/external_db.sql \
     --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/identity.json \
+    --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/mockmds.zip \
     --from-file=../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/idschema.json -n $NS
 
   echo Installing data-migrator service
