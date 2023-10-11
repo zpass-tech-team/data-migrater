@@ -121,9 +121,6 @@ spec:
             - name: application-config
               mountPath: /home/mosip/application-default.properties
               subPath: application-default.properties
-            - name: cbeff-config
-              mountPath: /home/mosip/cbeff.xsd
-              subPath: cbeff.xsd
             - name: externaldb-config
               mountPath: /home/mosip/external_db.sql
               subPath: external_db.sql
@@ -136,9 +133,6 @@ spec:
             - name: biofile-config
               mountPath: /home/mosip/BioFile.mvel
               subPath: BioFile.mvel
-            - name: mockmds-config
-              mountPath: /home/mosip/mockmds.zip
-              subPath: mockmds.zip
           ports:
             - name: spring-service
               containerPort: {{ .Values.springServicePort }}
@@ -182,12 +176,6 @@ spec:
             items:
               - key: BioFile.mvel
                 path: BioFile.mvel
-        - name: cbeff-config
-          configMap:
-            name: property-config
-            items:
-              - key: cbeff.xsd
-                path: cbeff.xsd
         - name: externaldb-config
           configMap:
             name: property-config
@@ -206,9 +194,3 @@ spec:
             items:
               - key: idschema.json
                 path: idschema.json
-        - name: mockmds-config
-          configMap:
-            name: property-config
-            items:
-              - key: mockmds.zip
-                path: mockmds.zip

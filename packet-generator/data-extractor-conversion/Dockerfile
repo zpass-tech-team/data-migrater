@@ -67,7 +67,7 @@ USER ${container_user_uid}:${container_user_gid}
 
 EXPOSE 8099
 
-#RUN unzip '/home/mosip/mockmds.zip' -d /home/mosip/ && rm /home/mosip/mockmds.zip
+RUN unzip '/home/mosip/mockmds.zip' -d /home/mosip/ && rm /home/mosip/mockmds.zip
 
 CMD ["java","-Dspring.cloud.config.label=${spring_config_label_env}","-Dspring.profiles.active=${active_profile_env}","-Dspring.cloud.config.uri=${spring_config_url_env}","-jar","data-extractor-conversion.jar"]
 
