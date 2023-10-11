@@ -114,7 +114,13 @@ public class ConfigUtil {
         ResponseWrapper masterSyncResponse = null;
 
         try {
-            ResponseWrapper response = (ResponseWrapper) restApiClient.getApi(ApiName.MASTER_VALIDATOR_SERVICE_NAME, null, "keyindex", configUtil.keyIndex, ResponseWrapper.class);
+            ResponseWrapper response=null;
+            try {
+                response = (ResponseWrapper) restApiClient.getApi(ApiName.MASTER_VALIDATOR_SERVICE_NAME, null, "keyindex", configUtil.keyIndex, ResponseWrapper.class);
+            } catch (Exception e) {
+                IS_NETWORK_AVAILABLE = false;
+            }
+
             String message = getErrorMessage(getErrorList(response));
 
             if (null != response.getResponse()) {
@@ -143,7 +149,6 @@ public class ConfigUtil {
                 throw new Exception("Registration Center not Configured for Machine Name '" + configUtil.machineName + "' in MOSIP System");
         } catch (Exception e) {
             e.printStackTrace();
-            IS_NETWORK_AVAILABLE = false;
             if(!IS_ONLY_FOR_QUALITY_CHECK)
                 throw e;
         }
