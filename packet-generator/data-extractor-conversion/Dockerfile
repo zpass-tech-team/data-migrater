@@ -69,4 +69,4 @@ EXPOSE 8099
 
 RUN unzip '/home/mosip/mockmds.zip' -d /home/mosip/ && rm /home/mosip/mockmds.zip
 
-CMD ["java","-Dspring.profiles.active=default","-Dspring.config.location=application-default.properties", "-jar","data-extractor-conversion.jar"]
+CMD ["java","-jar","data-extractor-conversion.jar", "--spring.profiles.active=default", "--spring.config.location=application-default.properties"]
