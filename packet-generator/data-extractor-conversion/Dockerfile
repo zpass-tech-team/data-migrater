@@ -55,7 +55,7 @@ RUN mkdir -p ${loader_path}
 
 ENV loader_path_env=${loader_path}
 
-COPY ./target/build/data-extractor-conversion-*.jar data-extractor-conversion.jar
+COPY ./target/build/data-extractor-conversion-*.jar /home/mosip/data-extractor-conversion.jar
 
 RUN dir
 
