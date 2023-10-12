@@ -1,6 +1,6 @@
 image:
-  registry: ghcr.io
-  repository: biometix/bqat-stateless
+  registry: docker.io
+  repository: trialblazerseee/bqat-stateless
   tag: latest
 
 istio:

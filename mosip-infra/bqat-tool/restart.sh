@@ -12,7 +12,7 @@ function Restarting_migrator() {
   kubectl -n $NS rollout restart deploy
 
   kubectl -n $NS  get deploy -o name |  xargs -n1 -t  kubectl -n $NS rollout status
-  echo Restarted data-migrator services
+  echo Restarted bqat-service services
   return 0
 }
 

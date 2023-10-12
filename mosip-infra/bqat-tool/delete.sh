@@ -12,7 +12,7 @@ function deleting_migrator() {
       read -p "Are you sure you want to delete Migrator helm chart?(Y/n) " yn
       if [ $yn = "Y" ]
         then
-          helm -n $NS delete data-migrator
+          helm -n $NS delete bqat-service
           break
         else
           break
