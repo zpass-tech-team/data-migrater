@@ -67,7 +67,7 @@ image:
   #   - myRegistryKeySecretName
 
 ## Port on which this particular spring service module is running.
-springServicePort: 9001
+springServicePort: 8848
 
 ## Configure extra options for liveness and readiness probes
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
@@ -389,7 +389,7 @@ metrics:
     rules: []
 
 ports:
-  migrator: 9001
+  migrator: 8848
 ## Partner management needs public access.
 istio:
   enabled: true
