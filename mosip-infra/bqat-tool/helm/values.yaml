@@ -395,4 +395,4 @@ istio:
   enabled: true
   gateways:
     - istio-system/internal
-  prefix: /datamigrator/v1
+  prefix: /v1/bqat/
