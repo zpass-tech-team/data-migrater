@@ -146,8 +146,8 @@ public class TableWriter implements QualityWriterFactory {
                 DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
                 for(Object ob : commonUtil.getBioAttributesforAll()) {
-                    statement.execute("ALTER TABLE " + ANALYZER_TABLE_NAME + " ADD " + dbCreator.addColumn(ob.toString().toUpperCase(), Number.class, 6,0, false, dbType));
                     try {
+                        statement.execute("ALTER TABLE " + ANALYZER_TABLE_NAME + " ADD " + dbCreator.addColumn(ob.toString().toUpperCase(), Number.class, 6,0, false, dbType));
                         statement.execute("ALTER TABLE " + WRITER_TABLE_NAME + " ADD " + dbCreator.addColumn(ob.toString().toUpperCase(), Number.class, 5,2, false, dbType));
                     }catch (Exception e){
                     }
