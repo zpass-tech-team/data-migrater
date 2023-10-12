@@ -334,7 +334,7 @@ serviceAccount:
 ## Prometheus Metrics
 ##
 metrics:
-  enabled: true
+  enabled: false
   ## Prometheus pod annotations
   ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
   ##
