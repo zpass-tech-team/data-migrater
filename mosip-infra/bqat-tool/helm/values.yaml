@@ -27,7 +27,7 @@ extraDeploy: []
 
 ## Number of nodes
 ##
-replicaCount: 0
+replicaCount: 15
 
 service:
   type: ClusterIP
