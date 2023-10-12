@@ -396,3 +396,5 @@ istio:
   gateways:
     - istio-system/internal
   prefix: /v1/bqat/
+  rewrite:
+    uri: /
