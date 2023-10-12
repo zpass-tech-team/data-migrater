@@ -32,4 +32,11 @@ public class QueryFormatter {
 
         return query;
     }
+
+    public String queryFormatter(String query, Map<String, String> map) {
+        for(Map.Entry<String, String> entry : map.entrySet()) {
+            query = query.replace("<" + entry.getKey() + ">", entry.getValue());
+        }
+        return query;
+    }
 }

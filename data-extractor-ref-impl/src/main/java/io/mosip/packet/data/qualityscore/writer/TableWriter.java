@@ -9,9 +9,11 @@ import io.mosip.packet.core.constant.tracker.TimeStampType;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.spi.QualityWriterFactory;
 import io.mosip.packet.core.util.CommonUtil;
+import io.mosip.packet.core.util.QueryFormatter;
 import io.mosip.packet.data.qualityscore.writer.constant.TableWriterConstant;
 import io.mosip.packet.data.qualityscore.writer.constant.TableWriterQuery;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -48,6 +50,12 @@ public class TableWriter implements QualityWriterFactory {
     @Autowired
     private Environment env;
 
+    @Autowired
+    private QueryFormatter queryFormatter;
+
+    @Value("${mosip.tablewriter.clear.table.required:true}")
+    private boolean tableClearRequired;
+
     @PostConstruct
     public void initialize(){
         columnMap.put("REF_ID", String.class);
@@ -77,7 +85,7 @@ public class TableWriter implements QualityWriterFactory {
                             if(!IS_RUNNING_AS_BATCH) {
                                 Scanner scanner = new Scanner(System.in);
                                 option = scanner.next();
-                            } else {
+                            } else if(tableClearRequired) {
                                 option = "Y";
                             }
 
@@ -179,12 +187,11 @@ public class TableWriter implements QualityWriterFactory {
     public void writeQualityData(HashMap<String, String> csvMap) throws Exception {
         Statement statement = conn.createStatement();
         PreparedStatement preparedStatement = null;
-
+        DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
         try {
             if(!map.keySet().containsAll(csvMap.keySet())) {
                 TableWriter.DBCreator dbCreator = new TableWriter.DBCreator();
-                DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
                 for(String key : csvMap.keySet())
                     if(!map.containsKey(key)) {
@@ -199,6 +206,7 @@ public class TableWriter implements QualityWriterFactory {
 
             String columns = "";
             String values = "";
+            String updateField = "";
 
             for(String key : map.keySet()) {
                 if(columns.isEmpty())
@@ -210,9 +218,22 @@ public class TableWriter implements QualityWriterFactory {
                     values = "?";
                 else
                     values += ", ?";
+
+                if(updateField.isEmpty())
+                    updateField = key + " = ?" ;
+                else
+                    updateField += ", " + key + " = ?";
             }
 
-            preparedStatement = conn.prepareStatement("INSERT INTO " + WRITER_TABLE_NAME + " (" + columns + ") VALUES (" + values + ")");
+            String query = TableWriterQuery.getInsertQueries(WRITER_TABLE_NAME).get(dbType);
+            Map<String, String> valueMap = new HashMap<>();
+            valueMap.put("TABLE_NAME", WRITER_TABLE_NAME);
+            valueMap.put("REF_ID", csvMap.get("ref_id"));
+            valueMap.put("VALUES", values);
+            valueMap.put("COLUMN_NAME", columns);
+            valueMap.put("UPDATE_COLUMN_NAME", updateField);
+
+            preparedStatement = conn.prepareStatement(queryFormatter.queryFormatter(query, valueMap));
 
             int i = 0;
             for(String key : map.keySet()) {
@@ -220,12 +241,16 @@ public class TableWriter implements QualityWriterFactory {
                 switch(columnMap.get(key.toUpperCase()).getSimpleName()) {
                     case "String" :
                         preparedStatement.setString(i, csvMap.get(key));
+                        preparedStatement.setString(map.size() + i, csvMap.get(key));
                         break;
                     case "Number" :
-                        if(csvMap.get(key) == null)
+                        if(csvMap.get(key) == null) {
                             preparedStatement.setNull(i, Types.FLOAT);
-                        else
+                            preparedStatement.setNull(map.size() + i, Types.FLOAT);
+                        } else {
                             preparedStatement.setFloat(i, Float.valueOf(csvMap.get(key)));
+                            preparedStatement.setFloat(map.size() + i, Float.valueOf(csvMap.get(key)));
+                        }
                         break;
                 }
             }
