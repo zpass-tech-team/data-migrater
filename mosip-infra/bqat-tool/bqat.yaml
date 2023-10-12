@@ -1,0 +1,13 @@
+image:
+  registry: ghcr.io
+  repository: biometix/bqat-stateless
+  tag: latest
+
+istio:
+  enabled: true
+  hosts:
+    - api-internal.mecdev.mosip.net
+  ## Associate with either public or internal ingress controllers
+  ingressController:
+    name: ingressgateway-internal
+  prefix: /v1/bqat/
