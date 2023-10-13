@@ -2,6 +2,7 @@ package io.mosip.packet.core.util;
 
 import java.io.IOException;
 
+import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
 import io.mosip.packet.core.constant.RegistrationExceptionConstants;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,9 +67,9 @@ public class ObjectStoreHelper {
 		try {
 		return IOUtils.toByteArray(
 				objectStore.getObject(objectStoreAccountName, objectStoreBucketName, null, null, objectName));
-		} catch (AmazonS3Exception | FSAdapterException | IOException e) {
+		} catch (AmazonS3Exception | FSAdapterException | IOException | ObjectStoreAdapterException e) {
 			throw new Exception(RegistrationExceptionConstants.FILE_STORAGE_ACCESS_ERROR.getErrorCode() +
-					RegistrationExceptionConstants.FILE_STORAGE_ACCESS_ERROR.getErrorMessage(), e);
+					RegistrationExceptionConstants.FILE_STORAGE_ACCESS_ERROR.getErrorMessage() + " Object Name : " + objectName , e);
 		}
 	}
 }

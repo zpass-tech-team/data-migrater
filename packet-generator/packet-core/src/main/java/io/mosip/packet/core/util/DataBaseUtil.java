@@ -1,6 +1,7 @@
 package io.mosip.packet.core.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.DBTypes;
@@ -79,28 +80,32 @@ public class DataBaseUtil {
 
                 if (resultSet != null) {
                     while(resultSet.next()) {
-                        dataHashMap = new HashMap<>();
-                        populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, fieldsCategoryMap, false);
+                        try {
+                            dataHashMap = new HashMap<>();
+                            populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, fieldsCategoryMap, false);
 
-                        for (int i = 1; i < tableRequestDtoList.size(); i++) {
-                            Statement statement2 = conn.createStatement();
-                            try {
-                                TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
-                                ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2);
+                            for (int i = 1; i < tableRequestDtoList.size(); i++) {
+                                Statement statement2 = conn.createStatement();
+                                try {
+                                    TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
+                                    ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2);
 
-                                if (resultSet1 != null && resultSet1.next()) {
-                                    populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet1, dataHashMap, fieldsCategoryMap, false);
+                                    if (resultSet1 != null && resultSet1.next()) {
+                                        populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet1, dataHashMap, fieldsCategoryMap, false);
+                                    }
+                                } finally {
+                                    if(statement2 != null)
+                                        statement2.close();
                                 }
-                            } finally {
-                                if(statement2 != null)
-                                    statement2.close();
                             }
+                            DataResult result = new DataResult();
+                            result.setDemoDetails(dataHashMap.get(FieldCategory.DEMO));
+                            result.setBioDetails(dataHashMap.get(FieldCategory.BIO));
+                            result.setDocDetails(dataHashMap.get(FieldCategory.DOC));
+                            syncronizedQueue.put(result);
+                        } catch (Exception e) {
+                            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
                         }
-                        DataResult result = new DataResult();
-                        result.setDemoDetails(dataHashMap.get(FieldCategory.DEMO));
-                        result.setBioDetails(dataHashMap.get(FieldCategory.BIO));
-                        result.setDocDetails(dataHashMap.get(FieldCategory.DOC));
-                        syncronizedQueue.put(result);
                     }
                 }
             } else
