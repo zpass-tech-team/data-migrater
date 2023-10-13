@@ -1,0 +1,21 @@
+apiVersion: v2
+name: data-migrator
+description: A Helm chart for data migrator installation.
+type: application
+version: 12.0.2
+appVersion: 1.2.0
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - bitnami-common
+    version: 1.x.x
+
+home: https://mosip.io
+keywords:
+  - mosip
+  - data-migrator
+  - migrator
+maintainers:
+  - email: info@mosip.io
+    name: MOSIP
