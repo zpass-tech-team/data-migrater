@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -94,7 +95,8 @@ public class CSVFileWriter implements QualityWriterFactory {
     }
 
     @PreDestroy
-    public void destroy() {
+    @Override
+    public void preDestroyProcess() throws SQLException {
         CSVWriter WRITER = null;
         try {
             WRITER = new CSVWriter(new FileWriter(csvFile, true));

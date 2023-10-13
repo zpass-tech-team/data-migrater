@@ -48,6 +48,7 @@ import java.util.*;
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
 import static io.mosip.packet.core.constant.GlobalConfig.SESSION_KEY;
 import static io.mosip.packet.core.constant.GlobalConfig.TIMECONSUPTIONQUEUE;
+import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Service
@@ -267,6 +268,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             dataBaseUtil.closeConnection();
             if(!IS_ONLY_FOR_QUALITY_CHECK)
                 trackerUtil.closeStatement();
+
+            if(IS_RUNNING_AS_BATCH)
+                qualityWriterFactory.preDestroyProcess();
         }
 
         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploaded List : " + (new Gson()).toJson(packetCreatorResponse));

@@ -303,7 +303,8 @@ public class TableWriter implements QualityWriterFactory {
     }
 
     @PreDestroy
-    private void consolidateData() throws SQLException {
+    @Override
+    public void preDestroyProcess() throws SQLException {
         Statement statement = null;
         PreparedStatement preparedStatement = null;
         try {
