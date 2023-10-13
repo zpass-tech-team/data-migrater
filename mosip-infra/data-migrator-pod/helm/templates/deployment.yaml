@@ -72,6 +72,7 @@ spec:
         {{- if .Values.initContainers }}
           {{- include "common.tplvalues.render" (dict "value" .Values.initContainers "context" $) | nindent 8 }}
         {{- end }}
+      restartPolicy: Never
       containers:
         - name: data-migrator
           image: {{ template "data-migrator.image" . }}
