@@ -7,7 +7,7 @@ if [ $# -ge 1 ] ; then
 fi
 
 function data-migrator-job-install() {
-  NS=data-migrator-job
+  NS=data-migrator
   CHART_VERSION=12.0.2
   kubectl label ns $NS istio-injection=enabled --overwrite
   helm repo update
