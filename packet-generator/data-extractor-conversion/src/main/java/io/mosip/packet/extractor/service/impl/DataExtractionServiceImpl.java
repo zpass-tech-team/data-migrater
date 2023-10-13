@@ -182,7 +182,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Override
     public PacketCreatorResponse createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionServiceImpl :: createPacketFromDataBase():: entry");
-        TIMECONSUPTIONQUEUE = new FixedListQueue<Long>(20);
+        TIMECONSUPTIONQUEUE = new FixedListQueue<Long>(100);
         mockDeviceUtil.resetDevices();
         mockDeviceUtil.initDeviceHelpers();
         PacketCreatorResponse packetCreatorResponse = new PacketCreatorResponse();

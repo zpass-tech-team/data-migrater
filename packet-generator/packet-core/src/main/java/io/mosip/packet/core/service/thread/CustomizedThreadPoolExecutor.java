@@ -47,11 +47,10 @@ public class CustomizedThreadPoolExecutor {
                         }
                     }
 
-                    Collections.sort(poolMap, new SortbyCount());
-                    System.out.println((new Gson()).toJson(poolMap));
                     if(isSuccess)
                         noSlotAvailable=false;
                 }
+                Collections.sort(poolMap, new SortbyCount());
             }
         }, 0, DELAY_SECONDS);
 
