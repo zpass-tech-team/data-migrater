@@ -1,18 +1,15 @@
 package io.mosip.packet.core.service.thread;
 
-import com.google.gson.Gson;
-
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 import static io.mosip.packet.core.constant.GlobalConfig.TIMECONSUPTIONQUEUE;
 import static io.mosip.packet.core.constant.GlobalConfig.TOTAL_RECORDS_FOR_PROCESS;
 
 public class CustomizedThreadPoolExecutor {
-    Map<String, ThreadPoolExecutor> poolMap = new HashMap<>();
+    List<ThreadPoolExecutor> poolMap = new ArrayList<>();
     private int MAX_THREAD_EXE_COUNT;
     private Long DELAY_SECONDS = 10000L;
     private int maxThreadCount;
@@ -28,7 +25,7 @@ public class CustomizedThreadPoolExecutor {
         this.maxThreadCount = maxThreadCount;
         this.MAX_THREAD_EXE_COUNT = maxThreadExecCount;
         for(int i = 1; i <= threadPoolCount; i++)
-            poolMap.put("ThreadPool" + i, (ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
+            poolMap.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
 
         monitor = new Timer("ThreadPool_Monitor");
         monitor.schedule(new TimerTask() {
@@ -36,19 +33,19 @@ public class CustomizedThreadPoolExecutor {
             public void run() {
                 if(noSlotAvailable) {
                     boolean isSuccess = false;
-                    for(Map.Entry<String, ThreadPoolExecutor> entry : poolMap.entrySet()) {
-                        if(entry.getValue().getActiveCount() ==0) {
-                            totalTaskCount += entry.getValue().getTaskCount();
-                            totalCompletedTaskCount += entry.getValue().getCompletedTaskCount();
-                            entry.getValue().shutdown();
-                            entry.getValue().purge();
-                            poolMap.put(entry.getKey(), (ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
+                    for(ThreadPoolExecutor entry : poolMap) {
+                        if(entry.getActiveCount() ==0) {
+                            totalTaskCount += entry.getTaskCount();
+                            totalCompletedTaskCount += entry.getCompletedTaskCount();
+                            entry.shutdown();
+                            entry.purge();
+                            poolMap.remove(entry);
+                            poolMap.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
                             isSuccess=true;
                         }
                     }
 
-                    poolMap.entrySet().stream().sorted(Map.Entry.comparingByValue(
-                            (o1, o2) -> Long.valueOf(o1.getTaskCount()).compareTo(Long.valueOf(o2.getTaskCount()))));
+                    Collections.sort(poolMap, new SortbyCount());
 
                     if(isSuccess)
                         noSlotAvailable=false;
@@ -68,10 +65,10 @@ public class CustomizedThreadPoolExecutor {
                 int remainingMinutes =0;
                 Long avgTime = 0l;
 
-                for(Map.Entry<String, ThreadPoolExecutor> entry : poolMap.entrySet()) {
-                    totalCount += entry.getValue().getTaskCount();
-                    activeCount+= entry.getValue().getActiveCount();
-                    completedCount+= entry.getValue().getCompletedTaskCount();
+                for(ThreadPoolExecutor entry : poolMap) {
+                    totalCount += entry.getTaskCount();
+                    activeCount+= entry.getActiveCount();
+                    completedCount+= entry.getCompletedTaskCount();
                 }
 
                 if(totalTaskCount > 0 || totalCount > 0) {
@@ -103,10 +100,10 @@ public class CustomizedThreadPoolExecutor {
 
         do {
             if(!noSlotAvailable) {
-                for(Map.Entry<String, ThreadPoolExecutor> entry : poolMap.entrySet()) {
+                for(ThreadPoolExecutor entry : poolMap) {
                     threadCount++;
-                    if(entry.getValue().getTaskCount() < maxThreadCount) {
-                        entry.getValue().execute(task);
+                    if(entry.getTaskCount() < maxThreadCount) {
+                        entry.execute(task);
                         taskAdded=true;
                         break;
                     } else if(threadCount == maxThreadCount){
@@ -123,8 +120,8 @@ public class CustomizedThreadPoolExecutor {
         boolean isCompleted = false;
         while(!isCompleted) {
             isCompleted = true;
-            for(Map.Entry<String, ThreadPoolExecutor> entry : poolMap.entrySet()) {
-                if(entry.getValue().getActiveCount() > 0) {
+            for(ThreadPoolExecutor entry : poolMap) {
+                if(entry.getActiveCount() > 0) {
                     isCompleted = false;
                     break;
                 }
@@ -137,5 +134,12 @@ public class CustomizedThreadPoolExecutor {
             watch.cancel();
         }
         return isCompleted;
+    }
+
+    class SortbyCount implements Comparator<ThreadPoolExecutor> {
+        public int compare(ThreadPoolExecutor a, ThreadPoolExecutor b)
+        {
+            return Long.valueOf(a.getTaskCount()).compareTo(Long.valueOf(b.getTaskCount()));
+        }
     }
 }
