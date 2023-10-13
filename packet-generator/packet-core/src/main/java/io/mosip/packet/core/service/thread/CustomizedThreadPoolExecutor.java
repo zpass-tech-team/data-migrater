@@ -140,7 +140,7 @@ public class CustomizedThreadPoolExecutor {
     class SortbyCount implements Comparator<ThreadPoolExecutor> {
         public int compare(ThreadPoolExecutor a, ThreadPoolExecutor b)
         {
-            return Long.valueOf(b.getTaskCount()).compareTo(Long.valueOf(a.getTaskCount()));
+            return Long.valueOf(a.getTaskCount()).compareTo(Long.valueOf(b.getTaskCount()));
         }
     }
 }
