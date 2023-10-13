@@ -1,5 +1,7 @@
 package io.mosip.packet.core.service.thread;
 
+import com.google.gson.Gson;
+
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -46,7 +48,7 @@ public class CustomizedThreadPoolExecutor {
                     }
 
                     Collections.sort(poolMap, new SortbyCount());
-
+                    System.out.println((new Gson()).toJson(poolMap));
                     if(isSuccess)
                         noSlotAvailable=false;
                 }
@@ -139,7 +141,7 @@ public class CustomizedThreadPoolExecutor {
     class SortbyCount implements Comparator<ThreadPoolExecutor> {
         public int compare(ThreadPoolExecutor a, ThreadPoolExecutor b)
         {
-            return Long.valueOf(a.getTaskCount()).compareTo(Long.valueOf(b.getTaskCount()));
+            return Long.valueOf(b.getTaskCount()).compareTo(Long.valueOf(a.getTaskCount()));
         }
     }
 }
