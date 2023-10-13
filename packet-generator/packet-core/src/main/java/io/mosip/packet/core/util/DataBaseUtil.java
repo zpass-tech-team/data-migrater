@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
+import static io.mosip.packet.core.constant.GlobalConfig.TOTAL_RECORDS_FOR_PROCESS;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Component
@@ -76,8 +77,11 @@ public class DataBaseUtil {
                 List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
                 Collections.sort(tableRequestDtoList);
                 TableRequestDto tableRequestDto  = tableRequestDtoList.get(0);
-                ResultSet resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1);
+                ResultSet resultSetCount = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, true);
+                if(resultSetCount.next())
+                    TOTAL_RECORDS_FOR_PROCESS = resultSetCount.getLong(1);
 
+                ResultSet resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, false);
                 if (resultSet != null) {
                     while(resultSet.next()) {
                         try {
@@ -88,7 +92,7 @@ public class DataBaseUtil {
                                 Statement statement2 = conn.createStatement();
                                 try {
                                     TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
-                                    ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2);
+                                    ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2, false);
 
                                     if (resultSet1 != null && resultSet1.next()) {
                                         populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet1, dataHashMap, fieldsCategoryMap, false);
@@ -104,6 +108,7 @@ public class DataBaseUtil {
                             result.setDocDetails(dataHashMap.get(FieldCategory.DOC));
                             syncronizedQueue.put(result);
                         } catch (Exception e) {
+                            e.printStackTrace();
                             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
                         }
                     }
@@ -117,7 +122,7 @@ public class DataBaseUtil {
 
     }
 
-    private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Statement statement) throws Exception {
+    private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Statement statement, boolean fetchCount) throws Exception {
         if (tableRequestDto.getQueryType().equals(QuerySelection.TABLE)) {
             String tableName = tableRequestDto.getTableNameWithOutSchema();
 
@@ -142,6 +147,7 @@ public class DataBaseUtil {
             boolean whereCondition= false;
 
             String selectSql = "SELECT " + columnNames + "  from " + tableRequestDto.getTableName();
+            String countSql = "SELECT COUNT(*) from " + tableRequestDto.getTableName();
 
             if(tableRequestDto.getFilters() != null) {
                 for (QueryFilter queryFilter : tableRequestDto.getFilters()) {
@@ -156,6 +162,7 @@ public class DataBaseUtil {
                 }
 
                 selectSql += filterCondition;
+                countSql += filterCondition;
             }
 
             filterCondition = "";
@@ -169,11 +176,22 @@ public class DataBaseUtil {
 
                 filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s) ", TRACKER_TABLE_NAME);
                 selectSql += filterCondition;
+                countSql += filterCondition;
             }
 
-            return statement.executeQuery(formatter.replaceColumntoDataIfAny(selectSql, dataMap));
+            if(fetchCount)
+                return statement.executeQuery(formatter.replaceColumntoDataIfAny(countSql, dataMap));
+            else
+                return statement.executeQuery(formatter.replaceColumntoDataIfAny(selectSql, dataMap));
         } else if (tableRequestDto.getQueryType().equals(QuerySelection.SQL_QUERY)) {
-            return statement.executeQuery(formatter.replaceColumntoDataIfAny(tableRequestDto.getSqlQuery(), dataMap));
+            String sqlQuery = tableRequestDto.getSqlQuery().toUpperCase();
+            int fromIndex = sqlQuery.indexOf("FROM");
+            String countSql = "SELECT COUNT(*) " + sqlQuery.substring(fromIndex);
+
+            if(fetchCount)
+                return statement.executeQuery(formatter.replaceColumntoDataIfAny(countSql, dataMap));
+            else
+                return statement.executeQuery(formatter.replaceColumntoDataIfAny(sqlQuery, dataMap));
         } else
             return null;
     }

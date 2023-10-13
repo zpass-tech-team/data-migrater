@@ -19,6 +19,7 @@ import io.mosip.packet.core.service.thread.*;
 import io.mosip.packet.core.spi.QualityWriterFactory;
 import io.mosip.packet.core.util.CommonUtil;
 import io.mosip.packet.core.util.DataBaseUtil;
+import io.mosip.packet.core.util.FixedListQueue;
 import io.mosip.packet.core.util.TrackerUtil;
 import io.mosip.packet.extractor.service.DataExtractionService;
 import io.mosip.packet.extractor.util.ConfigUtil;
@@ -46,6 +47,7 @@ import java.util.*;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
 import static io.mosip.packet.core.constant.GlobalConfig.SESSION_KEY;
+import static io.mosip.packet.core.constant.GlobalConfig.TIMECONSUPTIONQUEUE;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Service
@@ -179,6 +181,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Override
     public PacketCreatorResponse createPacketFromDataBase(DBImportRequest dbImportRequest) throws Exception {
         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionServiceImpl :: createPacketFromDataBase():: entry");
+        TIMECONSUPTIONQUEUE = new FixedListQueue<Long>(100);
         mockDeviceUtil.resetDevices();
         mockDeviceUtil.initDeviceHelpers();
         PacketCreatorResponse packetCreatorResponse = new PacketCreatorResponse();
@@ -302,6 +305,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 baseThreadController.setProcessor(new ThreadProcessor() {
                     @Override
                     public void processData(ResultSetter setter, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, String registrationId, String trackerColumn) {
+                        Long startTime = System.nanoTime();
                         LinkedHashMap<String, Object> demoDetails = dataHashMap.get(FieldCategory.DEMO);
                         LinkedHashMap<String, Object> bioDetails = dataHashMap.get(FieldCategory.BIO);
                         LinkedHashMap<String, Object> docDetails = dataHashMap.get(FieldCategory.DOC);
@@ -427,6 +431,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                             setter.setResult(resultDto);
                         }
                         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + (registrationId == null ? demoDetails.get(trackerColumn).toString() : registrationId) + " Process Ended");
+                        Long endTime = System.nanoTime();
+                        Long timeDifference = endTime-startTime;
+                        TIMECONSUPTIONQUEUE.add(timeDifference);
                     }
                 });
                 return true;

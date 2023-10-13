@@ -1,12 +1,13 @@
 package io.mosip.packet.core.service.thread;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
+
+import static io.mosip.packet.core.constant.GlobalConfig.TIMECONSUPTIONQUEUE;
+import static io.mosip.packet.core.constant.GlobalConfig.TOTAL_RECORDS_FOR_PROCESS;
 
 public class CustomizedThreadPoolExecutor {
     Map<String, ThreadPoolExecutor> poolMap = new HashMap<>();
@@ -57,15 +58,35 @@ public class CustomizedThreadPoolExecutor {
                 Long totalCount = 0L;
                 Long activeCount = 0L;
                 Long completedCount = 0L;
+                int totalDays = 0;
+                int totalHours = 0;
+                int remainingMinutes =0;
+                Long avgTime = 0l;
 
                 for(Map.Entry<String, ThreadPoolExecutor> entry : poolMap.entrySet()) {
                     totalCount += entry.getValue().getTaskCount();
                     activeCount+= entry.getValue().getActiveCount();
                     completedCount+= entry.getValue().getCompletedTaskCount();
+
+        // Calculating Estimated Time of Process Completion
+                    if(TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
+                        Long[] consumedTimeList = TIMECONSUPTIONQUEUE.toArray(new Long[TIMECONSUPTIONQUEUE.size()]);
+                        Long totalRecords = TOTAL_RECORDS_FOR_PROCESS;
+                        Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
+                        int noOfRecords = consumedTimeList.length;
+                        Long remainingRecords = totalRecords - completedCount;
+                        avgTime = TotalSum / noOfRecords;
+                        Long timeRequired = avgTime * remainingRecords;
+                        long convert = TimeUnit.MINUTES.convert(timeRequired, TimeUnit.NANOSECONDS);
+                        totalHours = (int) (convert / 60);
+                        totalDays = (int) totalHours / 24;
+                        totalHours = (int) (totalHours % 24);
+                        remainingMinutes = (int) (convert % 60);
+                    }
                 }
 
                 if(totalTaskCount > 0 || totalCount > 0) {
-                    System.out.println("Pool Name : " + NAME + "   Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+completedCount));
+                    System.out.println("Pool Name : " + NAME + " Avg Time : " + TimeUnit.MINUTES.convert(avgTime, TimeUnit.NANOSECONDS) + " Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+completedCount));
                 }
             }
         }, 0, DELAY_SECONDS);
