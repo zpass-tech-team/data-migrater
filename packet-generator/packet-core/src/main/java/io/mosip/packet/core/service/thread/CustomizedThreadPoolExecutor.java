@@ -47,6 +47,9 @@ public class CustomizedThreadPoolExecutor {
                         }
                     }
 
+                    poolMap.entrySet().stream().sorted(Map.Entry.comparingByValue(
+                            (o1, o2) -> Long.valueOf(o1.getTaskCount()).compareTo(Long.valueOf(o2.getTaskCount()))));
+
                     if(isSuccess)
                         noSlotAvailable=false;
                 }
