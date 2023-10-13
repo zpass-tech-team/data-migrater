@@ -15,5 +15,5 @@ roleRef:
   name: {{ template "common.names.fullname" . }}
 subjects:
   - kind: ServiceAccount
-    name: {{ template "data-migrator.serviceAccountName" . }}
+    name: {{ template "data-migrator-job.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}

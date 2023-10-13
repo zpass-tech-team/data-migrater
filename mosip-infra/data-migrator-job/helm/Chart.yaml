@@ -1,5 +1,5 @@
 apiVersion: v2
-name: data-migrator
+name: data-migrator-job
 description: A Helm chart for data migrator installation.
 type: application
 version: 12.0.2
@@ -14,7 +14,7 @@ dependencies:
 home: https://mosip.io
 keywords:
   - mosip
-  - data-migrator
+  - data-migrator-job
   - migrator
 maintainers:
   - email: info@mosip.io

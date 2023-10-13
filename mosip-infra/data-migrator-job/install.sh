@@ -6,8 +6,8 @@ if [ $# -ge 1 ] ; then
   export KUBECONFIG=$1
 fi
 
-function data-migrator-install() {
-  NS=data-migrator
+function data-migrator-job-install() {
+  NS=data-migrator-job
   CHART_VERSION=12.0.2
   kubectl label ns $NS istio-injection=enabled --overwrite
   helm repo update
@@ -22,8 +22,8 @@ function data-migrator-install() {
     --from-file=../../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/identity.json \
     --from-file=../../packet-generator/data-extractor-conversion/src/main/resources/externalsamples/idschema.json -n $NS
 
-  echo Installing data-migrator service
-  helm -n $NS install data-migrator helm/ --wait --wait-for-jobs --version $CHART_VERSION -f migrator.yaml
+  echo Installing data-migrator-job service
+  helm -n $NS install data-migrator-job helm/ --wait --wait-for-jobs --version $CHART_VERSION -f migrator.yaml
   return 0
 }
 
@@ -33,4 +33,4 @@ set -o errexit   ## set -e : exit the script if any statement returns a non-true
 set -o nounset   ## set -u : exit the script if you try to use an uninitialised variable
 set -o errtrace  # trace ERR through 'time command' and other functions
 set -o pipefail  # trace ERR through pipes
-data-migrator-install   # calling function
+data-migrator-job-install   # calling function
