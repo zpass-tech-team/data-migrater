@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
 import static io.mosip.packet.core.constant.GlobalConfig.SESSION_KEY;
@@ -437,6 +438,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + (registrationId == null ? demoDetails.get(trackerColumn).toString() : registrationId) + " Process Ended");
                         Long endTime = System.nanoTime();
                         Long timeDifference = endTime-startTime;
+                        System.out.println("Time taken to complete " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
                         TIMECONSUPTIONQUEUE.add(timeDifference);
                     }
                 });
