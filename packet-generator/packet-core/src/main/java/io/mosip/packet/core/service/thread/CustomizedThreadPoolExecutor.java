@@ -69,8 +69,10 @@ public class CustomizedThreadPoolExecutor {
                     totalCount += entry.getValue().getTaskCount();
                     activeCount+= entry.getValue().getActiveCount();
                     completedCount+= entry.getValue().getCompletedTaskCount();
+                }
 
-        // Calculating Estimated Time of Process Completion
+                if(totalTaskCount > 0 || totalCount > 0) {
+                    // Calculating Estimated Time of Process Completion
                     if(TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
                         Long[] consumedTimeList = TIMECONSUPTIONQUEUE.toArray(new Long[TIMECONSUPTIONQUEUE.size()]);
                         System.out.println((new Gson()).toJson(consumedTimeList));
@@ -91,9 +93,7 @@ public class CustomizedThreadPoolExecutor {
                         totalHours = (int) (totalHours % 24);
                         remainingMinutes = (int) (convert % 60);
                     }
-                }
-
-                if(totalTaskCount > 0 || totalCount > 0) {
+                    
                     System.out.println("Pool Name : " + NAME + " Avg Time : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+completedCount));
                 }
             }
