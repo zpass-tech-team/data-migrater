@@ -12,19 +12,18 @@ import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
 import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.PacketTrackerRepository;
+import org.hibernate.engine.jdbc.ClobProxy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.sql.rowset.serial.SerialBlob;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.sql.*;
+import java.util.Base64;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Scanner;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
@@ -250,8 +249,10 @@ public class TrackerUtil {
             if(regNo != null ) packetTracker.setRegNo(regNo);
             if(status != null ) packetTracker.setStatus(status.toString());
             if(process != null ) packetTracker.setProcess(process);
-            if(request != null ) packetTracker.setRequest(new SerialBlob(requestValue));
+            if(request != null ) packetTracker.setRequest(ClobProxy.generateProxy(Base64.getEncoder().encodeToString(requestValue)));
             if(activity != null ) packetTracker.setActivity(activity);
+            if(status.equals(TrackerStatus.PROCESSED) || status.equals(TrackerStatus.PROCESSED_WITHOUT_UPLOAD))
+                packetTracker.setRequest(null);
             packetTracker.setSessionKey(sessionKey);
             packetTracker.setUpdBy("BATCH");
             packetTracker.setUpdDtimes(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
@@ -261,7 +262,7 @@ public class TrackerUtil {
             if(regNo != null ) packetTracker.setRegNo(regNo);
             if(status != null ) packetTracker.setStatus(status.toString());
             if(process != null ) packetTracker.setProcess(process);
-            if(request != null ) packetTracker.setRequest(requestValue != null ? null : new SerialBlob(requestValue));
+            if(request != null ) packetTracker.setRequest(requestValue == null ? null : ClobProxy.generateProxy(Base64.getEncoder().encodeToString(requestValue)));
             if(activity != null ) packetTracker.setActivity(activity);
             packetTracker.setSessionKey(sessionKey);
             packetTracker.setCrBy("BATCH");

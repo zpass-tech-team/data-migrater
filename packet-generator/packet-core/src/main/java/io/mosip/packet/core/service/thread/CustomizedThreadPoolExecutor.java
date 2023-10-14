@@ -138,4 +138,8 @@ public class CustomizedThreadPoolExecutor {
             return Long.valueOf(a.getTaskCount()).compareTo(Long.valueOf(b.getTaskCount()));
         }
     }
+
+    public boolean isBatchAcceptRequest() {
+        return !noSlotAvailable;
+    }
 }

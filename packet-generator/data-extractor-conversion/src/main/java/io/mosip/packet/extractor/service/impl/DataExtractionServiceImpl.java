@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.commons.packet.dto.packet.PacketDto;
+import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.FieldCategory;
+import io.mosip.packet.core.constant.GlobalConfig;
 import io.mosip.packet.core.constant.ValidatorEnum;
 import io.mosip.packet.core.constant.tracker.TrackerStatus;
 import io.mosip.packet.core.dto.dbimport.*;
@@ -15,6 +17,9 @@ import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
 import io.mosip.packet.core.dto.upload.PacketUploadDTO;
 import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
 import io.mosip.packet.core.logger.DataProcessLogger;
+import io.mosip.packet.core.repository.PacketTrackerRepository;
+import io.mosip.packet.core.service.CustomNativeRepository;
+import io.mosip.packet.core.service.impl.CustomNativeRepositoryImpl;
 import io.mosip.packet.core.service.thread.*;
 import io.mosip.packet.core.spi.QualityWriterFactory;
 import io.mosip.packet.core.util.CommonUtil;
@@ -46,10 +51,8 @@ import java.sql.ResultSet;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
 import static io.mosip.packet.core.constant.GlobalConfig.SESSION_KEY;
-import static io.mosip.packet.core.constant.GlobalConfig.TIMECONSUPTIONQUEUE;
-import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
+import static io.mosip.packet.core.constant.GlobalConfig.*;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Service
@@ -110,11 +113,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     private QualityWriterFactory qualityWriterFactory;
 
+    @Autowired
+    private CustomNativeRepository customNativeRepository;
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
     private Map<String, HashSet<String>> fieldsCategoryMap = new HashMap<>();
     private ObjectMapper objectMapper = new ObjectMapper();
     private boolean backendProcess = false;
+    private boolean isRecordPresentForProcess = true;
 
     @Value("${mosip.data.quality.writer.classname:io.mosip.packet.data.quality.writer.CSVFileWriter}")
     private String qualityWriterClassName;
@@ -202,7 +208,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             validationUtil.validateRequest(dbImportRequest, enumList);
             populateTableFields(dbImportRequest);
             dataBaseUtil.connectDatabase(dbImportRequest);
-            CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount, getActivityName());
+            CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount, GlobalConfig.getActivityName());
             Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
 
                 @Override
@@ -221,12 +227,12 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     trackerRequestDto.setRegNo(resultDto.getRegNo());
                     trackerRequestDto.setRefId(resultDto.getRefId());
                     trackerRequestDto.setProcess(dbImportRequest.getProcess());
-                    trackerRequestDto.setActivity(getActivityName());
+                    trackerRequestDto.setActivity(GlobalConfig.getActivityName());
                     trackerRequestDto.setSessionKey(SESSION_KEY);
                     trackerRequestDto.setStatus(resultDto.getStatus().toString());
                     trackerRequestDto.setComments(resultDto.getComments());
                     trackerUtil.addTrackerEntry(trackerRequestDto);
-                    trackerUtil.addTrackerLocalEntry(resultDto.getRefId(), null, (enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD), dbImportRequest.getProcess(), resultDto.getComments(), SESSION_KEY, getActivityName());
+                    trackerUtil.addTrackerLocalEntry(resultDto.getRefId(), null, (enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD), dbImportRequest.getProcess(), resultDto.getComments(), SESSION_KEY, GlobalConfig.getActivityName());
                 }
             };
 
@@ -236,28 +242,34 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 @Override
                 public void run() {
                     if(!backendProcess) {
-                        if(dataBaseUtil.getSyncronizedQueue().size() > 0) {
-                            backendProcess = true;
+                        List<String> list = new ArrayList<>();
+                        list.add(TrackerStatus.QUEUED.toString());
+                        customNativeRepository.getPacketTrackerData(list, new CustomNativeRepositoryImpl.PacketTrackerInterface() {
+                            @Override
+                            public void processData(Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception {
+                                backendProcess = true;
 
-                            for(int i = 0; i < dataBaseUtil.getSyncronizedQueue().size(); i++) {
-                                BaseThreadController baseThreadController = new BaseThreadController();
-                                baseThreadController.setSetter(setter);
-                                if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController))
-                                    threadPool.ExecuteTask(baseThreadController);
+                                if(threadPool.isBatchAcceptRequest()) {
+                                    BaseThreadController baseThreadController = new BaseThreadController();
+                                    baseThreadController.setSetter(setter);
 
+                                    if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, dataHashMap))
+                                        threadPool.ExecuteTask(baseThreadController);
+                                }
                             }
-                            backendProcess = false;
-                        }
+                        });
+                        backendProcess = false;
                     }
                 }
             }, 0, DELAY_SECONDS);
 
             Date startTime = new Date();
             dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap);
+            isRecordPresentForProcess = false;
 
-            while(dataBaseUtil.getSyncronizedQueue().size() > 0 || !threadPool.isTaskCompleted() || backendProcess) {
+            do {
                 Thread.sleep(10000);
-            }
+            } while(isRecordPresentForProcess || !threadPool.isTaskCompleted() || backendProcess);
 
             System.out.println("Start Time " + startTime);
             System.out.println("End Time Time " + new Date());
@@ -279,13 +291,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         return packetCreatorResponse;
     }
 
-    private boolean processPacket(DBImportRequest dbImportRequest, PacketCreatorResponse packetCreatorResponse, BaseThreadController baseThreadController) throws Exception {
-        Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap = new HashMap<>();
-        DataResult result = (DataResult)dataBaseUtil.getSyncronizedQueue().take();
-        dataHashMap.put(FieldCategory.DEMO, result.getDemoDetails());
-        dataHashMap.put(FieldCategory.BIO, result.getBioDetails());
-        dataHashMap.put(FieldCategory.DOC, result.getDocDetails());
-
+    private boolean processPacket(DBImportRequest dbImportRequest, PacketCreatorResponse packetCreatorResponse, BaseThreadController baseThreadController, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception {
         if ( dataHashMap != null) {
             String registrationId = null;
 
@@ -302,7 +308,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 }
             }
 
-            if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), getActivityName()) || IS_ONLY_FOR_QUALITY_CHECK) {
+            if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName()) || IS_ONLY_FOR_QUALITY_CHECK) {
                 baseThreadController.setDataHashMap(dataHashMap);
                 baseThreadController.setRegistrationId(registrationId);
                 baseThreadController.setTrackerColumn(dbImportRequest.getTrackerInfo().getTrackerColumn());
@@ -317,7 +323,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + refId + " Process Started");
 
                         try {
-                            trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), registrationId, TrackerStatus.STARTED, dbImportRequest.getProcess(), dataHashMap, SESSION_KEY, getActivityName());
+                            trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), registrationId, TrackerStatus.STARTED, dbImportRequest.getProcess(), null, SESSION_KEY, getActivityName());
 
                             HashMap<String, String> csvMap = qualityWriterFactory.getDataMap();
                             LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
@@ -368,7 +374,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 List<PacketInfo> infoList = packetCreatorService.persistPacket(packetDto);
                                 PacketInfo info = infoList.get(0);
 
-                                trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.CREATED, dbImportRequest.getProcess(), demoDetails, SESSION_KEY, getActivityName());
+                                trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.CREATED, dbImportRequest.getProcess(), demoDetails, SESSION_KEY, GlobalConfig.getActivityName());
 
                                 Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
 
@@ -410,7 +416,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                                     if (enablePaccketUploader) {
                                         packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
-                                        trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.SYNCED, null, uploadList, SESSION_KEY, getActivityName());
+                                        trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.SYNCED, null, uploadList, SESSION_KEY, GlobalConfig.getActivityName());
                                         packetUploaderService.uploadSyncedPacket(uploadList, response);
                                     } else {
                                         LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploader Disabled : " + (new Gson()).toJson(response));
@@ -507,9 +513,5 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField()));
             }
         }
-    }
-
-    private String getActivityName() {
-        return (IS_ONLY_FOR_QUALITY_CHECK ? "QUALITY ANALYSIS" : "PACKET CREATOR");
     }
 }

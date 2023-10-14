@@ -6,18 +6,22 @@ import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.DBTypes;
 import io.mosip.packet.core.constant.FieldCategory;
+import io.mosip.packet.core.constant.GlobalConfig;
 import io.mosip.packet.core.constant.QuerySelection;
-import io.mosip.packet.core.dto.dbimport.*;
+import io.mosip.packet.core.constant.tracker.TrackerStatus;
+import io.mosip.packet.core.dto.dbimport.DBImportRequest;
+import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
+import io.mosip.packet.core.dto.dbimport.QueryFilter;
+import io.mosip.packet.core.dto.dbimport.TableRequestDto;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.PriorityBlockingQueue;
 
-import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
-import static io.mosip.packet.core.constant.GlobalConfig.TOTAL_RECORDS_FOR_PROCESS;
+import static io.mosip.packet.core.constant.GlobalConfig.SESSION_KEY;
+import static io.mosip.packet.core.constant.GlobalConfig.*;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Component
@@ -26,7 +30,6 @@ public class DataBaseUtil {
     private Connection conn = null;
     private boolean isTrackerSameHost = false;
     private String trackColumn = null;
-    private PriorityBlockingQueue<DataResult> syncronizedQueue = new PriorityBlockingQueue<>();
     private ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
@@ -38,13 +41,6 @@ public class DataBaseUtil {
     @Autowired
     private TrackerUtil trackerUtil;
 
-    public PriorityBlockingQueue<DataResult> getSyncronizedQueue() {
-        return syncronizedQueue;
-    }
-
-    public void setSyncronizedQueue(PriorityBlockingQueue<DataResult> syncronizedQueue) {
-        this.syncronizedQueue = syncronizedQueue;
-    }
 
     public void connectDatabase(DBImportRequest dbImportRequest) throws SQLException {
         try {
@@ -69,8 +65,6 @@ public class DataBaseUtil {
     }
 
     public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashSet<String>> fieldsCategoryMap) throws Exception {
-        syncronizedQueue.clear();
-
         Statement statement1 = conn.createStatement();
         try {
             if(conn != null) {
@@ -102,11 +96,7 @@ public class DataBaseUtil {
                                         statement2.close();
                                 }
                             }
-                            DataResult result = new DataResult();
-                            result.setDemoDetails(dataHashMap.get(FieldCategory.DEMO));
-                            result.setBioDetails(dataHashMap.get(FieldCategory.BIO));
-                            result.setDocDetails(dataHashMap.get(FieldCategory.DOC));
-                            syncronizedQueue.put(result);
+                            trackerUtil.addTrackerLocalEntry(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()).toString(), null, TrackerStatus.QUEUED, dbImportRequest.getProcess(), dataHashMap, SESSION_KEY, GlobalConfig.getActivityName());
                         } catch (Exception e) {
                             e.printStackTrace();
                             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
