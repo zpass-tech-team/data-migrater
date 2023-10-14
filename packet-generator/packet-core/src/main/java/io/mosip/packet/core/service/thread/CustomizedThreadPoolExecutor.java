@@ -49,7 +49,10 @@ public class CustomizedThreadPoolExecutor {
                     if(isSuccess)
                         noSlotAvailable=false;
                 }
-                Collections.sort(poolMap, new SortbyCount());
+
+                try {
+                    Collections.sort(poolMap, new SortbyCount());
+                } catch (ConcurrentModificationException e){}
 
                 Long totalCount = 0L;
                 Long activeCount = 0L;
