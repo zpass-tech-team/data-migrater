@@ -18,7 +18,6 @@ public class CustomizedThreadPoolExecutor {
     private boolean noSlotAvailable=false;
     private long totalTaskCount = 0;
     private long totalCompletedTaskCount = 0;
-    private Timer monitor = null;
     private Timer watch = null;
     private String NAME;
 
@@ -29,8 +28,8 @@ public class CustomizedThreadPoolExecutor {
         for(int i = 1; i <= threadPoolCount; i++)
             poolMap.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
 
-        monitor = new Timer("ThreadPool_Monitor");
-        monitor.schedule(new TimerTask() {
+        watch = new Timer("ThreadPool_Wathcer");
+        watch.schedule(new TimerTask() {
             @Override
             public void run() {
                 if(noSlotAvailable) {
@@ -51,13 +50,7 @@ public class CustomizedThreadPoolExecutor {
                         noSlotAvailable=false;
                 }
                 Collections.sort(poolMap, new SortbyCount());
-            }
-        }, 0, DELAY_SECONDS);
 
-        watch = new Timer("ThreadPool_Wathcer");
-        watch.schedule(new TimerTask() {
-            @Override
-            public void run() {
                 Long totalCount = 0L;
                 Long activeCount = 0L;
                 Long completedCount = 0L;
@@ -131,7 +124,6 @@ public class CustomizedThreadPoolExecutor {
         }
 
         if(isCompleted) {
-            monitor.cancel();
             watch.cancel();
         }
         return isCompleted;

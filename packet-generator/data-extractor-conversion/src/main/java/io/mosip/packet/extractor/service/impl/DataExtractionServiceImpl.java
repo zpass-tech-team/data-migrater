@@ -333,18 +333,29 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                             if (!IS_ONLY_FOR_QUALITY_CHECK && docDetails.size() > 0) {
                                 packetDto.setDocuments(packetCreator.setDocuments(docDetails, dbImportRequest.getIgnoreIdSchemaFields(), metaInfo, demoDetails));
                             }
+                            Long timeDifference = System.nanoTime()-startTime;
+                            System.out.println("After Completion of Document " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
                             if (!IS_ONLY_FOR_QUALITY_CHECK && demoDetails.size() > 0) {
                                 packetDto.setFields(packetCreator.setDemographic(demoDetails, (bioDetails.size() > 0), dbImportRequest.getIgnoreIdSchemaFields()));
                             }
 
+                            timeDifference = System.nanoTime()-startTime;
+                            System.out.println("After Completion of Demographic " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+
                             if (bioDetails.size() > 0) {
                                 packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo, csvMap, demoDetails.get(trackerColumn).toString()));
                             }
 
+                            timeDifference = System.nanoTime()-startTime;
+                            System.out.println("After Completion of Biometric " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+
                             csvMap.put("reg_no", registrationId);
                             csvMap.put("ref_id", demoDetails.get(trackerColumn).toString());
                             qualityWriterFactory.writeQualityData(csvMap);
+
+                            timeDifference = System.nanoTime()-startTime;
+                            System.out.println("After Completion of log Writing " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
                             if (!IS_ONLY_FOR_QUALITY_CHECK) {
                                 packetDto.setId(registrationId);
