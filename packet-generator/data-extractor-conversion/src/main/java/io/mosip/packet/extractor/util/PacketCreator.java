@@ -43,6 +43,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
 
@@ -200,7 +201,7 @@ public class PacketCreator {
 
     public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap, String trackerColumn) throws Exception {
         LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
-
+        Long startTime = System.nanoTime();
 //        LOGGER.debug("Adding Biometrics to packet manager started..");
         LinkedHashMap<String, List<BIR>> capturedBiometrics = new LinkedHashMap<>();
         Map<String, Map<String, Object>> capturedMetaInfo = new LinkedHashMap<>();
@@ -221,7 +222,8 @@ public class PacketCreator {
                 bioAttributes.addAll((List<String>) map.get("bioAttributes"));
                 Integer attributeCount = bioAttributes.size();
                 bioAttributes.add("unknown");
-
+                Long timeDifference = System.nanoTime()-startTime;
+                System.out.println("Starting Biometric Processing " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
                 for (Map.Entry<String, Object> entry : bioDetails.entrySet()) {
                     String[] keyEntries = entry.getKey().split("_");
                     String fieldId = keyEntries[0];
@@ -272,7 +274,8 @@ public class PacketCreator {
                                 biometricDTO.setCaptured(true);
                                 biometricDTO.setAttributeISO((byte[]) bioData.getBioData());
                                 BIR bir = birBuilder.buildBIR(biometricDTO);
-
+                                timeDifference = System.nanoTime()-startTime;
+                                System.out.println("Completed BIR Builder for " + entry.getKey() + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
                                 if (bioQualityScore==null) {
                                     if(biosdkCheckEnabled) {
                                         BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
@@ -308,6 +311,9 @@ public class PacketCreator {
                                                 bir.getBdbInfo().getQuality().setScore(score.longValue());
                                                 csvMap.put(entry.getKey(), score.toString());
                                             }
+                                            timeDifference = System.nanoTime()-startTime;
+                                            System.out.println("After Calculation of Quality from BIOSDK " + entry.getKey() + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                             throw new Exception(trackerColumn + " Error : " + biometricType.toString() + ", " + bioAttribute + " Error Message :" + e.getLocalizedMessage());
