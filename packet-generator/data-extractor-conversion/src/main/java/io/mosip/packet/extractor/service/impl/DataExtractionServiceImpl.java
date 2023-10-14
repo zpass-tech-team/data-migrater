@@ -256,7 +256,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap);
 
             while(dataBaseUtil.getSyncronizedQueue().size() > 0 || !threadPool.isTaskCompleted() || backendProcess) {
-                System.out.println("Process Not Completed");
                 Thread.sleep(10000);
             }
 
@@ -314,7 +313,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         LinkedHashMap<String, Object> demoDetails = dataHashMap.get(FieldCategory.DEMO);
                         LinkedHashMap<String, Object> bioDetails = dataHashMap.get(FieldCategory.BIO);
                         LinkedHashMap<String, Object> docDetails = dataHashMap.get(FieldCategory.DOC);
-                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + (registrationId == null ? demoDetails.get(trackerColumn).toString() : registrationId) + " Process Started");
+                        String refId = registrationId == null ? demoDetails.get(trackerColumn).toString() : registrationId;
+                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + refId + " Process Started");
 
                         try {
                             trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), registrationId, TrackerStatus.STARTED, dbImportRequest.getProcess(), dataHashMap, SESSION_KEY, getActivityName());
@@ -334,28 +334,25 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 packetDto.setDocuments(packetCreator.setDocuments(docDetails, dbImportRequest.getIgnoreIdSchemaFields(), metaInfo, demoDetails));
                             }
                             Long timeDifference = System.nanoTime()-startTime;
-                            System.out.println("After Completion of Document " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+                            LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Completion of Document Process " + refId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
                             if (!IS_ONLY_FOR_QUALITY_CHECK && demoDetails.size() > 0) {
                                 packetDto.setFields(packetCreator.setDemographic(demoDetails, (bioDetails.size() > 0), dbImportRequest.getIgnoreIdSchemaFields()));
                             }
 
                             timeDifference = System.nanoTime()-startTime;
-                            System.out.println("After Completion of Demographic " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+                            LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Completion of Demographic Process " + refId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
                             if (bioDetails.size() > 0) {
                                 packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo, csvMap, demoDetails.get(trackerColumn).toString()));
                             }
 
                             timeDifference = System.nanoTime()-startTime;
-                            System.out.println("After Completion of Biometric " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+                            LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Completion of Biometric Process " + refId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
                             csvMap.put("reg_no", registrationId);
                             csvMap.put("ref_id", demoDetails.get(trackerColumn).toString());
                             qualityWriterFactory.writeQualityData(csvMap);
-
-                            timeDifference = System.nanoTime()-startTime;
-                            System.out.println("After Completion of log Writing " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
                             if (!IS_ONLY_FOR_QUALITY_CHECK) {
                                 packetDto.setId(registrationId);
@@ -449,7 +446,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + (registrationId == null ? demoDetails.get(trackerColumn).toString() : registrationId) + " Process Ended");
                         Long endTime = System.nanoTime();
                         Long timeDifference = endTime-startTime;
-                        System.out.println("Time taken to complete " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + refId + " Time taken to complete " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
                         TIMECONSUPTIONQUEUE.add(timeDifference);
                     }
                 });

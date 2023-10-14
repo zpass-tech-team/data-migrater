@@ -13,6 +13,7 @@ import io.mosip.commons.packet.dto.packet.PacketDto;
 import io.mosip.kernel.biometrics.constant.BiometricType;
 import io.mosip.kernel.biometrics.entities.BIR;
 import io.mosip.kernel.biometrics.entities.BiometricRecord;
+import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.packet.core.config.biosdk.BioSDKConfig;
 import io.mosip.packet.core.constant.RegistrationConstants;
@@ -28,6 +29,7 @@ import io.mosip.packet.core.dto.packet.metadata.BiometricsMetaInfoDto;
 import io.mosip.packet.core.dto.packet.metadata.DocumentMetaInfoDTO;
 import io.mosip.packet.core.dto.packet.type.IndividualBiometricType;
 import io.mosip.packet.core.dto.packet.type.SimpleType;
+import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.BlocklistedWordsRepository;
 import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.core.spi.BioSdkApiFactory;
@@ -46,9 +48,13 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
 
 @Component
 public class PacketCreator {
+
+    private static final Logger LOGGER = DataProcessLogger.getLogger(PacketCreator.class);
 
     @Autowired
     private DataRestClientService restApiClient;
@@ -201,8 +207,7 @@ public class PacketCreator {
 
     public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap, String trackerColumn) throws Exception {
         LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
-        Long startTime = System.nanoTime();
-//        LOGGER.debug("Adding Biometrics to packet manager started..");
+        LOGGER.debug("Adding Biometrics to packet manager started..");
         LinkedHashMap<String, List<BIR>> capturedBiometrics = new LinkedHashMap<>();
         Map<String, Map<String, Object>> capturedMetaInfo = new LinkedHashMap<>();
         Map<String, Map<String, Object>> exceptionMetaInfo = new LinkedHashMap<>();
@@ -222,9 +227,9 @@ public class PacketCreator {
                 bioAttributes.addAll((List<String>) map.get("bioAttributes"));
                 Integer attributeCount = bioAttributes.size();
                 bioAttributes.add("unknown");
-                Long timeDifference = System.nanoTime()-startTime;
-                System.out.println("Starting Biometric Processing " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
-                for (Map.Entry<String, Object> entry : bioDetails.entrySet()) {
+
+                 for (Map.Entry<String, Object> entry : bioDetails.entrySet()) {
+                    Long startTime = System.nanoTime();
                     String[] keyEntries = entry.getKey().split("_");
                     String fieldId = keyEntries[0];
                     String bioAttribute = keyEntries.length > 1 ? keyEntries[1] : null;
@@ -274,8 +279,9 @@ public class PacketCreator {
                                 biometricDTO.setCaptured(true);
                                 biometricDTO.setAttributeISO((byte[]) bioData.getBioData());
                                 BIR bir = birBuilder.buildBIR(biometricDTO);
-                                timeDifference = System.nanoTime()-startTime;
-                                System.out.println("Completed BIR Builder for " + entry.getKey() + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+                                Long timeDifference = System.nanoTime()-startTime;
+                                LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Completed BIR Builder for " + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+
                                 if (bioQualityScore==null) {
                                     if(biosdkCheckEnabled) {
                                         BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
@@ -311,9 +317,9 @@ public class PacketCreator {
                                                 bir.getBdbInfo().getQuality().setScore(score.longValue());
                                                 csvMap.put(entry.getKey(), score.toString());
                                             }
-                                            timeDifference = System.nanoTime()-startTime;
-                                            System.out.println("After Calculation of Quality from BIOSDK " + entry.getKey() + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
+                                            timeDifference = System.nanoTime()-startTime;
+                                            LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Calculation of Quality from BIOSDK " + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                             throw new Exception(trackerColumn + " Error : " + biometricType.toString() + ", " + bioAttribute + " Error Message :" + e.getLocalizedMessage());
@@ -410,7 +416,7 @@ public class PacketCreator {
 //            biometricRecord.getOthers().put(OtherKey.CONFIGURED, String.join(",",
 //                    registrationDTO.CONFIGURED_BIOATTRIBUTES.getOrDefault(fieldId, Collections.EMPTY_LIST)));
             biometricRecord.setSegments(capturedBiometrics.get(fieldId));
-//            LOGGER.debug("Adding biometric to packet manager for field : {}", fieldId);
+            LOGGER.debug("Adding biometric to packet manager for field : {}", fieldId);
             biometricsMap.put(fieldId, biometricRecord);
         });
 
