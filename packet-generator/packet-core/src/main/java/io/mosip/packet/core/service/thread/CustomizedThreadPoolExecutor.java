@@ -13,7 +13,7 @@ import static io.mosip.packet.core.constant.GlobalConfig.TOTAL_RECORDS_FOR_PROCE
 public class CustomizedThreadPoolExecutor {
     List<ThreadPoolExecutor> poolMap = new ArrayList<>();
     private int MAX_THREAD_EXE_COUNT;
-    private Long DELAY_SECONDS = 10000L;
+    private Long DELAY_SECONDS = 30000L;
     private int maxThreadCount;
     private boolean noSlotAvailable=false;
     private long totalTaskCount = 0;
