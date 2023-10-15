@@ -21,8 +21,8 @@ public class CustomizedThreadPoolExecutor {
     private Timer watch = null;
     private Timer estimateTimer = null;
     private String NAME;
-    private FixedListQueue<Long> timeConsumptionPerMin;
-    private FixedListQueue<Integer> countOfProcessPerMin;
+    private FixedListQueue<Long> timeConsumptionPerMin = new FixedListQueue<>(100);
+    private FixedListQueue<Integer> countOfProcessPerMin = new FixedListQueue<>(100);
 
     public CustomizedThreadPoolExecutor(Integer threadPoolCount, Integer maxThreadCount, Integer maxThreadExecCount, String poolName) {
         this.NAME = poolName;
