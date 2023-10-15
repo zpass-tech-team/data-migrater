@@ -1,8 +1,10 @@
 package io.mosip.packet.core.entity;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.io.Serializable;
-import java.sql.Clob;
 import java.sql.Timestamp;
 
 @Entity
@@ -30,9 +32,8 @@ public class PacketTracker implements Serializable {
     @Column(name = "PROCESS")
     private String process;
 
-    @Column(name = "REQUEST")
-    @Lob
-    private Clob request;
+    @Column(name = "REQUEST" , columnDefinition = "CLOB")
+    private String request;
 
     @Column(name = "CR_BY")
     protected String crBy;
@@ -110,7 +111,7 @@ public class PacketTracker implements Serializable {
         this.process = process;
     }
 
-    public Clob getRequest() {
+    public String getRequest() {
         return request;
     }
 
@@ -130,7 +131,7 @@ public class PacketTracker implements Serializable {
         this.activity = activity;
     }
 
-    public void setRequest(Clob request) {
+    public void setRequest(String request) {
         this.request = request;
     }
 }

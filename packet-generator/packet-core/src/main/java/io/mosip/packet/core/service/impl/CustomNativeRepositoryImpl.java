@@ -55,6 +55,7 @@ public class CustomNativeRepositoryImpl implements CustomNativeRepository {
                     ObjectInputStream is = new ObjectInputStream(bis);
                     processor.processData((Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject());
                 }
+                st.close();
             }
         });
     }
