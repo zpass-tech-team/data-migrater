@@ -16,6 +16,7 @@ import io.mosip.packet.core.dto.masterdata.DocumentTypeExtnDto;
 import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
 import io.mosip.packet.core.dto.upload.PacketUploadDTO;
 import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
+import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.PacketTrackerRepository;
 import io.mosip.packet.core.service.CustomNativeRepository;
@@ -43,10 +44,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
+import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Clob;
 import java.sql.ResultSet;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -112,6 +116,12 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     private TrackerUtil trackerUtil;
 
     private QualityWriterFactory qualityWriterFactory;
+
+    @Autowired
+    private PacketTrackerRepository packetTrackerRepository;
+
+    @Autowired
+    private ClientCryptoFacade clientCryptoFacade;
 
     @Autowired
     private CustomNativeRepository customNativeRepository;
@@ -244,7 +254,20 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     if(!backendProcess && threadPool.isBatchAcceptRequest()) {
                         List<String> list = new ArrayList<>();
                         list.add(TrackerStatus.QUEUED.toString());
-                        customNativeRepository.getPacketTrackerData(list, new CustomNativeRepositoryImpl.PacketTrackerInterface() {
+                        List<PacketTracker> packetList =  packetTrackerRepository.findByStatusIn(list);
+
+                        for(PacketTracker tracker : packetList) {
+                            backendProcess = true;
+                            ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(tracker.getRequest())) : Base64.getDecoder().decode(tracker.getRequest()));
+                            ObjectInputStream is = new ObjectInputStream(bis);
+                            BaseThreadController baseThreadController = new BaseThreadController();
+                            baseThreadController.setSetter(setter);
+
+                            if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, (Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject()))
+                                threadPool.ExecuteTask(baseThreadController);
+                        }
+
+/*                        customNativeRepository.getPacketTrackerData(list, new CustomNativeRepositoryImpl.PacketTrackerInterface() {
                             @Override
                             public void processData(Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception {
                                 backendProcess = true;
@@ -255,7 +278,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, dataHashMap))
                                     threadPool.ExecuteTask(baseThreadController);
                             }
-                        });
+                        });*/
                         backendProcess = false;
                     }
                 }
