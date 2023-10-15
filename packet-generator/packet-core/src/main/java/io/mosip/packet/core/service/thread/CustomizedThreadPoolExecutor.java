@@ -103,7 +103,7 @@ public class CustomizedThreadPoolExecutor {
 
                         Long remainingRecords = totalRecords - completedCount;
                         avgTime = TotalSum / noOfRecords;
-                        Long totalTimeRequired = (remainingRecords / avgCount) * 60;
+                        Long totalTimeRequired = (remainingRecords / avgCount);
 
                         totalHours = (int) (totalTimeRequired / 60);
                         totalDays = (int) totalHours / 24;
