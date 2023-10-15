@@ -227,7 +227,7 @@ public class TrackerUtil {
 
     }
 
-    public void addTrackerLocalEntry(String refId, String regNo, TrackerStatus status, String process, Object request, String sessionKey, String activity) throws SQLException, IOException {
+    public synchronized void addTrackerLocalEntry(String refId, String regNo, TrackerStatus status, String process, Object request, String sessionKey, String activity) throws SQLException, IOException {
         Optional<PacketTracker> optional= packetTrackerRepository.findById(refId);
         byte[] requestValue = null;
 
