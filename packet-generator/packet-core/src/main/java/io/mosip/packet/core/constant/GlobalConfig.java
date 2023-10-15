@@ -22,6 +22,8 @@ public class GlobalConfig {
 
     public static Long TOTAL_RECORDS_FOR_PROCESS = 0l;
 
+    public static Boolean IS_TPM_AVAILABLE;
+
     public static String getActivityName() {
         return (IS_ONLY_FOR_QUALITY_CHECK ? "QUALITY ANALYSIS" : "PACKET CREATOR");
     }

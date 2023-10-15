@@ -51,7 +51,7 @@ public class CustomNativeRepositoryImpl implements CustomNativeRepository {
 
                 while(resultSet.next()) {
                     Clob clob = resultSet.getClob(1);
-                    ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.decrypt(Base64.getDecoder().decode(clob.getSubString(1, (int)clob.length()).toString())));
+                    ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(clob.getSubString(1, (int)clob.length()).toString())) : clientCryptoFacade.getClientSecurity().asymmetricDecrypt(Base64.getDecoder().decode(clob.getSubString(1, (int)clob.length()).toString())));
                     ObjectInputStream is = new ObjectInputStream(bis);
                     processor.processData((Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject());
                 }

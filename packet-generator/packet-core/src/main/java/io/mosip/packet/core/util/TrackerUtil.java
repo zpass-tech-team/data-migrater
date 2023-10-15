@@ -26,8 +26,7 @@ import java.util.Base64;
 import java.util.Optional;
 import java.util.Scanner;
 
-import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
-import static io.mosip.packet.core.constant.GlobalConfig.IS_TRACKER_REQUIRED;
+import static io.mosip.packet.core.constant.GlobalConfig.*;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Component
@@ -237,7 +236,11 @@ public class TrackerUtil {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bos);
             oos.writeObject(request);
-            requestValue = clientCryptoFacade.encrypt(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), bos.toByteArray());
+            if(IS_TPM_AVAILABLE)
+                requestValue = clientCryptoFacade.encrypt(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), bos.toByteArray());
+            else
+                requestValue = clientCryptoFacade.getClientSecurity().asymmetricEncrypt(bos.toByteArray());
+
             oos.close();
             bos.close();
         }

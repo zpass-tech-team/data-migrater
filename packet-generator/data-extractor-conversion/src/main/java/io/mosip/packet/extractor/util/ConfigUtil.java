@@ -83,6 +83,8 @@ public class ConfigUtil {
                 configUtil.machineName = InetAddress.getLocalHost().getHostName().toLowerCase();
                 configUtil.regClientVersion = env.getProperty("mosip.id.regclient.current.version");
                 configUtil.selectedLanguages = env.getProperty("mosip.selected.languages");
+                IS_TPM_AVAILABLE = clientCryptoFacade.getClientSecurity().isTPMInstance();
+
                 syncClientSettings();
                 if(!IS_NETWORK_AVAILABLE) {
                     System.out.println("Nerwork Not available for Host : " + env.getProperty("mosip.internal.host") + "  Do you want to Continue (Y-Yes, N-No)");
