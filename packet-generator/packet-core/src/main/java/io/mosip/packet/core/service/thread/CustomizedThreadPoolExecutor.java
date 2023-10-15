@@ -1,6 +1,6 @@
 package io.mosip.packet.core.service.thread;
 
-import com.google.gson.Gson;
+import io.mosip.packet.core.util.FixedListQueue;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -19,7 +19,9 @@ public class CustomizedThreadPoolExecutor {
     private long totalTaskCount = 0;
     private long totalCompletedTaskCount = 0;
     private Timer watch = null;
+    private Timer estimateTimer = null;
     private String NAME;
+    private FixedListQueue<Long> timeConsumptionPerMin;
 
     public CustomizedThreadPoolExecutor(Integer threadPoolCount, Integer maxThreadCount, Integer maxThreadExecCount, String poolName) {
         this.NAME = poolName;
@@ -27,6 +29,21 @@ public class CustomizedThreadPoolExecutor {
         this.MAX_THREAD_EXE_COUNT = maxThreadExecCount;
         for(int i = 1; i <= threadPoolCount; i++)
             poolMap.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
+
+        estimateTimer = new Timer("Estimate Time Calculator");
+        estimateTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if(TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
+                    Long avgTime = 0l;
+                    Long[] consumedTimeList = TIMECONSUPTIONQUEUE.toArray(new Long[TIMECONSUPTIONQUEUE.size()]);
+                    Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
+                    int noOfRecords = consumedTimeList.length;
+                    avgTime = TotalSum / noOfRecords;
+                    timeConsumptionPerMin.add(avgTime);
+                }
+            }
+        }, 0, 60000L);
 
         watch = new Timer("ThreadPool_Wathcer");
         watch.schedule(new TimerTask() {
@@ -70,8 +87,8 @@ public class CustomizedThreadPoolExecutor {
 
                 if(totalTaskCount > 0 || totalCount > 0) {
                     // Calculating Estimated Time of Process Completion
-                    if(TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
-                        Long[] consumedTimeList = TIMECONSUPTIONQUEUE.toArray(new Long[TIMECONSUPTIONQUEUE.size()]);
+                    if(timeConsumptionPerMin != null && timeConsumptionPerMin.size() > 0) {
+                        Long[] consumedTimeList = timeConsumptionPerMin.toArray(new Long[timeConsumptionPerMin.size()]);
                         Long totalRecords = TOTAL_RECORDS_FOR_PROCESS;
                         Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
                         int noOfRecords = consumedTimeList.length;
