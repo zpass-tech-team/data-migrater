@@ -57,7 +57,6 @@ public class CustomNativeRepositoryImpl implements CustomNativeRepository {
                 }
             }
         });
-        session.close();
     }
 
     public interface PacketTrackerInterface {
