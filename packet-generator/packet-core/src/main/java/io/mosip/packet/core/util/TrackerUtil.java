@@ -239,7 +239,7 @@ public class TrackerUtil {
             if(IS_TPM_AVAILABLE)
                 requestValue = clientCryptoFacade.encrypt(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), bos.toByteArray());
             else
-                requestValue = clientCryptoFacade.getClientSecurity().asymmetricEncrypt(bos.toByteArray());
+                requestValue = bos.toByteArray();
 
             oos.close();
             bos.close();
