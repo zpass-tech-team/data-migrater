@@ -22,6 +22,7 @@ public class CustomizedThreadPoolExecutor {
     private Timer estimateTimer = null;
     private String NAME;
     private FixedListQueue<Long> timeConsumptionPerMin;
+    private FixedListQueue<Integer> countOfProcessPerMin;
 
     public CustomizedThreadPoolExecutor(Integer threadPoolCount, Integer maxThreadCount, Integer maxThreadExecCount, String poolName) {
         this.NAME = poolName;
@@ -41,6 +42,8 @@ public class CustomizedThreadPoolExecutor {
                     int noOfRecords = consumedTimeList.length;
                     avgTime = TotalSum / noOfRecords;
                     timeConsumptionPerMin.add(avgTime);
+                    countOfProcessPerMin.add(noOfRecords);
+                    TIMECONSUPTIONQUEUE.clear();
                 }
             }
         }, 0, 60000L);
@@ -92,14 +95,20 @@ public class CustomizedThreadPoolExecutor {
                         Long totalRecords = TOTAL_RECORDS_FOR_PROCESS;
                         Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
                         int noOfRecords = consumedTimeList.length;
+
+                        Integer[] consumedCountList = countOfProcessPerMin.toArray(new Integer[countOfProcessPerMin.size()]);
+                        Integer TotalCountSum = Arrays.stream(consumedCountList).mapToInt(Integer::intValue).sum();
+                        int noOfCountRecords = consumedCountList.length;
+                        int avgCount = TotalCountSum/noOfCountRecords;
+
                         Long remainingRecords = totalRecords - completedCount;
                         avgTime = TotalSum / noOfRecords;
-                        Long timeRequired = avgTime * remainingRecords;
-                        long convert = TimeUnit.MINUTES.convert(timeRequired, TimeUnit.NANOSECONDS);
-                        totalHours = (int) (convert / 60);
+                        Long totalTimeRequired = (remainingRecords / avgCount) * 60;
+
+                        totalHours = (int) (totalTimeRequired / 60);
                         totalDays = (int) totalHours / 24;
                         totalHours = (int) (totalHours % 24);
-                        remainingMinutes = (int) (convert % 60);
+                        remainingMinutes = (int) (totalTimeRequired % 60);
                     }
 
                     System.out.println("Pool Name : " + NAME + " Avg Time : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+completedCount));
