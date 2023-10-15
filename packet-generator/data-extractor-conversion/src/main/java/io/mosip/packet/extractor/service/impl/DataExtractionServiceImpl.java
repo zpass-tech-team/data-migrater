@@ -241,7 +241,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 @SneakyThrows
                 @Override
                 public void run() {
-                    if(!backendProcess) {
+                    if(!backendProcess && threadPool.isBatchAcceptRequest()) {
                         List<String> list = new ArrayList<>();
                         list.add(TrackerStatus.QUEUED.toString());
                         customNativeRepository.getPacketTrackerData(list, new CustomNativeRepositoryImpl.PacketTrackerInterface() {
@@ -249,13 +249,11 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                             public void processData(Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception {
                                 backendProcess = true;
 
-                                if(threadPool.isBatchAcceptRequest()) {
-                                    BaseThreadController baseThreadController = new BaseThreadController();
-                                    baseThreadController.setSetter(setter);
+                                BaseThreadController baseThreadController = new BaseThreadController();
+                                baseThreadController.setSetter(setter);
 
-                                    if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, dataHashMap))
-                                        threadPool.ExecuteTask(baseThreadController);
-                                }
+                                if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, dataHashMap))
+                                    threadPool.ExecuteTask(baseThreadController);
                             }
                         });
                         backendProcess = false;
