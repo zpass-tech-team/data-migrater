@@ -60,7 +60,7 @@ public class CustomizedThreadPoolExecutor {
                     List<Integer> removeIndex = new ArrayList<>();
                     for(int i=0; i < poolMap.size(); i++) {
                         ThreadPoolExecutor entry = poolMap.get(i);
-                        if(entry.getActiveCount() ==0 && entry.getTaskCount() > 0) {
+                        if(entry.getActiveCount() ==0 && entry.getTaskCount() > 0 && entry.getCompletedTaskCount() > 0 && entry.getTaskCount() == entry.getCompletedTaskCount()) {
                             totalTaskCount += entry.getTaskCount();
                             totalCompletedTaskCount += entry.getCompletedTaskCount();
                             removeIndex.add(i);
