@@ -256,20 +256,23 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         list.add(TrackerStatus.QUEUED.toString());
                         List<PacketTracker> packetList =  packetTrackerRepository.findByStatusIn(list);
 
-                        for(PacketTracker tracker : packetList) {
-                            if(threadPool.isBatchAcceptRequest()) {
-                                backendProcess = true;
-                                ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(tracker.getRequest())) : Base64.getDecoder().decode(tracker.getRequest()));
-                                ObjectInputStream is = new ObjectInputStream(bis);
-                                BaseThreadController baseThreadController = new BaseThreadController();
-                                baseThreadController.setSetter(setter);
+                        if(packetList.size() > 0)
+                            for(PacketTracker tracker : packetList) {
+                                if(threadPool.isBatchAcceptRequest()) {
+                                    backendProcess = true;
+                                    ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(tracker.getRequest())) : Base64.getDecoder().decode(tracker.getRequest()));
+                                    ObjectInputStream is = new ObjectInputStream(bis);
+                                    BaseThreadController baseThreadController = new BaseThreadController();
+                                    baseThreadController.setSetter(setter);
 
-                                if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, (Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject()))
-                                    threadPool.ExecuteTask(baseThreadController);
-                            } else {
-                                break;
+                                    if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, (Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject()))
+                                        threadPool.ExecuteTask(baseThreadController);
+                                } else {
+                                    break;
+                                }
                             }
-                        }
+                        else
+                            isRecordPresentForProcess = false;
 
 /*                        customNativeRepository.getPacketTrackerData(list, new CustomNativeRepositoryImpl.PacketTrackerInterface() {
                             @Override
@@ -290,12 +293,11 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
             Date startTime = new Date();
             dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap);
-            isRecordPresentForProcess = false;
 
             do {
                 System.out.println("Thread Sllep for Completing Program 10s");
                 Thread.sleep(10000);
-            } while(isRecordPresentForProcess || !threadPool.isTaskCompleted() || backendProcess);
+            } while(isRecordPresentForProcess || !threadPool.isTaskCompleted() || backendProcess || !threadPool.isBatchAcceptRequest());
 
             System.out.println("Start Time " + startTime);
             System.out.println("End Time Time " + new Date());

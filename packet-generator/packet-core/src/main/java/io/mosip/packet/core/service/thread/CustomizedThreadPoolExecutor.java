@@ -121,44 +121,32 @@ public class CustomizedThreadPoolExecutor {
         int threadCount = 0;
         boolean taskAdded = false;
 
-        do {
-            if(!noSlotAvailable) {
-                for(ThreadPoolExecutor entry : poolMap) {
-                    threadCount++;
-                    if(entry.getTaskCount() < maxThreadCount) {
-                        entry.execute(task);
-                        taskAdded=true;
-                        break;
-                    }
+        if(!noSlotAvailable) {
+            for(ThreadPoolExecutor entry : poolMap) {
+                threadCount++;
+                if(entry.getTaskCount() < maxThreadCount) {
+                    entry.execute(task);
+                    taskAdded=true;
 
                     if(threadCount == poolMap.size()) {
                         if(entry.getTaskCount() == maxThreadCount)
                             noSlotAvailable = true;
                     }
 
-                        /*else if(threadCount == maxThreadCount){
-                        noSlotAvailable = true;
-                    }*/
-                }
-            } else {
-                System.out.println("ExecuteTask Activate Sleeping 10S");
-                TimeUnit.SECONDS.sleep(10);
-            }
-        } while (noSlotAvailable || !taskAdded);
-    }
-
-    public boolean isTaskCompleted() throws InterruptedException {
-        boolean isCompleted = false;
-        while(!isCompleted) {
-            isCompleted = true;
-            for(ThreadPoolExecutor entry : poolMap) {
-                if(entry.getActiveCount() > 0) {
-                    isCompleted = false;
                     break;
                 }
             }
-            System.out.println("isTaskCompleted Activate Sleeping 10S");
-            TimeUnit.SECONDS.sleep(10);
+        }
+    }
+
+    public boolean isTaskCompleted() throws InterruptedException {
+        boolean isCompleted = true;
+
+        for(ThreadPoolExecutor entry : poolMap) {
+            if(entry.getActiveCount() > 0) {
+                isCompleted = false;
+                break;
+            }
         }
 
         if(isCompleted) {
