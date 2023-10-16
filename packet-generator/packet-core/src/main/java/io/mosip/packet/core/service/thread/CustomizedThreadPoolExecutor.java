@@ -129,9 +129,16 @@ public class CustomizedThreadPoolExecutor {
                         entry.execute(task);
                         taskAdded=true;
                         break;
-                    } else if(threadCount == maxThreadCount){
-                        noSlotAvailable = true;
                     }
+
+                    if(threadCount == poolMap.size()) {
+                        if(entry.getTaskCount() == maxThreadCount)
+                            noSlotAvailable = true;
+                    }
+
+                        /*else if(threadCount == maxThreadCount){
+                        noSlotAvailable = true;
+                    }*/
                 }
             } else {
                 System.out.println("ExecuteTask Activate Sleeping 10S");
