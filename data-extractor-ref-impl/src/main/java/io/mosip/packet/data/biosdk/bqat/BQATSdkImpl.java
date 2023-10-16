@@ -22,6 +22,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
 import static io.mosip.packet.core.constant.GlobalConfig.WRITE_BIOSDK_RESPONSE;
@@ -38,7 +39,7 @@ public class BQATSdkImpl implements BioSdkApiFactory {
     @Override
     public Double calculateBioQuality(BioSDKRequestWrapper bioSDKRequestWrapper) throws Exception {
         BQATRequest request = new BQATRequest();
-
+        Long startTime = System.nanoTime();
         request.setModality(BQATModalityType.valueOf(bioSDKRequestWrapper.getBiometricType()).getModality());
         request.setType(BQATFileType.valueOf(bioSDKRequestWrapper.getFormat()).getType());
         request.setData(Base64.getEncoder().encodeToString(((BIR)bioSDKRequestWrapper.getSegments().get(0)).getBdb()));
@@ -46,7 +47,8 @@ public class BQATSdkImpl implements BioSdkApiFactory {
         request.setTimestamp(LocalDateTime.now(ZoneId.of("UTC")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         BQATResponse response= (BQATResponse) restApiClient.postApi(ApiName.BQAT_BIOSDK_QUALITY_CHECK, null, "", request, BQATResponse.class);
         LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResults();
-
+        Long time = System.nanoTime() - startTime;
+        System.out.println("Time Taken to call BIOSDK is" + TimeUnit.MINUTES.convert(time, TimeUnit.NANOSECONDS));
         if(bioSDKResponse != null) {
             try {
                 if(bioSDKRequestWrapper.getIsOnlyForQualityCheck()) {
