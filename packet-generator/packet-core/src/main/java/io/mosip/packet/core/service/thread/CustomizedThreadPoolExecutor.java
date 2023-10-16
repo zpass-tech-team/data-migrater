@@ -36,8 +36,9 @@ public class CustomizedThreadPoolExecutor {
             @Override
             public void run() {
                 if(TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
+                    FixedListQueue<Long> listQueue = (FixedListQueue<Long>) TIMECONSUPTIONQUEUE.clone();
                     Long avgTime = 0l;
-                    Long[] consumedTimeList = TIMECONSUPTIONQUEUE.toArray(new Long[TIMECONSUPTIONQUEUE.size()]);
+                    Long[] consumedTimeList = listQueue.toArray(new Long[listQueue.size()]);
                     Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
                     int noOfRecords = consumedTimeList.length;
                     avgTime = TotalSum / noOfRecords;
@@ -91,13 +92,16 @@ public class CustomizedThreadPoolExecutor {
                 if(totalTaskCount > 0 || totalCount > 0) {
                     // Calculating Estimated Time of Process Completion
                     if(timeConsumptionPerMin != null && timeConsumptionPerMin.size() > 0) {
-                        Long[] consumedTimeList = (Long[]) timeConsumptionPerMin.toArray();
-                        System.out.println("consumedTimeList size " + consumedTimeList.length);
+                        FixedListQueue<Long> listQueue = (FixedListQueue<Long>) timeConsumptionPerMin.clone();
+                        FixedListQueue<Integer> countQueue = (FixedListQueue<Integer>)countOfProcessPerMin.clone();
+
+                        Long[] consumedTimeList = listQueue.toArray(new Long[listQueue.size()]);
+                        System.out.println("Queue List Size " + consumedTimeList.length);
                         Long totalRecords = TOTAL_RECORDS_FOR_PROCESS;
                         Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
                         int noOfRecords = consumedTimeList.length;
 
-                        Integer[] consumedCountList = countOfProcessPerMin.toArray(new Integer[countOfProcessPerMin.size()]);
+                        Integer[] consumedCountList = countQueue.toArray(new Integer[countQueue.size()]);
                         Integer TotalCountSum = Arrays.stream(consumedCountList).mapToInt(Integer::intValue).sum();
                         int noOfCountRecords = consumedCountList.length;
                         int avgCount = TotalCountSum/noOfCountRecords;
