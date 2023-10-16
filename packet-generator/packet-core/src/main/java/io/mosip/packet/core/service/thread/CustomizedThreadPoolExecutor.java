@@ -142,14 +142,14 @@ public class CustomizedThreadPoolExecutor {
         }, 0, DELAY_SECONDS);
     }
 
-    public void ExecuteTask(Runnable task) throws InterruptedException {
+    public synchronized void ExecuteTask(Runnable task) throws InterruptedException {
         int threadCount = 0;
         System.out.println("Entering Execute Taxk");
         if(!noSlotAvailable) {
             System.out.println("Slot Available");
 
             for(ThreadPoolExecutor entry : poolMap) {
-                threadCount++;
+                ++threadCount;
                 System.out.println("entry.getTaskCount()" + entry.getTaskCount());
                 System.out.println("maxThreadCount" + maxThreadCount );
                 if(entry.getTaskCount() < maxThreadCount) {
