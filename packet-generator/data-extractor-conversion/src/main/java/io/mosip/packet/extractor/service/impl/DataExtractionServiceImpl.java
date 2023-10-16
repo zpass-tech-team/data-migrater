@@ -252,6 +252,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 @Override
                 public void run() {
                     if(!backendProcess && threadPool.isBatchAcceptRequest()) {
+                        backendProcess = true;
                         List<String> list = new ArrayList<>();
                         list.add(TrackerStatus.QUEUED.toString());
                         List<PacketTracker> packetList =  packetTrackerRepository.findByStatusIn(list);
@@ -259,7 +260,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         if(packetList.size() > 0)
                             for(PacketTracker tracker : packetList) {
                                 if(threadPool.isBatchAcceptRequest()) {
-                                    backendProcess = true;
                                     ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(tracker.getRequest())) : Base64.getDecoder().decode(tracker.getRequest()));
                                     ObjectInputStream is = new ObjectInputStream(bis);
                                     BaseThreadController baseThreadController = new BaseThreadController();
