@@ -144,7 +144,6 @@ public class CustomizedThreadPoolExecutor {
 
     public void ExecuteTask(Runnable task) throws InterruptedException {
         int threadCount = 0;
-        boolean taskAdded = false;
         System.out.println("Entering Execute Taxk");
         if(!noSlotAvailable) {
             System.out.println("Slot Available");
@@ -153,18 +152,18 @@ public class CustomizedThreadPoolExecutor {
                 threadCount++;
                 if(entry.getTaskCount() < maxThreadCount) {
                     entry.execute(task);
-                    taskAdded=true;
                     System.out.println("Added New Task");
                     System.out.println("threadCount" + threadCount);
                     System.out.println("poolMap.size()" + poolMap.size());
                     if(threadCount == poolMap.size()) {
                         System.out.println("This is Last Pool");
-                        if(entry.getTaskCount() == maxThreadCount)
+                        if(entry.getTaskCount() == maxThreadCount) {
                             System.out.println("Setting noslotAvailalble as true");
                             noSlotAvailable = true;
-                    }
-
-                    break;
+                        }
+                        break;
+                    } else
+                        break;
                 }
             }
         }
