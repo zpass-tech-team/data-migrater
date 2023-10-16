@@ -251,11 +251,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 @SneakyThrows
                 @Override
                 public void run() {
+                    List<String> list = new ArrayList<>();
+                    list.add(TrackerStatus.QUEUED.toString());
+                    List<PacketTracker> packetList =  packetTrackerRepository.findByStatusIn(list);
+                    System.out.println("No of Records Present" + packetList.size());
+
                     if(!backendProcess && threadPool.isBatchAcceptRequest()) {
+                        System.out.println("Batch Accepting for Process Records");
                         backendProcess = true;
-                        List<String> list = new ArrayList<>();
-                        list.add(TrackerStatus.QUEUED.toString());
-                        List<PacketTracker> packetList =  packetTrackerRepository.findByStatusIn(list);
 
                         if(packetList.size() > 0)
                             for(PacketTracker tracker : packetList) {
