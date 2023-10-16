@@ -91,7 +91,7 @@ public class CustomizedThreadPoolExecutor {
                 if(totalTaskCount > 0 || totalCount > 0) {
                     // Calculating Estimated Time of Process Completion
                     if(timeConsumptionPerMin != null && timeConsumptionPerMin.size() > 0) {
-                        Long[] consumedTimeList = timeConsumptionPerMin.toArray(new Long[100]);
+                        Long[] consumedTimeList = (Long[]) timeConsumptionPerMin.toArray();
                         System.out.println("consumedTimeList size " + consumedTimeList.length);
                         Long totalRecords = TOTAL_RECORDS_FOR_PROCESS;
                         Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
