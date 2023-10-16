@@ -150,6 +150,8 @@ public class CustomizedThreadPoolExecutor {
 
             for(ThreadPoolExecutor entry : poolMap) {
                 threadCount++;
+                System.out.println("entry.getTaskCount()" + entry.getTaskCount());
+                System.out.println("maxThreadCount" + maxThreadCount );
                 if(entry.getTaskCount() < maxThreadCount) {
                     entry.execute(task);
                     System.out.println("Added New Task");
