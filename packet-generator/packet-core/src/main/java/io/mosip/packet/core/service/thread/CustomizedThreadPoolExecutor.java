@@ -69,7 +69,7 @@ public class CustomizedThreadPoolExecutor {
                         }
                     }
 
-                    for(Integer i : removeIndex) {
+                    for(int i : removeIndex) {
                         System.out.println("Removing Pool" + i );
                         ThreadPoolExecutor entry = poolMap.get(i);
                         entry.shutdown();
