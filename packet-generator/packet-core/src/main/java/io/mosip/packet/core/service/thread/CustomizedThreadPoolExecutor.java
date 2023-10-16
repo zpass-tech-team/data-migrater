@@ -69,6 +69,13 @@ public class CustomizedThreadPoolExecutor {
                         }
                     }
 
+                    Collections.sort(removeIndex, new Comparator<Integer>() {
+                        @Override
+                        public int compare(Integer o1, Integer o2) {
+                            return o2.compareTo(o1);
+                        }
+                    });
+
                     for(int i : removeIndex) {
                         System.out.println("Removing Pool" + i );
                         ThreadPoolExecutor entry = poolMap.get(i);
