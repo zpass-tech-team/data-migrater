@@ -1,6 +1,7 @@
 package io.mosip.packet.core.service.thread;
 
 import io.mosip.packet.core.util.FixedListQueue;
+import org.apache.commons.collections.ArrayStack;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -57,18 +58,33 @@ public class CustomizedThreadPoolExecutor {
                 if(noSlotAvailable) {
                     System.out.println("NO Slot Available is True");
                     boolean isSuccess = false;
-                    for(ThreadPoolExecutor entry : poolMap) {
+                    List<ThreadPoolExecutor> poolMap1 = new ArrayList<>();
+                    List<Integer> removeIndex = new ArrayList<>();
+                    for(int i=0; i < poolMap.size(); i++) {
+                        ThreadPoolExecutor entry = poolMap.get(i);
                         if(entry.getActiveCount() ==0) {
                             System.out.println("Initializing Thread Pool" );
                             totalTaskCount += entry.getTaskCount();
                             totalCompletedTaskCount += entry.getCompletedTaskCount();
-                            entry.shutdown();
-                            entry.purge();
-                            poolMap.remove(entry);
-                            poolMap.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
+                            removeIndex.add(i);
+                            poolMap1.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
                             isSuccess=true;
                         }
                     }
+
+                    for(Integer i : removeIndex) {
+                        System.out.println("Removing Pool" + i );
+                        ThreadPoolExecutor entry = poolMap.get(i);
+                        entry.shutdown();
+                        entry.purge();
+                        poolMap.remove(i);
+                    }
+
+                    System.out.println("Adding New Pol" + poolMap1.toArray() );
+                    poolMap.addAll(poolMap1);
+
+                    System.out.println("After Adding New Pol" + poolMap.toArray() );
+                    System.out.println("Is Success" + isSuccess );
 
                     if(isSuccess)
                         noSlotAvailable=false;
@@ -128,8 +144,10 @@ public class CustomizedThreadPoolExecutor {
     public void ExecuteTask(Runnable task) throws InterruptedException {
         int threadCount = 0;
         boolean taskAdded = false;
-
+        System.out.println("Entering Execute Taxk");
         if(!noSlotAvailable) {
+            System.out.println("Slot Available");
+
             for(ThreadPoolExecutor entry : poolMap) {
                 threadCount++;
                 if(entry.getTaskCount() < maxThreadCount) {
