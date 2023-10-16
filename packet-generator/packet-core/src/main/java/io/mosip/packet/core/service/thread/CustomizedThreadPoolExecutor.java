@@ -138,6 +138,7 @@ public class CustomizedThreadPoolExecutor {
 
                     if(threadCount == poolMap.size()) {
                         if(entry.getTaskCount() == maxThreadCount)
+                            System.out.println("Setting noslotAvailalble as true");
                             noSlotAvailable = true;
                     }
 
