@@ -57,6 +57,7 @@ public class CustomizedThreadPoolExecutor {
                     boolean isSuccess = false;
                     for(ThreadPoolExecutor entry : poolMap) {
                         if(entry.getActiveCount() ==0) {
+                            System.out.println("Initializing Thread Pool" );
                             totalTaskCount += entry.getTaskCount();
                             totalCompletedTaskCount += entry.getCompletedTaskCount();
                             entry.shutdown();
