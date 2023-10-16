@@ -246,7 +246,20 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 }
             };
 
-            processor = new Timer("Packet_Processor");
+            ResultSetter DataProcessor = new ResultSetter() {
+                @SneakyThrows
+                @Override
+                public void setResult(Object obj) {
+                    BaseThreadController baseThreadController = new BaseThreadController();
+                    baseThreadController.setSetter(setter);
+                    Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap = (Map<FieldCategory, LinkedHashMap<String, Object>>) obj;
+                    if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, dataHashMap))
+                        threadPool.ExecuteTask(baseThreadController);
+                    trackerUtil.addTrackerLocalEntry(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()).toString(), null, TrackerStatus.STARTED, dbImportRequest.getProcess(), null, SESSION_KEY, getActivityName());
+                }
+            };
+
+ /*           processor = new Timer("Packet_Processor");
             processor.schedule(new TimerTask() {
                 @SneakyThrows
                 @Override
@@ -280,25 +293,13 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         else
                             isRecordPresentForProcess = false;
 
-/*                        customNativeRepository.getPacketTrackerData(list, new CustomNativeRepositoryImpl.PacketTrackerInterface() {
-                            @Override
-                            public void processData(Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception {
-                                backendProcess = true;
-
-                                BaseThreadController baseThreadController = new BaseThreadController();
-                                baseThreadController.setSetter(setter);
-
-                                if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, dataHashMap))
-                                    threadPool.ExecuteTask(baseThreadController);
-                            }
-                        });*/
                         backendProcess = false;
                     }
                 }
-            }, 0, DELAY_SECONDS);
+            }, 0, DELAY_SECONDS); */
 
             Date startTime = new Date();
-            dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap);
+            dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap, DataProcessor);
 
             do {
                 System.out.println("Thread Sleeping for some time 60S");
