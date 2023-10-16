@@ -134,6 +134,7 @@ public class CustomizedThreadPoolExecutor {
                     }
                 }
             } else {
+                System.out.println("ExecuteTask Activate Sleeping 10S");
                 TimeUnit.SECONDS.sleep(10);
             }
         } while (noSlotAvailable || !taskAdded);
@@ -149,6 +150,7 @@ public class CustomizedThreadPoolExecutor {
                     break;
                 }
             }
+            System.out.println("isTaskCompleted Activate Sleeping 10S");
             TimeUnit.SECONDS.sleep(10);
         }
 

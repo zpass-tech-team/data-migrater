@@ -289,6 +289,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             isRecordPresentForProcess = false;
 
             do {
+                System.out.println("Thread Sllep for Completing Program 10s");
                 Thread.sleep(10000);
             } while(isRecordPresentForProcess || !threadPool.isTaskCompleted() || backendProcess);
 
