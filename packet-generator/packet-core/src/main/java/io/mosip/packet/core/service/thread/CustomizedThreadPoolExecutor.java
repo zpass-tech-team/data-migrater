@@ -54,16 +54,13 @@ public class CustomizedThreadPoolExecutor {
         watch.schedule(new TimerTask() {
             @Override
             public void run() {
-                System.out.println("Entering ThreadPool_Wathcer");
                 if(noSlotAvailable) {
-                    System.out.println("NO Slot Available is True");
                     boolean isSuccess = false;
                     List<ThreadPoolExecutor> poolMap1 = new ArrayList<>();
                     List<Integer> removeIndex = new ArrayList<>();
                     for(int i=0; i < poolMap.size(); i++) {
                         ThreadPoolExecutor entry = poolMap.get(i);
-                        if(entry.getActiveCount() ==0) {
-                            System.out.println("Initializing Thread Pool" );
+                        if(entry.getActiveCount() ==0 && entry.getTaskCount() > 0) {
                             totalTaskCount += entry.getTaskCount();
                             totalCompletedTaskCount += entry.getCompletedTaskCount();
                             removeIndex.add(i);
@@ -80,12 +77,9 @@ public class CustomizedThreadPoolExecutor {
                         poolMap.remove(i);
                     }
 
-                    System.out.println("Adding New Pol" + poolMap1.toArray() );
                     if(poolMap1.size() > 0)
                         poolMap.addAll(poolMap1);
 
-                    System.out.println("After Adding New Pol" + poolMap.toArray() );
-                    System.out.println("Is Success" + isSuccess );
 
                     if(isSuccess)
                         noSlotAvailable=false;
@@ -116,7 +110,6 @@ public class CustomizedThreadPoolExecutor {
                         FixedListQueue<Integer> countQueue = (FixedListQueue<Integer>)countOfProcessPerMin.clone();
 
                         Long[] consumedTimeList = listQueue.toArray(new Long[listQueue.size()]);
-                        System.out.println("Queue List Size " + consumedTimeList.length);
                         Long totalRecords = TOTAL_RECORDS_FOR_PROCESS;
                         Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
                         int noOfRecords = consumedTimeList.length;
@@ -143,13 +136,9 @@ public class CustomizedThreadPoolExecutor {
     }
 
     public synchronized void ExecuteTask(Runnable task) throws InterruptedException {
-        System.out.println("Entering Execute Taxk");
         if(!noSlotAvailable) {
-            System.out.println("Slot Available");
 
             for(ThreadPoolExecutor entry : poolMap) {
-                System.out.println("entry.getTaskCount()" + entry.getTaskCount());
-                System.out.println("maxThreadCount" + maxThreadCount );
                 if(entry.getTaskCount() < maxThreadCount) {
                     entry.execute(task);
                     break;
@@ -162,8 +151,9 @@ public class CustomizedThreadPoolExecutor {
                     slotAvailable = true;
             }
 
-            if(!slotAvailable)
-                    noSlotAvailable = true;
+            if(!slotAvailable) {
+                noSlotAvailable = true;
+            }
         }
     }
 
