@@ -81,7 +81,8 @@ public class CustomizedThreadPoolExecutor {
                     }
 
                     System.out.println("Adding New Pol" + poolMap1.toArray() );
-                    poolMap.addAll(poolMap1);
+                    if(poolMap1.size() > 0)
+                        poolMap.addAll(poolMap1);
 
                     System.out.println("After Adding New Pol" + poolMap.toArray() );
                     System.out.println("Is Success" + isSuccess );
