@@ -1,7 +1,6 @@
 package io.mosip.packet.core.service.thread;
 
 import io.mosip.packet.core.util.FixedListQueue;
-import org.apache.commons.collections.ArrayStack;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -150,7 +149,6 @@ public class CustomizedThreadPoolExecutor {
 
                 for(ThreadPoolExecutor entry : poolMap) {
                     if(entry.getTaskCount() < maxThreadCount) {
-                        System.out.println("Adding Thread for Execution");
                         entry.execute(task);
                         taskAdded=true;
                         break;
@@ -167,7 +165,8 @@ public class CustomizedThreadPoolExecutor {
                     noSlotAvailable = true;
                 }
             }  else {
-                TimeUnit.SECONDS.sleep(10);
+                TimeUnit.SECONDS.sleep(30);
+                System.out.println("Trying to Repush the Data to Thread");
             }
         } while (noSlotAvailable || !taskAdded);
 

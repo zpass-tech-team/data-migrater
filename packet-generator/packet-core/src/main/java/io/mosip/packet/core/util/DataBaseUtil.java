@@ -67,7 +67,6 @@ public class DataBaseUtil {
 
     public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashSet<String>> fieldsCategoryMap, ResultSetter setter) throws Exception {
         Statement statement1 = conn.createStatement();
-        int count = 0;
         try {
             if(conn != null) {
                 List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
@@ -98,8 +97,6 @@ public class DataBaseUtil {
                                         statement2.close();
                                 }
                             }
-                            System.out.println("Writing Record into Local Database" + ++count);
- //                           trackerUtil.addTrackerLocalEntry(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()).toString(), null, TrackerStatus.QUEUED, dbImportRequest.getProcess(), null, SESSION_KEY, GlobalConfig.getActivityName());
                             setter.setResult(dataHashMap);
                         } catch (Exception e) {
                             e.printStackTrace();
