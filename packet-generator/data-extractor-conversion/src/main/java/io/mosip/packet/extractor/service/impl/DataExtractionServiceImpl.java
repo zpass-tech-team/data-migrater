@@ -268,9 +268,12 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                     BaseThreadController baseThreadController = new BaseThreadController();
                                     baseThreadController.setSetter(setter);
 
-                                    if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, (Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject()))
+                                    Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap = (Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject();
+                                    if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, dataHashMap))
                                         threadPool.ExecuteTask(baseThreadController);
+                                    trackerUtil.addTrackerLocalEntry(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()).toString(), null, TrackerStatus.STARTED, dbImportRequest.getProcess(), null, SESSION_KEY, getActivityName());
                                 } else {
+                                    System.out.println("System Queue full. Skipping");
                                     break;
                                 }
                             }
