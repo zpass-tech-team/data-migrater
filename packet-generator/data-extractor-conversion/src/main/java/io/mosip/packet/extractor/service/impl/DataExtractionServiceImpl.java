@@ -295,8 +295,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap);
 
             do {
-                System.out.println("Thread Sllep for Completing Program 10s");
-                Thread.sleep(10000);
+                Thread.sleep(60000);
             } while(isRecordPresentForProcess || !threadPool.isTaskCompleted() || backendProcess || !threadPool.isBatchAcceptRequest());
 
             System.out.println("Start Time " + startTime);
