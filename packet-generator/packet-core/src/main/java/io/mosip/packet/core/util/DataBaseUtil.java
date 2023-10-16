@@ -96,6 +96,7 @@ public class DataBaseUtil {
                                         statement2.close();
                                 }
                             }
+                            System.out.println("Writing Record into Local Database");
                             trackerUtil.addTrackerLocalEntry(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()).toString(), null, TrackerStatus.QUEUED, dbImportRequest.getProcess(), dataHashMap, SESSION_KEY, GlobalConfig.getActivityName());
                         } catch (Exception e) {
                             e.printStackTrace();
