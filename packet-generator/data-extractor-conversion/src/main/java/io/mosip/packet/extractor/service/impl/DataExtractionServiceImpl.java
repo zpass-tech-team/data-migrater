@@ -257,14 +257,18 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         List<PacketTracker> packetList =  packetTrackerRepository.findByStatusIn(list);
 
                         for(PacketTracker tracker : packetList) {
-                            backendProcess = true;
-                            ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(tracker.getRequest())) : Base64.getDecoder().decode(tracker.getRequest()));
-                            ObjectInputStream is = new ObjectInputStream(bis);
-                            BaseThreadController baseThreadController = new BaseThreadController();
-                            baseThreadController.setSetter(setter);
+                            if(threadPool.isBatchAcceptRequest()) {
+                                backendProcess = true;
+                                ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(tracker.getRequest())) : Base64.getDecoder().decode(tracker.getRequest()));
+                                ObjectInputStream is = new ObjectInputStream(bis);
+                                BaseThreadController baseThreadController = new BaseThreadController();
+                                baseThreadController.setSetter(setter);
 
-                            if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, (Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject()))
-                                threadPool.ExecuteTask(baseThreadController);
+                                if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, (Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject()))
+                                    threadPool.ExecuteTask(baseThreadController);
+                            } else {
+                                break;
+                            }
                         }
 
 /*                        customNativeRepository.getPacketTrackerData(list, new CustomNativeRepositoryImpl.PacketTrackerInterface() {
