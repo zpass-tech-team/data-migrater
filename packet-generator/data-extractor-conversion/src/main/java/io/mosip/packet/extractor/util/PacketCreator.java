@@ -285,6 +285,7 @@ public class PacketCreator {
                                 if (bioQualityScore==null) {
                                     if(biosdkCheckEnabled) {
                                         BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
+                                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Fetch Biometric Type For BIOSDK Quality Calculation" + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
 
                                         BioSDKRequestWrapper requestWrapper = new BioSDKRequestWrapper();
                                         requestWrapper.setSegments(new ArrayList<>());
@@ -293,14 +294,20 @@ public class PacketCreator {
                                         requestWrapper.setFormat(bioData.getFormat().toString());
                                         requestWrapper.setInputObject(csvMap);
                                         requestWrapper.setIsOnlyForQualityCheck(IS_ONLY_FOR_QUALITY_CHECK);
+
                                         try {
                                             if(IS_ONLY_FOR_QUALITY_CHECK) {
                                                 Map<String, BioSdkApiFactory> bioSdkMap = bioSDKConfig.getBioSDKList().get(biometricType);
+                                                LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Fetch BIOSDK List from Configuration " + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
 
                                                 for(Map.Entry<String, BioSdkApiFactory> bioSdkEntry : bioSdkMap.entrySet()) {
                                                     requestWrapper.setBiometricField(entry.getKey() + "_" + bioSdkEntry.getKey());
 
+                                                    LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Before Calling BIOSDK Call" + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
+
                                                     Double score = bioSdkEntry.getValue().calculateBioQuality(requestWrapper);
+                                                    LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Calling BIOSDK Call" + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
+
                                                     String currentVal = csvMap.get(entry.getKey());
                                                     if(bioSDKConfig.getBioSDKList().get(biometricType).size() > 1) {
                                                         if(currentVal == null)
@@ -311,6 +318,7 @@ public class PacketCreator {
                                                         currentVal = score.toString();
                                                     }
                                                     csvMap.put(entry.getKey(),  currentVal.toString());
+                                                    LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Update the Score into CSVMAP" + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
                                                 }
                                             } else {
                                                 Double score = bioSDKConfig.getDefaultBioSDK().get(biometricType).calculateBioQuality(requestWrapper);
