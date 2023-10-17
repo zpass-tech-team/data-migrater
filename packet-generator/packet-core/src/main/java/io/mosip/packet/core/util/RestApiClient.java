@@ -83,18 +83,18 @@ public class RestApiClient {
 	 * Gets the api. *
 	 *
 	 * @param              <T> the generic type
-	 * @param getURI       the get URI
+	 * @param  <T>     the get URI
 	 * @param responseType the response type
 	 * @return the api
 	 * @throws Exception
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T getApi(URI uri, Class<?> responseType) throws Exception {
+	public <T> T getApi(URI uri, Class<?> responseType, boolean isAuthRequired) throws Exception {
 		RestTemplate restTemplate;
 		T result = null;
 		try {
 			restTemplate = getRestTemplate();
-			result = (T) restTemplate.exchange(uri, HttpMethod.GET, setRequestHeader(null, null), responseType)
+			result = (T) restTemplate.exchange(uri, HttpMethod.GET, setRequestHeader(null, null, isAuthRequired), responseType)
 					.getBody();
 		} catch (Exception e) {
 			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
@@ -118,7 +118,7 @@ public class RestApiClient {
 	 * @return the t
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T postApi(String uri, MediaType mediaType, Object requestType, Class<?> responseClass) throws Exception {
+	public <T> T postApi(String uri, MediaType mediaType, Object requestType, Class<?> responseClass, boolean isAuthRequired) throws Exception {
 
 		RestTemplate restTemplate;
 		T result = null;
@@ -126,7 +126,7 @@ public class RestApiClient {
 			restTemplate = getRestTemplate();
 			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
 					APPLICATION_ID, uri);
-			result = (T) restTemplate.postForObject(uri, setRequestHeader(requestType, mediaType), responseClass);
+			result = (T) restTemplate.postForObject(uri, setRequestHeader(requestType, mediaType, isAuthRequired), responseClass);
 
 		} catch (Exception e) {
 			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
@@ -151,7 +151,7 @@ public class RestApiClient {
 	 * @return the t
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T patchApi(String uri, MediaType mediaType, Object requestType, Class<?> responseClass)
+	public <T> T patchApi(String uri, MediaType mediaType, Object requestType, Class<?> responseClass, boolean isAuthRequired)
 			throws Exception {
 
 		RestTemplate restTemplate;
@@ -160,7 +160,7 @@ public class RestApiClient {
 			restTemplate = getRestTemplate();
 			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
 					APPLICATION_ID, uri);
-			result = (T) restTemplate.patchForObject(uri, setRequestHeader(requestType, mediaType), responseClass);
+			result = (T) restTemplate.patchForObject(uri, setRequestHeader(requestType, mediaType, isAuthRequired), responseClass);
 
 		} catch (Exception e) {
 
@@ -172,8 +172,8 @@ public class RestApiClient {
 		return result;
 	}
 
-	public <T> T patchApi(String uri, Object requestType, Class<?> responseClass) throws Exception {
-		return patchApi(uri, null, requestType, responseClass);
+	public <T> T patchApi(String uri, Object requestType, Class<?> responseClass, boolean isAuthRequired) throws Exception {
+		return patchApi(uri, null, requestType, responseClass, isAuthRequired);
 	}
 
 	/**
@@ -193,7 +193,7 @@ public class RestApiClient {
 	 *             the exception
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T putApi(String uri, Object requestType, Class<?> responseClass, MediaType mediaType) throws Exception {
+	public <T> T putApi(String uri, Object requestType, Class<?> responseClass, MediaType mediaType, boolean isAuthRequired) throws Exception {
 
 		RestTemplate restTemplate;
 		T result = null;
@@ -204,7 +204,7 @@ public class RestApiClient {
 					APPLICATION_ID, uri);
 
 			response = (ResponseEntity<T>) restTemplate.exchange(uri, HttpMethod.PUT,
-					setRequestHeader(requestType.toString(), mediaType), responseClass);
+					setRequestHeader(requestType.toString(), mediaType, isAuthRequired), responseClass);
 			result = response.getBody();
 		} catch (Exception e) {
 
@@ -248,9 +248,9 @@ public class RestApiClient {
 	 * @throws IOException
 	 */
 	@SuppressWarnings("unchecked")
-	private HttpEntity<Object> setRequestHeader(Object requestType, MediaType mediaType) throws IOException {
+	private HttpEntity<Object> setRequestHeader(Object requestType, MediaType mediaType, boolean authRequired) throws IOException {
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
-		if(IS_NETWORK_AVAILABLE)
+		if(IS_NETWORK_AVAILABLE && authRequired)
 			headers.add("Cookie", getToken());
 		if (mediaType != null) {
 			headers.add("Content-Type", mediaType.toString());

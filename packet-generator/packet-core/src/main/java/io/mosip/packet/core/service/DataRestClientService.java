@@ -65,6 +65,9 @@ public interface DataRestClientService<T> {
 	public T postApi(ApiName apiName, String queryParam, String queryParamValue, T requestedData, Class<?> responseType)
 			throws ApisResourceAccessException;
 
+	public T postApi(ApiName apiName, String queryParam, String queryParamValue, T requestedData, Class<?> responseType, boolean isAuthRequired)
+			throws ApisResourceAccessException;
+
 	/**
 	 * Post api.
 	 *
