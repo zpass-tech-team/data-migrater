@@ -129,8 +129,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
     private Map<String, HashSet<String>> fieldsCategoryMap = new HashMap<>();
     private ObjectMapper objectMapper = new ObjectMapper();
-    private boolean backendProcess = false;
-    private boolean isRecordPresentForProcess = true;
+    //private boolean backendProcess = false;
+    //private boolean isRecordPresentForProcess = true;
 
     @Value("${mosip.data.quality.writer.classname:io.mosip.packet.data.quality.writer.CSVFileWriter}")
     private String qualityWriterClassName;
@@ -304,7 +304,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             do {
                 System.out.println("Thread Sleeping for some time 60S");
                 Thread.sleep(60000);
-            } while(isRecordPresentForProcess || !threadPool.isTaskCompleted() || backendProcess || !threadPool.isBatchAcceptRequest());
+            } while(!threadPool.isTaskCompleted() || !threadPool.isBatchAcceptRequest());
 
             System.out.println("Start Time " + startTime);
             System.out.println("End Time Time " + new Date());
