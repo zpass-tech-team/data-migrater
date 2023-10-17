@@ -85,7 +85,7 @@ public class DataProcessApplication {
                     System.out.println("Response : " + (new Gson()).toJson(response));
                 }
 
-      //          if(!IS_RUNNING_AS_BATCH)
+                if(!IS_RUNNING_AS_BATCH)
                     System.exit(0);
             }
         } catch (UnknownHostException e) {
