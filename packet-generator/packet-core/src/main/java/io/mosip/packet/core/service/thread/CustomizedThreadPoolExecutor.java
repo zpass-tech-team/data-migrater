@@ -7,8 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static io.mosip.packet.core.constant.GlobalConfig.TIMECONSUPTIONQUEUE;
-import static io.mosip.packet.core.constant.GlobalConfig.TOTAL_RECORDS_FOR_PROCESS;
+import static io.mosip.packet.core.constant.GlobalConfig.*;
 
 public class CustomizedThreadPoolExecutor {
     List<ThreadPoolExecutor> poolMap = new ArrayList<>();
@@ -135,7 +134,7 @@ public class CustomizedThreadPoolExecutor {
                         remainingMinutes = (int) (totalTimeRequired % 60);
                     }
 
-                    System.out.println("Pool Name : " + NAME + " Avg Time : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+completedCount));
+                    System.out.println("Pool Name : " + NAME + " Avg Time : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS));
                 }
             }
         }, 0, DELAY_SECONDS);

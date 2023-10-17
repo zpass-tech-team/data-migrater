@@ -67,6 +67,7 @@ public class DataBaseUtil {
 
     public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashSet<String>> fieldsCategoryMap, ResultSetter setter) throws Exception {
         Statement statement1 = conn.createStatement();
+
         try {
             if(conn != null) {
                 List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
@@ -100,6 +101,7 @@ public class DataBaseUtil {
                                 }
                                 setter.setResult(dataHashMap);
                             } else {
+                                ALREADY_PROCESSED_RECORDS++;
                                 LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Record Already Processed for ref_id" +  dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()));
                             }
                         } catch (Exception e) {
@@ -114,7 +116,6 @@ public class DataBaseUtil {
             if(statement1 != null)
                 statement1.close();
         }
-
     }
 
     private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Statement statement, boolean fetchCount) throws Exception {
