@@ -343,7 +343,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 }
             }
 
-            if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName()) || IS_ONLY_FOR_QUALITY_CHECK) {
+            if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName())) {
                 baseThreadController.setDataHashMap(dataHashMap);
                 baseThreadController.setRegistrationId(registrationId);
                 baseThreadController.setTrackerColumn(dbImportRequest.getTrackerInfo().getTrackerColumn());
