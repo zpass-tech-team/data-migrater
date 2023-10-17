@@ -205,8 +205,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         PacketCreatorResponse packetCreatorResponse = new PacketCreatorResponse();
         packetCreatorResponse.setRID(new ArrayList<>());
         PacketDto packetDto = null;
-        Timer processor = null;
-        Long DELAY_SECONDS = 10000L;
+        //Timer processor = null;
+        //Long DELAY_SECONDS = 10000L;
 
 
         try {
@@ -309,8 +309,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             System.out.println("Start Time " + startTime);
             System.out.println("End Time Time " + new Date());
 
-            if(threadPool.isTaskCompleted())
-                processor.cancel();
+ //           if(threadPool.isTaskCompleted())
+ //               processor.cancel();
         } finally {
             dataBaseUtil.closeConnection();
             if(!IS_ONLY_FOR_QUALITY_CHECK)
