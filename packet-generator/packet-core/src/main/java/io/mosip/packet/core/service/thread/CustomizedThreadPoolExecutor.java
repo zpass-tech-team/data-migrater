@@ -165,7 +165,7 @@ public class CustomizedThreadPoolExecutor {
                     noSlotAvailable = true;
                 }
             }  else {
-                TimeUnit.SECONDS.sleep(30);
+                TimeUnit.SECONDS.sleep(10);
                 System.out.println("Trying to Repush the Data to Thread");
             }
         } while (noSlotAvailable || !taskAdded);
