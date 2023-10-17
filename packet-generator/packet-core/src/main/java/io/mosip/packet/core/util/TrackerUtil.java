@@ -25,7 +25,10 @@ import java.util.Base64;
 import java.util.Optional;
 import java.util.Scanner;
 
-import static io.mosip.packet.core.constant.GlobalConfig.*;
+import static io.mosip.packet.core.constant.GlobalConfig.SESSION_KEY;
+import static io.mosip.packet.core.constant.GlobalConfig.IS_TRACKER_REQUIRED;
+import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
+import static io.mosip.packet.core.constant.GlobalConfig.IS_TPM_AVAILABLE;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Component
@@ -159,9 +162,10 @@ public class TrackerUtil {
         if(IS_TRACKER_REQUIRED) {
             PreparedStatement statement = null;
             try {
-                statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ? AND ACTIVITY = ?", TRACKER_TABLE_NAME));
+                statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ? AND ACTIVITY = ? AND SESSION_KEY = ?", TRACKER_TABLE_NAME));
                 statement.setString(1, value.toString());
                 statement.setString(2, activity);
+                statement.setString(3, SESSION_KEY);
                 ResultSet resultSet = statement.executeQuery();
 
                 if(resultSet.next())

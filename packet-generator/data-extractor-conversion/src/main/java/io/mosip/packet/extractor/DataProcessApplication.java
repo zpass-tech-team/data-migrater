@@ -45,9 +45,10 @@ public class DataProcessApplication {
                 IS_TRACKER_REQUIRED = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required"));
             if(context.getEnvironment().getProperty("mosip.packet.creator.run.as.batch.execution") != null)
                 IS_RUNNING_AS_BATCH = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.run.as.batch.execution"));
-
-
-            SESSION_KEY = RandomStringUtils.randomAlphanumeric(20);
+            if(context.getEnvironment().getProperty("mosip.packet.creator.use.existing.session.key") != null)
+                SESSION_KEY = context.getEnvironment().getProperty("mosip.packet.creator.use.existing.session.key");
+            else
+                SESSION_KEY = RandomStringUtils.randomAlphanumeric(20);
 
             context.getBean(MockDeviceUtil.class).resetDevices();
             context.getBean(MockDeviceUtil.class).initDeviceHelpers();
@@ -55,6 +56,15 @@ public class DataProcessApplication {
             context.getBean(Reprocessor.class).reprocess();
 
             if(internal) {
+                System.out.println("Current Session Key is " + SESSION_KEY + ". Please Enter New Session Key in-case Change.");
+                String sessionKey = "";
+
+                if(!IS_RUNNING_AS_BATCH) {
+                    Scanner scanner = new Scanner(System.in);
+                    sessionKey = scanner.next();
+                    SESSION_KEY = sessionKey.trim().toUpperCase();
+                }
+
                 System.out.println("Current Flow Enabled for  " + (IS_ONLY_FOR_QUALITY_CHECK ? "Quality Calculation" : "Packet Creation") + " . Do you want to Continue (Y-Yes, N-No)");
                 String option = "";
 

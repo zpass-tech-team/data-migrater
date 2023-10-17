@@ -14,7 +14,6 @@ import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.PacketTrackerRepository;
 import io.mosip.packet.core.service.thread.*;
 import io.mosip.packet.core.util.TrackerUtil;
-import io.mosip.packet.extractor.service.impl.DataExtractionServiceImpl;
 import io.mosip.packet.uploader.service.PacketUploaderService;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
@@ -73,7 +72,7 @@ public class Reprocessor {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final Logger LOGGER = DataProcessLogger.getLogger(DataExtractionServiceImpl.class);
+    private static final Logger LOGGER = DataProcessLogger.getLogger(Reprocessor.class);
 
     public void reprocess() throws IOException, ParseException, InterruptedException {
         PacketCreatorResponse packetCreatorResponse = new PacketCreatorResponse();
