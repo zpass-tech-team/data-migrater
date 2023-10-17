@@ -83,21 +83,25 @@ public class DataBaseUtil {
                             dataHashMap = new HashMap<>();
                             populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, fieldsCategoryMap, false);
 
-                            for (int i = 1; i < tableRequestDtoList.size(); i++) {
-                                Statement statement2 = conn.createStatement();
-                                try {
-                                    TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
-                                    ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2, false);
+                            if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName())) {
+                                for (int i = 1; i < tableRequestDtoList.size(); i++) {
+                                    Statement statement2 = conn.createStatement();
+                                    try {
+                                        TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
+                                        ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2, false);
 
-                                    if (resultSet1 != null && resultSet1.next()) {
-                                        populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet1, dataHashMap, fieldsCategoryMap, false);
+                                        if (resultSet1 != null && resultSet1.next()) {
+                                            populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet1, dataHashMap, fieldsCategoryMap, false);
+                                        }
+                                    } finally {
+                                        if(statement2 != null)
+                                            statement2.close();
                                     }
-                                } finally {
-                                    if(statement2 != null)
-                                        statement2.close();
                                 }
+                                setter.setResult(dataHashMap);
+                            } else {
+                                LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Record Already Processed for ref_id" +  dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()));
                             }
-                            setter.setResult(dataHashMap);
                         } catch (Exception e) {
                             e.printStackTrace();
                             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
