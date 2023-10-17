@@ -54,6 +54,7 @@ public class BQATSdkImpl implements BioSdkApiFactory {
         BQATResponse response= (BQATResponse) restApiClient.postApi(ApiName.BQAT_BIOSDK_QUALITY_CHECK, null, "", request, BQATResponse.class, false);
         LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResults();
         LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Rest Call Executed Successfully " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
+        System.out.println("Time Taken to call BIOSDK is" + TimeUnit.MINUTES.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
         if(bioSDKResponse != null) {
             try {
                 if(bioSDKRequestWrapper.getIsOnlyForQualityCheck()) {
