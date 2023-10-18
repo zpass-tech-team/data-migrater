@@ -1,16 +1,6 @@
 package io.mosip.packet.core.util;
 
-import java.io.IOException;
-import java.net.URI;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.Iterator;
-
-import javax.net.ssl.SSLContext;
-
+import com.google.gson.Gson;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.LoggerFileConstant;
 import io.mosip.packet.core.dto.PasswordRequest;
@@ -19,28 +9,21 @@ import io.mosip.packet.core.dto.request.SecretKeyRequest;
 import io.mosip.packet.core.dto.request.TokenRequestDTO;
 import io.mosip.packet.core.exception.TokenGenerationFailedException;
 import io.mosip.packet.core.logger.DataProcessLogger;
-import net.logstash.logback.appender.listener.AppenderListener;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.TrustStrategy;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -48,10 +31,18 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import static io.mosip.packet.core.constant.GlobalConfig.IS_NETWORK_AVAILABLE;
-import static io.mosip.packet.core.constant.RegistrationConstants.*;
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.net.URI;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Iterator;
 
-import com.google.gson.Gson;
+import static io.mosip.packet.core.constant.GlobalConfig.IS_NETWORK_AVAILABLE;
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
+import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
 
 /**
  * The Class RestApiClient.
@@ -60,6 +51,12 @@ import com.google.gson.Gson;
  */
 @Component
 public class RestApiClient {
+
+	@Value("${registration.processor.httpclient.connections.max.per.host:20}")
+	private int maxConnectionPerRoute;
+
+	@Value("${registration.processor.httpclient.connections.max:100}")
+	private int totalMaxConnection;
 
 	/** The logger. */
 	private Logger logger = DataProcessLogger.getLogger(RestApiClient.class);
@@ -73,12 +70,20 @@ public class RestApiClient {
 
 	private static final String AUTHORIZATION = "Authorization=";
 
+	RestTemplate localRestTemplate;
+
 	private static Boolean isAuthRequired = true;
 
 	public static void setIsAuthRequired(Boolean isAuthRequired) {
 		RestApiClient.isAuthRequired = isAuthRequired;
 	}
 
+	@PostConstruct
+	private void loadRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+		localRestTemplate = getRestTemplate();
+		logger.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
+				LoggerFileConstant.APPLICATIONID.toString(), "loadRestTemplate completed successfully");
+	}
 	/**
 	 * Gets the api. *
 	 *
@@ -90,11 +95,9 @@ public class RestApiClient {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T getApi(URI uri, Class<?> responseType, boolean isAuthRequired) throws Exception {
-		RestTemplate restTemplate;
 		T result = null;
 		try {
-			restTemplate = getRestTemplate();
-			result = (T) restTemplate.exchange(uri, HttpMethod.GET, setRequestHeader(null, null, isAuthRequired), responseType)
+			result = (T) localRestTemplate.exchange(uri, HttpMethod.GET, setRequestHeader(null, null, isAuthRequired), responseType)
 					.getBody();
 		} catch (Exception e) {
 			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
@@ -120,13 +123,11 @@ public class RestApiClient {
 	@SuppressWarnings("unchecked")
 	public <T> T postApi(String uri, MediaType mediaType, Object requestType, Class<?> responseClass, boolean isAuthRequired) throws Exception {
 
-		RestTemplate restTemplate;
 		T result = null;
 		try {
-			restTemplate = getRestTemplate();
 			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
 					APPLICATION_ID, uri);
-			result = (T) restTemplate.postForObject(uri, setRequestHeader(requestType, mediaType, isAuthRequired), responseClass);
+			result = (T) localRestTemplate.postForObject(uri, setRequestHeader(requestType, mediaType, isAuthRequired), responseClass);
 
 		} catch (Exception e) {
 			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
@@ -157,10 +158,9 @@ public class RestApiClient {
 		RestTemplate restTemplate;
 		T result = null;
 		try {
-			restTemplate = getRestTemplate();
 			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
 					APPLICATION_ID, uri);
-			result = (T) restTemplate.patchForObject(uri, setRequestHeader(requestType, mediaType, isAuthRequired), responseClass);
+			result = (T) localRestTemplate.patchForObject(uri, setRequestHeader(requestType, mediaType, isAuthRequired), responseClass);
 
 		} catch (Exception e) {
 
@@ -195,15 +195,13 @@ public class RestApiClient {
 	@SuppressWarnings("unchecked")
 	public <T> T putApi(String uri, Object requestType, Class<?> responseClass, MediaType mediaType, boolean isAuthRequired) throws Exception {
 
-		RestTemplate restTemplate;
 		T result = null;
 		ResponseEntity<T> response = null;
 		try {
-			restTemplate = getRestTemplate();
 			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
 					APPLICATION_ID, uri);
 
-			response = (ResponseEntity<T>) restTemplate.exchange(uri, HttpMethod.PUT,
+			response = (ResponseEntity<T>) localRestTemplate.exchange(uri, HttpMethod.PUT,
 					setRequestHeader(requestType.toString(), mediaType, isAuthRequired), responseClass);
 			result = response.getBody();
 		} catch (Exception e) {
@@ -217,23 +215,22 @@ public class RestApiClient {
 	}
 
 	public RestTemplate getRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+		if(localRestTemplate != null)
+			return localRestTemplate;
+
 		logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
 				APPLICATION_ID, Arrays.asList(environment.getActiveProfiles()).toString());
 		if (Arrays.stream(environment.getActiveProfiles()).anyMatch("dev-k8"::equals)) {
+			logger.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
+					LoggerFileConstant.APPLICATIONID.toString(),
+					Arrays.asList(environment.getActiveProfiles()).toString());
 			return new RestTemplate();
 		} else {
-			TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
-
-			SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
-					.loadTrustMaterial(null, acceptingTrustStrategy).build();
-
-			SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-
-			CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(csf).build();
-
+			HttpClientBuilder httpClientBuilder = HttpClients.custom()
+					.setMaxConnPerRoute(maxConnectionPerRoute)
+					.setMaxConnTotal(totalMaxConnection).disableCookieManagement();
 			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-
-			requestFactory.setHttpClient(httpClient);
+			requestFactory.setHttpClient(httpClientBuilder.build());
 			return new RestTemplate(requestFactory);
 		}
 
