@@ -20,7 +20,6 @@ public class CustomizedThreadPoolExecutor {
     private Timer watch = null;
     private Timer estimateTimer = null;
     private String NAME;
-    private FixedListQueue<Long> timeConsumptionPerMin = new FixedListQueue<>(100);
     private FixedListQueue<Integer> countOfProcessPerMin = new FixedListQueue<>(100);
 
     public CustomizedThreadPoolExecutor(Integer threadPoolCount, Integer maxThreadCount, Integer maxThreadExecCount, String poolName) {
@@ -40,10 +39,7 @@ public class CustomizedThreadPoolExecutor {
 
                     Long avgTime = 0l;
                     Long[] consumedTimeList = listQueue.toArray(new Long[listQueue.size()]);
-                    Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
                     int noOfRecords = consumedTimeList.length;
-                    avgTime = TotalSum / noOfRecords;
-                    timeConsumptionPerMin.add(avgTime);
                     countOfProcessPerMin.add(noOfRecords);
                 }
             }
@@ -111,14 +107,10 @@ public class CustomizedThreadPoolExecutor {
 
                 if(totalTaskCount > 0 || totalCount > 0) {
                     // Calculating Estimated Time of Process Completion
-                    if(timeConsumptionPerMin != null && timeConsumptionPerMin.size() > 0) {
-                        FixedListQueue<Long> listQueue = (FixedListQueue<Long>) timeConsumptionPerMin.clone();
+                    if(countOfProcessPerMin != null && countOfProcessPerMin.size() > 0) {
                         FixedListQueue<Integer> countQueue = (FixedListQueue<Integer>)countOfProcessPerMin.clone();
 
-                        Long[] consumedTimeList = listQueue.toArray(new Long[listQueue.size()]);
                         Long totalRecords = TOTAL_RECORDS_FOR_PROCESS;
-                        Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
-                        int noOfRecords = consumedTimeList.length;
 
                         Integer[] consumedCountList = countQueue.toArray(new Integer[countQueue.size()]);
                         Integer TotalCountSum = Arrays.stream(consumedCountList).mapToInt(Integer::intValue).sum();
@@ -126,7 +118,6 @@ public class CustomizedThreadPoolExecutor {
                         int avgCount = TotalCountSum/noOfCountRecords;
 
                         Long remainingRecords = totalRecords - (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS);
-                        avgTime = TotalSum / noOfRecords;
                         Long totalTimeRequired = (remainingRecords / avgCount);
 
                         totalHours = (int) (totalTimeRequired / 60);
