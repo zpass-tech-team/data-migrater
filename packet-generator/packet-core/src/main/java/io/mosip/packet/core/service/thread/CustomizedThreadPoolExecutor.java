@@ -36,6 +36,8 @@ public class CustomizedThreadPoolExecutor {
             public void run() {
                 if(TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
                     FixedListQueue<Long> listQueue = (FixedListQueue<Long>) TIMECONSUPTIONQUEUE.clone();
+                    TIMECONSUPTIONQUEUE.clear();
+
                     Long avgTime = 0l;
                     Long[] consumedTimeList = listQueue.toArray(new Long[listQueue.size()]);
                     Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
@@ -43,7 +45,6 @@ public class CustomizedThreadPoolExecutor {
                     avgTime = TotalSum / noOfRecords;
                     timeConsumptionPerMin.add(avgTime);
                     countOfProcessPerMin.add(noOfRecords);
-                    TIMECONSUPTIONQUEUE.clear();
                 }
             }
         }, 0, 60000L);
@@ -124,7 +125,7 @@ public class CustomizedThreadPoolExecutor {
                         int noOfCountRecords = consumedCountList.length;
                         int avgCount = TotalCountSum/noOfCountRecords;
 
-                        Long remainingRecords = totalRecords - completedCount;
+                        Long remainingRecords = totalRecords - (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS);
                         avgTime = TotalSum / noOfRecords;
                         Long totalTimeRequired = (remainingRecords / avgCount);
 
