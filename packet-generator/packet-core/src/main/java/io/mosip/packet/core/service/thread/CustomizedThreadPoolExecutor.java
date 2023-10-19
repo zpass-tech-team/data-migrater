@@ -45,6 +45,8 @@ public class CustomizedThreadPoolExecutor {
                     avgTime = TotalSum / noOfRecords;
                     timeConsumptionPerMin.add(avgTime);
                     countOfProcessPerMin.add(noOfRecords);
+                    System.out.println("countOfProcessPerMin" + noOfRecords);
+
                 }
             }
         }, 0, 60000L);
@@ -128,6 +130,8 @@ public class CustomizedThreadPoolExecutor {
                         Long remainingRecords = totalRecords - (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS);
                         avgTime = TotalSum / noOfRecords;
                         Long totalTimeRequired = (remainingRecords / avgCount);
+                        System.out.println("TotalCountSum" + TotalCountSum);
+                        System.out.println("noOfCountRecords" + noOfCountRecords);
                         System.out.println("remainingRecords" + remainingRecords);
                         System.out.println("avgCount" + avgCount);
                         System.out.println("Total Time Required" + totalTimeRequired);
