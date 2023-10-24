@@ -41,14 +41,17 @@ public class CustomizedThreadPoolExecutor {
 
                     Long avgTime = 0l;
                     Long[] consumedTimeList = listQueue.toArray(new Long[listQueue.size()]);
-                    System.out.println("countOfProcessPerMin" + consumedTimeList);
 
                     Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
                     int noOfRecords = consumedTimeList.length;
+                    System.out.println("Estimate TotalSum " + TotalSum);
+                    System.out.println("Estimate No Of Records" + noOfRecords);
+
                     avgTime = TotalSum / noOfRecords;
+                    System.out.println("Estimate Avg Records" + avgTime);
+
                     timeConsumptionPerMin.add(avgTime);
                     countOfProcessPerMin.add(noOfRecords);
-                    System.out.println("countOfProcessPerMin" + noOfRecords);
 
                 }
             }

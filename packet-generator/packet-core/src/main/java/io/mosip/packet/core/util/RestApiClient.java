@@ -226,6 +226,7 @@ public class RestApiClient {
 					Arrays.asList(environment.getActiveProfiles()).toString());
 			return new RestTemplate();
 		} else {
+			System.out.println("Max Connection for RestAPI Call " + maxConnectionPerRoute);
 			HttpClientBuilder httpClientBuilder = HttpClients.custom()
 					.setMaxConnPerRoute(maxConnectionPerRoute)
 					.setMaxConnTotal(totalMaxConnection).disableCookieManagement();
