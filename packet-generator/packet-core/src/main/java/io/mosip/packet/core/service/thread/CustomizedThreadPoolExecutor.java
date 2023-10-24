@@ -197,6 +197,7 @@ public class CustomizedThreadPoolExecutor {
 
         if(isCompleted) {
             watch.cancel();
+            estimateTimer.cancel();
         }
         return isCompleted;
     }
