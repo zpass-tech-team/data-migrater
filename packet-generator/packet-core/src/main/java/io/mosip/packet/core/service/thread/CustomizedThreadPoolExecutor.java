@@ -36,7 +36,6 @@ public class CustomizedThreadPoolExecutor {
             public void run() {
                 if(TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
                     FixedListQueue<Long> listQueue = (FixedListQueue<Long>) TIMECONSUPTIONQUEUE.clone();
-                    System.out.println("countOfProcessPerMin" + TIMECONSUPTIONQUEUE.size());
                     TIMECONSUPTIONQUEUE.clear();
 
                     Long avgTime = 0l;
@@ -44,11 +43,7 @@ public class CustomizedThreadPoolExecutor {
 
                     Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
                     int noOfRecords = consumedTimeList.length;
-                    System.out.println("Estimate TotalSum " + TotalSum);
-                    System.out.println("Estimate No Of Records" + noOfRecords);
-
                     avgTime = TotalSum / noOfRecords;
-                    System.out.println("Estimate Avg Records" + avgTime);
 
                     timeConsumptionPerMin.add(avgTime);
                     countOfProcessPerMin.add(noOfRecords);
@@ -110,6 +105,7 @@ public class CustomizedThreadPoolExecutor {
                 int totalHours = 0;
                 int remainingMinutes =0;
                 Long avgTime = 0l;
+                int avgCount = 0;
 
                 for(ThreadPoolExecutor entry : poolMap) {
                     totalCount += entry.getTaskCount();
@@ -131,16 +127,11 @@ public class CustomizedThreadPoolExecutor {
                         Integer[] consumedCountList = countQueue.toArray(new Integer[countQueue.size()]);
                         Integer TotalCountSum = Arrays.stream(consumedCountList).mapToInt(Integer::intValue).sum();
                         int noOfCountRecords = consumedCountList.length;
-                        int avgCount = TotalCountSum/noOfCountRecords;
+                        avgCount = TotalCountSum/noOfCountRecords;
 
                         Long remainingRecords = totalRecords - (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS);
                         avgTime = TotalSum / noOfRecords;
                         Long totalTimeRequired = (remainingRecords / avgCount);
-                        System.out.println("TotalCountSum" + TotalCountSum);
-                        System.out.println("noOfCountRecords" + noOfCountRecords);
-                        System.out.println("remainingRecords" + remainingRecords);
-                        System.out.println("avgCount" + avgCount);
-                        System.out.println("Total Time Required" + totalTimeRequired);
 
                         totalHours = (int) (totalTimeRequired / 60);
                         totalDays = (int) totalHours / 24;
@@ -148,7 +139,7 @@ public class CustomizedThreadPoolExecutor {
                         remainingMinutes = (int) (totalTimeRequired % 60);
                     }
 
-                    System.out.println("Pool Name : " + NAME + " Avg Time : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS));
+                    System.out.println("Pool Name : " + NAME + " Avg Count per Min : " + avgCount + " Avg Time per Record : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS));
                 }
             }
         }, 0, DELAY_SECONDS);
