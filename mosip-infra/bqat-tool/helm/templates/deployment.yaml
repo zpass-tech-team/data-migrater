@@ -91,11 +91,6 @@ spec:
           env:
             - name: container_user
               value: {{ .Values.containerSecurityContext.runAsUser }}
-        #    - name: config_files
-        #      valueFrom:
-        #        configMapKeyRef:
-        #          name: property-config
-        #          key: ApiRequest.json
             - name: JDK_JAVA_OPTIONS
               value: {{ .Values.additionalResources.javaOpts }}
             {{- if .Values.extraEnvVars }}
@@ -114,25 +109,6 @@ spec:
                 name: {{ . }}
             {{- end }}
             {{- end }}
-          volumeMounts:
-            - name: apirequest-config
-              mountPath: /home/mosip/ApiRequest.json
-              subPath: ApiRequest.json
-            - name: application-config
-              mountPath: /home/mosip/application-default.properties
-              subPath: application-default.properties
-            - name: externaldb-config
-              mountPath: /home/mosip/external_db.sql
-              subPath: external_db.sql
-            - name: identity-config
-              mountPath: /home/mosip/identity.json
-              subPath: identity.json
-            - name: idschema-config
-              mountPath: /home/mosip/idschema.json
-              subPath: idschema.json
-            - name: biofile-config
-              mountPath: /home/mosip/BioFile.mvel
-              subPath: BioFile.mvel
           ports:
             - name: spring-service
               containerPort: {{ .Values.springServicePort }}
@@ -157,40 +133,3 @@ spec:
         {{- if .Values.sidecars }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.sidecars "context" $) | nindent 8 }}
         {{- end }}
-      volumes:
-        - name: apirequest-config
-          configMap:
-            name: property-config
-            items:
-              - key: ApiRequest.json
-                path: ApiRequest.json
-        - name: application-config
-          configMap:
-            name: property-config
-            items:
-              - key: application-default.properties
-                path: application-default.properties
-        - name: biofile-config
-          configMap:
-            name: property-config
-            items:
-              - key: BioFile.mvel
-                path: BioFile.mvel
-        - name: externaldb-config
-          configMap:
-            name: property-config
-            items:
-              - key: external_db.sql
-                path: external_db.sql
-        - name: identity-config
-          configMap:
-            name: property-config
-            items:
-              - key: identity.json
-                path: identity.json
-        - name: idschema-config
-          configMap:
-            name: property-config
-            items:
-              - key: idschema.json
-                path: idschema.json
