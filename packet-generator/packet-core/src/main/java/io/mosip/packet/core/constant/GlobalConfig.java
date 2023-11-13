@@ -60,13 +60,20 @@ public class GlobalConfig {
                     break;
                 } else {
                     if(executor.getInputProcessCompleted() && (entry.getTaskCount() - entry.getCompletedTaskCount() <= 0)) {
-                        if(executor.getTotalTaskCount() - executor.getTotalCompletedTaskCount() <= 0) {
+                        if(executor.getNAME().equals("QUALITY ANALYSIS") && executor.getTotalTaskCount() > 0) {
+                            if(executor.getTotalTaskCount() - executor.getTotalCompletedTaskCount() <= 0) {
+                                if(executor.getWatch() != null)
+                                    executor.getWatch().cancel();
+                                if(executor.getEstimateTimer() != null)
+                                    executor.getEstimateTimer().cancel();
+                            } else {
+                                isCompleted = false;
+                            }
+                        } else {
                             if(executor.getWatch() != null)
                                 executor.getWatch().cancel();
                             if(executor.getEstimateTimer() != null)
                                 executor.getEstimateTimer().cancel();
-                        } else {
-                            isCompleted = false;
                         }
                     } else {
                         isCompleted = false;
