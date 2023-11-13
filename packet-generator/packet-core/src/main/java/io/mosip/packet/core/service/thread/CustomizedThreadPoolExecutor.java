@@ -50,7 +50,7 @@ public class CustomizedThreadPoolExecutor {
                 public void run() {
                     if(TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
                         FixedListQueue<Long> listQueue = (FixedListQueue<Long>) TIMECONSUPTIONQUEUE.clone();
-                        System.out.println("No Of Records in Queue " + TIMECONSUPTIONQUEUE.size());
+                        System.out.println(NAME + " No Of Records in Queue " + TIMECONSUPTIONQUEUE.size());
                         TIMECONSUPTIONQUEUE.clear();
 
                         Long avgTime = 0l;
@@ -61,7 +61,7 @@ public class CustomizedThreadPoolExecutor {
                         avgTime = TotalSum / noOfRecords;
 
                         timeConsumptionPerMin.add(avgTime);
-                        System.out.println("No Of Records Prossed Per Min " + noOfRecords);
+                        System.out.println(NAME + "No Of Records Prossed Per Min " + noOfRecords);
                         countOfProcessPerMin.add(noOfRecords);
 
                     }
@@ -143,6 +143,8 @@ public class CustomizedThreadPoolExecutor {
                             Integer[] consumedCountList = countQueue.toArray(new Integer[countQueue.size()]);
                             Integer TotalCountSum = Arrays.stream(consumedCountList).mapToInt(Integer::intValue).sum();
                             int noOfCountRecords = consumedCountList.length;
+                            System.out.println(NAME + " Total Sum of Average Count " + TotalCountSum);
+                            System.out.println(NAME + " Total Sum of No of Count " + noOfCountRecords);
                             avgCount = TotalCountSum/noOfCountRecords;
 
                             Long remainingRecords = totalRecords - (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS);
