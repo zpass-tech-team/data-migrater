@@ -91,7 +91,7 @@ public class DataBaseUtil {
 
                 ResultSet resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, false);
                 if (resultSet != null) {
-                    CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(dbReaderMaxThreadPoolCount, dbReaderMaxRecordsCountPerThreadPool, dbReaderMaxThreadExecCount, "DATABASE READER", true);
+                    CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(dbReaderMaxThreadPoolCount, dbReaderMaxRecordsCountPerThreadPool, dbReaderMaxThreadExecCount, "DATABASE READER", false);
 
                     while(resultSet.next()) {
                         try {
