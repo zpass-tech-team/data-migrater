@@ -300,11 +300,11 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
             Date startTime = new Date();
             dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap, DataProcessor);
+            threadPool.setInputProcessCompleted(true);
 
             do {
-                System.out.println("Thread Sleeping for some time 60S");
                 Thread.sleep(60000);
-            } while(!threadPool.isTaskCompleted() || !threadPool.isBatchAcceptRequest());
+            } while(!GlobalConfig.isThreadPoolCompleted());
 
             System.out.println("Start Time " + startTime);
             System.out.println("End Time Time " + new Date());

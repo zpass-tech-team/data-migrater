@@ -189,6 +189,6 @@ public class Reprocessor {
             });
             threadPool.ExecuteTask(controller);
         }
-        threadPool.isTaskCompleted();
+        threadPool.setInputProcessCompleted(true);
     }
 }

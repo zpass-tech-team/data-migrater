@@ -8,14 +8,17 @@ import io.mosip.packet.core.constant.DBTypes;
 import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.constant.GlobalConfig;
 import io.mosip.packet.core.constant.QuerySelection;
-import io.mosip.packet.core.constant.tracker.TrackerStatus;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.dto.dbimport.QueryFilter;
 import io.mosip.packet.core.dto.dbimport.TableRequestDto;
 import io.mosip.packet.core.logger.DataProcessLogger;
+import io.mosip.packet.core.service.thread.BaseThreadDBController;
+import io.mosip.packet.core.service.thread.CustomizedThreadPoolExecutor;
 import io.mosip.packet.core.service.thread.ResultSetter;
+import io.mosip.packet.core.service.thread.ThreadDBProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.sql.*;
@@ -41,6 +44,15 @@ public class DataBaseUtil {
 
     @Autowired
     private TrackerUtil trackerUtil;
+
+    @Value("${mosip.database.reader.max-threadpool-count:1}")
+    private Integer dbReaderMaxThreadPoolCount;
+
+    @Value("${mosip.database.reader.max-records-process-per-threadpool:10000}")
+    private Integer dbReaderMaxRecordsCountPerThreadPool;
+
+    @Value("${mosip.database.reader.max-thread-execution-count:3}")
+    private Integer dbReaderMaxThreadExecCount;
 
 
     public void connectDatabase(DBImportRequest dbImportRequest) throws SQLException {
@@ -79,36 +91,51 @@ public class DataBaseUtil {
 
                 ResultSet resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, false);
                 if (resultSet != null) {
+                    CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(dbReaderMaxThreadPoolCount, dbReaderMaxRecordsCountPerThreadPool, dbReaderMaxThreadExecCount, "DATABASE READER", true);
+
                     while(resultSet.next()) {
                         try {
-                            dataHashMap = new HashMap<>();
-                            populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, dataHashMap, fieldsCategoryMap, false);
+                            Map<String, Object> resultData = extractResultSet(resultSet);
+                            BaseThreadDBController baseDbThreadController = new BaseThreadDBController();
+                            baseDbThreadController.setSetter(setter);
+                            baseDbThreadController.setResultMap(resultData);
+                            baseDbThreadController.setProcessor(new ThreadDBProcessor() {
+                                @Override
+                                public void processData(ResultSetter setter, Map<String, Object> resultMap) throws Exception {
+                                    Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap = new HashMap<>();
+                                    populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultMap, dataHashMap, fieldsCategoryMap, false);
 
-                            if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName())) {
-                                for (int i = 1; i < tableRequestDtoList.size(); i++) {
-                                    Statement statement2 = conn.createStatement();
-                                    try {
-                                        TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
-                                        ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2, false);
+                                    if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName())) {
+                                        for (int i = 1; i < tableRequestDtoList.size(); i++) {
+                                            Statement statement2 = conn.createStatement();
+                                            try {
+                                                TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
+                                                ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2, false);
 
-                                        if (resultSet1 != null && resultSet1.next()) {
-                                            populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultSet1, dataHashMap, fieldsCategoryMap, false);
+                                                if (resultSet1 != null && resultSet1.next()) {
+                                                    Map<String, Object> resultData1 = extractResultSet(resultSet1);
+                                                    populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultData1, dataHashMap, fieldsCategoryMap, false);
+                                                }
+                                            } finally {
+                                                if(statement2 != null)
+                                                    statement2.close();
+                                            }
                                         }
-                                    } finally {
-                                        if(statement2 != null)
-                                            statement2.close();
+                                        setter.setResult(dataHashMap);
+                                    } else {
+                                        ALREADY_PROCESSED_RECORDS++;
+                                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Record Already Processed for ref_id" +  dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()));
                                     }
+
                                 }
-                                setter.setResult(dataHashMap);
-                            } else {
-                                ALREADY_PROCESSED_RECORDS++;
-                                LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Record Already Processed for ref_id" +  dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()));
-                            }
+                            });
+                            threadPool.ExecuteTask(baseDbThreadController);
                         } catch (Exception e) {
                             e.printStackTrace();
                             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
                         }
                     }
+                    threadPool.setInputProcessCompleted(true);
                 }
             } else
                 throw new SQLException("Unable to Connect With Database. Please check the Configuration");
@@ -203,9 +230,7 @@ public class DataBaseUtil {
         }
     }
 
-    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, ResultSet resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
-        Map<String, Object> resultData = extractResultSet(resultSet);
-
+    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, Map<String, Object> resultData, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
         if (dataMap != null && dataMap.size() <= 0) {
             dataMap.put(FieldCategory.DEMO, new LinkedHashMap<>());
             dataMap.put(FieldCategory.BIO, new LinkedHashMap<>());

@@ -886,7 +886,7 @@ public final class DateUtils {
 
 	public static Date findDateFormat(String value) {
 		for (io.mosip.packet.core.constant.DateFormat format : io.mosip.packet.core.constant.DateFormat.values()) {
-			dateFormat = new SimpleDateFormat(format.getFormat());
+			SimpleDateFormat dateFormat = new SimpleDateFormat(format.getFormat());
 			try {
 				Date date =  dateFormat.parse(value);
 
@@ -901,7 +901,7 @@ public final class DateUtils {
 
 
 	public static String parseDate(Date date, String pattern) {
-		dateFormat = new SimpleDateFormat(pattern);
+		SimpleDateFormat dateFormat = new SimpleDateFormat(pattern);
 		return dateFormat.format(date);
 	}
 }
