@@ -131,8 +131,9 @@ public class DataBaseUtil {
                             });
                             threadPool.ExecuteTask(baseDbThreadController);
                         } catch (Exception e) {
-                            e.printStackTrace();
                             FAILED_RECORDS++;
+                            System.out.println("FAILED Record Count " + FAILED_RECORDS);
+                            e.printStackTrace();
                             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
                         }
                     }
@@ -140,6 +141,10 @@ public class DataBaseUtil {
                 }
             } else
                 throw new SQLException("Unable to Connect With Database. Please check the Configuration");
+        } catch(Exception e) {
+            FAILED_RECORDS++;
+            System.out.println("FAILED Record Count " + FAILED_RECORDS);
+            throw e;
         } finally {
             if(statement1 != null)
                 statement1.close();

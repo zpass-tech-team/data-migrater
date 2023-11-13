@@ -1,13 +1,12 @@
 package io.mosip.packet.core.service.thread;
 
 import io.mosip.kernel.core.logger.spi.Logger;
-import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import lombok.Setter;
-import lombok.SneakyThrows;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static io.mosip.packet.core.constant.GlobalConfig.FAILED_RECORDS;
 
 @Setter
 public class BaseThreadDBController implements Runnable {
@@ -16,9 +15,14 @@ public class BaseThreadDBController implements Runnable {
     private ThreadDBProcessor processor;
     private Map<String, Object> resultMap;
 
-    @SneakyThrows
     @Override
     public void run() {
-        processor.processData(setter, resultMap);
+        try {
+            processor.processData(setter, resultMap);
+        } catch (Exception e) {
+            FAILED_RECORDS++;
+            System.out.println("FAILED Record Count " + FAILED_RECORDS);
+            e.printStackTrace();
+        }
     }
 }
