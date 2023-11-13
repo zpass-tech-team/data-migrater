@@ -118,6 +118,7 @@ public class ConfigUtil {
             try {
                 response = (ResponseWrapper) restApiClient.getApi(ApiName.MASTER_VALIDATOR_SERVICE_NAME, null, "keyindex", configUtil.keyIndex, ResponseWrapper.class);
             } catch (Exception e) {
+                e.printStackTrace();
                 IS_NETWORK_AVAILABLE = false;
             }
 
