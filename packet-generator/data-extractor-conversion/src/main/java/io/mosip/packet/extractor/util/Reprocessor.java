@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.packet.core.constant.GlobalConfig;
 import io.mosip.packet.core.constant.tracker.TrackerStatus;
 import io.mosip.packet.core.dto.dbimport.PacketCreatorResponse;
 import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
@@ -190,5 +191,9 @@ public class Reprocessor {
             threadPool.ExecuteTask(controller);
         }
         threadPool.setInputProcessCompleted(true);
+
+        do {
+            Thread.sleep(10000);
+        } while(!GlobalConfig.isThreadPoolCompleted());
     }
 }
