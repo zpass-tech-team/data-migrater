@@ -487,7 +487,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     Long endTime = System.nanoTime();
                     Long timeDifference = endTime-startTime;
                     LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + refId + " Time taken to complete " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
-                    System.out.println("Time taken to complete  " + timeDifference);
                     TIMECONSUPTIONQUEUE.add(timeDifference);
                 }
             });
