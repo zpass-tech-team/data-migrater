@@ -66,6 +66,8 @@ public class GlobalConfig {
                                     executor.getWatch().cancel();
                                 if(executor.getEstimateTimer() != null)
                                     executor.getEstimateTimer().cancel();
+                            } else {
+                                isCompleted = false;
                             }
                         } else {
                             if(executor.getWatch() != null)
@@ -73,6 +75,8 @@ public class GlobalConfig {
                             if(executor.getEstimateTimer() != null)
                                 executor.getEstimateTimer().cancel();
                         }
+                    } else {
+                        isCompleted = false;
                     }
                 }
             }
