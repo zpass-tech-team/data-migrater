@@ -29,6 +29,8 @@ public class GlobalConfig {
 
     public static Long ALREADY_PROCESSED_RECORDS = 0L;
 
+    public static Long FAILED_RECORDS = 0L;
+
     public static Boolean IS_TPM_AVAILABLE;
 
     public static List<CustomizedThreadPoolExecutor> THREAD_POOL_EXECUTOR_LIST = new ArrayList<>();
@@ -60,8 +62,8 @@ public class GlobalConfig {
                     break;
                 } else {
                     if(executor.getInputProcessCompleted() && (entry.getTaskCount() - entry.getCompletedTaskCount() <= 0)) {
-                        if(executor.getNAME().equals("QUALITY ANALYSIS") && executor.getTotalTaskCount() > 0) {
-                            if(executor.getTotalTaskCount() - executor.getTotalCompletedTaskCount() <= 0) {
+                        if(executor.getNAME().equals("QUALITY ANALYSIS")) {
+                            if(TOTAL_RECORDS_FOR_PROCESS - FAILED_RECORDS - executor.getTotalCompletedTaskCount() <= 0) {
                                 if(executor.getWatch() != null)
                                     executor.getWatch().cancel();
                                 if(executor.getEstimateTimer() != null)

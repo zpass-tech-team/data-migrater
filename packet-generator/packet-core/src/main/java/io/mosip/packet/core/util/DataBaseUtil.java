@@ -132,6 +132,7 @@ public class DataBaseUtil {
                             threadPool.ExecuteTask(baseDbThreadController);
                         } catch (Exception e) {
                             e.printStackTrace();
+                            FAILED_RECORDS++;
                             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
                         }
                     }

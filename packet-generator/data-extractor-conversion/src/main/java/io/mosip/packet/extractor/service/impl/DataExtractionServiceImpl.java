@@ -205,6 +205,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         PacketCreatorResponse packetCreatorResponse = new PacketCreatorResponse();
         packetCreatorResponse.setRID(new ArrayList<>());
         PacketDto packetDto = null;
+        TOTAL_RECORDS_FOR_PROCESS=0L;
+        FAILED_RECORDS=0L;
         //Timer processor = null;
         //Long DELAY_SECONDS = 10000L;
 
