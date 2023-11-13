@@ -28,6 +28,10 @@ public class CustomizedThreadPoolExecutor {
         return totalCompletedTaskCount;
     }
 
+    public long getTotalTaskCount() {
+        return totalTaskCount;
+    }
+
     public String getNAME() {
         return NAME;
     }
