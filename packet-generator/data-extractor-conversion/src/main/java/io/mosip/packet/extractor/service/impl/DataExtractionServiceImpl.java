@@ -303,7 +303,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             threadPool.setInputProcessCompleted(true);
 
             do {
-                Thread.sleep(60000);
+                Thread.sleep(10000);
             } while(!GlobalConfig.isThreadPoolCompleted());
 
             System.out.println("Start Time " + startTime);
