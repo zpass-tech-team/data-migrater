@@ -477,7 +477,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                             setter.setResult(resultDto);
                         }
                     } catch (Exception e) {
-                        LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Exception : " + e.getLocalizedMessage());
+                        LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Exception : " + e.getMessage());
                         ResultDto resultDto = new ResultDto();
                         resultDto.setRegNo(null);
                         resultDto.setRefId(demoDetails.get(trackerColumn).toString());
