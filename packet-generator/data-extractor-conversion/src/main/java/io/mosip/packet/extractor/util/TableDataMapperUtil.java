@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.SQLException;
 import java.util.*;
@@ -249,6 +250,10 @@ public class TableDataMapperUtil implements DataMapperUtil {
             return clobObj.getSubString(1, (int) clobObj.length()).getBytes(StandardCharsets.UTF_8);
         }
 
+        if (obj instanceof Blob) {
+            Blob blobObj = (Blob) obj;
+            return blobObj.getBytes(1, (int) blobObj.length());
+        }
         return (byte[]) obj;
     }
 
