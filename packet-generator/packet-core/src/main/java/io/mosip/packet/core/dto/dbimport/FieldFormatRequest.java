@@ -38,11 +38,11 @@ public class FieldFormatRequest {
                 String field = fields[i];
                 FieldName fieldName = new FieldName();
                 if(field.contains(".")) {
-                    fieldName.setFieldName(field.split("\\.")[1]);
-                    fieldName.setTableName(field.split("\\.")[0]);
+                    fieldName.setFieldName(field.split("\\.")[1].toUpperCase());
+                    fieldName.setTableName(field.split("\\.")[0].toUpperCase());
                 } else {
-                    fieldName.setFieldName(field);
-                    fieldName.setTableName(DEFAULT_TABLE);
+                    fieldName.setFieldName(field.toUpperCase());
+                    fieldName.setTableName(DEFAULT_TABLE.toUpperCase());
                 }
 
                 fieldList.add(fieldName);
@@ -54,9 +54,9 @@ public class FieldFormatRequest {
 
     public String getFieldNameWithoutSchema(String fieldName){
         if(fieldName.contains(".")) {
-            return fieldName.split("\\.")[1];
+            return fieldName.split("\\.")[1].toUpperCase();
         } else {
-            return fieldName;
+            return fieldName.toUpperCase();
         }
     }
 }
