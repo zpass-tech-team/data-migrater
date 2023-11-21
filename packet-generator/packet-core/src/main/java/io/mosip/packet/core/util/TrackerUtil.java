@@ -161,12 +161,13 @@ public class TrackerUtil {
     public boolean isRecordPresent(Object value, String activity) throws SQLException {
         if(IS_TRACKER_REQUIRED) {
             PreparedStatement statement = null;
+            ResultSet resultSet = null;
             try {
                 statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ? AND ACTIVITY = ? AND SESSION_KEY = ?", TRACKER_TABLE_NAME));
                 statement.setString(1, value.toString());
                 statement.setString(2, activity);
                 statement.setString(3, SESSION_KEY);
-                ResultSet resultSet = statement.executeQuery();
+                resultSet = statement.executeQuery();
 
                 if(resultSet.next())
                     return true;
@@ -178,6 +179,9 @@ public class TrackerUtil {
                                 + ExceptionUtils.getStackTrace(throwables));
                 throw throwables;
             } finally {
+                if(resultSet != null)
+                    resultSet.close();
+
                 if(statement != null)
                     statement.close();
             }

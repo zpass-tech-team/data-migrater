@@ -324,6 +324,7 @@ public class TableWriter implements QualityWriterFactory {
                         ResultSet resultSet = statement.executeQuery(query);
                         if(resultSet.next())
                             objectMap.put(entry.getKey(), resultSet.getString(1));
+                        resultSet.close();
                     }
                 }
 

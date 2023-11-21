@@ -79,17 +79,19 @@ public class DataBaseUtil {
 
     public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashSet<String>> fieldsCategoryMap, ResultSetter setter) throws Exception {
         Statement statement1 = conn.createStatement();
+        ResultSet resultSetCount = null;
+        ResultSet resultSet = null;
 
         try {
             if(conn != null) {
                 List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
                 Collections.sort(tableRequestDtoList);
                 TableRequestDto tableRequestDto  = tableRequestDtoList.get(0);
-                ResultSet resultSetCount = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, true);
+                resultSetCount = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, true);
                 if(resultSetCount.next())
                     TOTAL_RECORDS_FOR_PROCESS = resultSetCount.getLong(1);
 
-                ResultSet resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, false);
+                resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, false);
                 if (resultSet != null) {
                     CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(dbReaderMaxThreadPoolCount, dbReaderMaxRecordsCountPerThreadPool, dbReaderMaxThreadExecCount, "DATABASE READER", false);
 
@@ -108,15 +110,19 @@ public class DataBaseUtil {
                                     if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName())) {
                                         for (int i = 1; i < tableRequestDtoList.size(); i++) {
                                             Statement statement2 = conn.createStatement();
+                                            ResultSet resultSet1 = null;
                                             try {
                                                 TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
-                                                ResultSet resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2, false);
+                                                resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2, false);
 
                                                 if (resultSet1 != null && resultSet1.next()) {
                                                     Map<String, Object> resultData1 = extractResultSet(resultSet1);
                                                     populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultData1, dataHashMap, fieldsCategoryMap, false);
                                                 }
                                             } finally {
+                                                if(resultSet1 != null)
+                                                    resultSet1.close();
+
                                                 if(statement2 != null)
                                                     statement2.close();
                                             }
@@ -146,6 +152,12 @@ public class DataBaseUtil {
             System.out.println("FAILED Record Count " + FAILED_RECORDS);
             throw e;
         } finally {
+            if(resultSetCount != null)
+                resultSetCount.close();
+
+            if(resultSet != null)
+                resultSet.close();
+
             if(statement1 != null)
                 statement1.close();
         }
