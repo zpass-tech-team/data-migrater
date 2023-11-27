@@ -4,10 +4,12 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 @Data
 @Getter
 @Setter
-public class PacketUploadDTO {
+public class PacketUploadDTO implements Serializable {
     public enum PacketUploadDTOEnum {
         name,
         phone,

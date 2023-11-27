@@ -179,11 +179,13 @@ public class TrackerUtil {
                                 + ExceptionUtils.getStackTrace(throwables));
                 throw throwables;
             } finally {
-                if(resultSet != null)
+                try {
                     resultSet.close();
+                } catch (Exception e){};
 
-                if(statement != null)
+                try {
                     statement.close();
+                }catch (Exception e){};
             }
         } else {
             return false;
