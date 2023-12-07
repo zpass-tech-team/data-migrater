@@ -83,10 +83,15 @@ public class TableDataMapperUtil implements DataMapperUtil {
                 for (MvelParameter parameter : fieldFormatRequest.getMvelExpressions().getParameters()) {
                     if (parameter.getParameterType().equals(ParameterType.STRING))
                         if(parameter.getParameterValue().contains("${")) {
+                            String value = parameter.getParameterValue().toUpperCase();
+                            for(FieldCategory fieldCategory : FieldCategory.values()) {
+                                value = value.replace(fieldCategory.toString() + ":", "");
+                            }
+
                             try {
-                                map.put(parameter.getParameterName(), formatter.replaceColumntoDataIfAny(parameter.getParameterValue(), dataMap2));
+                                map.put(parameter.getParameterName(), formatter.replaceColumntoDataIfAny(value, dataMap2));
                             } catch (Exception e) {
-                                String param = parameter.getParameterValue().replace("${", "").replace("}", "");
+                                String param = value.replace("${", "").replace("}", "");
                                 map.put(parameter.getParameterName(), resultSet.get(param));
                             }
                         } else {

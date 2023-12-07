@@ -9,8 +9,10 @@ import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
+import io.mosip.packet.core.dto.dbimport.TableRequestDto;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.service.DataRestClientService;
+import lombok.Getter;
 import org.apache.commons.io.IOUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -45,12 +47,24 @@ public class CommonUtil {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    @Getter
+    private List<String> nonIdSchemaNonTableFieldsMap;
+
+    @Getter
+    private List<String> nonIdSchemaFieldsMap;
+
     public String generateRegistrationId(String centerId, String machineId) {
         return (String) ridGenerator.generateId(centerId, machineId);
     }
 
     public String getDocumentAttributeStaticValue(String val) {
         return val.substring(val.indexOf(":")+1).trim();
+    }
+
+    public void initialize(DBImportRequest dbImportRequest) throws ApisResourceAccessException, IOException, ParseException {
+        updateFieldCategory(dbImportRequest);
+        updateBioDestFormat(dbImportRequest);
+        updateNonIdSchemaNonTableFields(dbImportRequest);
     }
 
     public LinkedHashMap<String, Object> getLatestIdSchema() throws ApisResourceAccessException, IOException, ParseException {
@@ -151,5 +165,23 @@ public class CommonUtil {
             }
         }
         return attributes.toArray();
+    }
+
+    public void updateNonIdSchemaNonTableFields(DBImportRequest dbImportRequest) {
+        nonIdSchemaFieldsMap = new ArrayList<>();
+        nonIdSchemaNonTableFieldsMap = new ArrayList<>();
+
+        for (TableRequestDto tableRequestDto: dbImportRequest.getTableDetails()) {
+            if(tableRequestDto.getNonIdSchemaTableFields() != null) {
+                List<String> nonIdSchemaFieldList = Arrays.asList(tableRequestDto.getNonIdSchemaTableFields());
+                nonIdSchemaFieldsMap.addAll(nonIdSchemaFieldList);
+            }
+
+            if(tableRequestDto.getNonIdSchemaNonTableFields() != null) {
+                List<String> nonIdSchemaFieldList = Arrays.asList(tableRequestDto.getNonIdSchemaNonTableFields());
+                nonIdSchemaFieldsMap.addAll(nonIdSchemaFieldList);
+                nonIdSchemaNonTableFieldsMap.addAll(nonIdSchemaFieldList);
+            }
+        }
     }
 }

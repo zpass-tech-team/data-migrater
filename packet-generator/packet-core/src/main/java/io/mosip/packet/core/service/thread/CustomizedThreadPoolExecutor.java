@@ -17,6 +17,18 @@ public class CustomizedThreadPoolExecutor {
     private boolean noSlotAvailable=false;
     private long totalTaskCount = 0;
     private long totalCompletedTaskCount = 0;
+    private long failedRecordCount = 0;
+    private Long completedCount = 0L;
+
+    public long getFailedRecordCount() {
+        return failedRecordCount;
+    }
+
+    public void increaseFailedRecordCount() {
+        failedRecordCount++;
+        TOTAL_FAILED_RECORDS++;
+    }
+
     private Timer watch = null;
     private Timer estimateTimer = null;
     private String NAME;
@@ -35,6 +47,13 @@ public class CustomizedThreadPoolExecutor {
     public String getNAME() {
         return NAME;
     }
+
+    CountIncrementer failedIncrement = new CountIncrementer() {
+        @Override
+        public void increment() {
+            increaseFailedRecordCount();
+        }
+    };
 
     public CustomizedThreadPoolExecutor(Integer threadPoolCount, Integer maxThreadCount, Integer maxThreadExecCount, String poolName) {
         this(threadPoolCount, maxThreadCount, maxThreadExecCount, poolName, true);
@@ -117,7 +136,7 @@ public class CustomizedThreadPoolExecutor {
 
                     Long totalCount = 0L;
                     Long activeCount = 0L;
-                    Long completedCount = 0L;
+                    completedCount = 0L;
                     int totalDays = 0;
                     int totalHours = 0;
                     int remainingMinutes =0;
@@ -129,6 +148,8 @@ public class CustomizedThreadPoolExecutor {
                         activeCount+= entry.getActiveCount();
                         completedCount+= entry.getCompletedTaskCount();
                     }
+
+                    completedCount+= totalCompletedTaskCount + ALREADY_PROCESSED_RECORDS;
 
                     if(totalTaskCount > 0 || totalCount > 0) {
                         // Calculating Estimated Time of Process Completion
@@ -146,7 +167,7 @@ public class CustomizedThreadPoolExecutor {
                             int noOfCountRecords = consumedCountList.length;
                             avgCount = TotalCountSum/noOfCountRecords;
 
-                            Long remainingRecords = totalRecords - (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS);
+                            Long remainingRecords = totalRecords - (completedCount + failedRecordCount);
                             avgTime = TotalSum / noOfRecords;
                             Long totalTimeRequired = (remainingRecords / avgCount);
 
@@ -156,7 +177,7 @@ public class CustomizedThreadPoolExecutor {
                             remainingMinutes = (int) (totalTimeRequired % 60);
                         }
 
-                        System.out.println("Pool Name : " + NAME + " Avg Count per Min : " + avgCount + " Avg Time per Record : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + (totalCompletedTaskCount+ completedCount + ALREADY_PROCESSED_RECORDS));
+                        System.out.println("Pool Name : " + NAME + " Avg Count per Min : " + avgCount + " Avg Time per Record : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + " Failed in Previous Batch : " + TOTAL_FAILED_RECORDS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + completedCount + ", Failed Task : " + failedRecordCount);
                     }
                 }
             }, 0, DELAY_SECONDS);
@@ -165,8 +186,10 @@ public class CustomizedThreadPoolExecutor {
         THREAD_POOL_EXECUTOR_LIST.add(this);
     }
 
-    public synchronized void ExecuteTask(Runnable task) throws InterruptedException {
+    public synchronized void ExecuteTask(BaseThreadController task) throws InterruptedException {
         boolean taskAdded = false;
+        task.setPoolName(NAME);
+        task.setFailedRecordCount(failedIncrement);
 
         do {
             if(!noSlotAvailable) {
@@ -232,5 +255,9 @@ public class CustomizedThreadPoolExecutor {
 
     public void setEstimateTimer(Timer estimateTimer) {
         this.estimateTimer = estimateTimer;
+    }
+
+    public Long getCurrentCompletedTask() {
+        return completedCount;
     }
 }

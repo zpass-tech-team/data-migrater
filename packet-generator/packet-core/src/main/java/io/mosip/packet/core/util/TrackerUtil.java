@@ -17,6 +17,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -142,6 +143,7 @@ public class TrackerUtil {
         }
     }
 
+    @PreDestroy
     public void closeStatement() {
         if(IS_TRACKER_REQUIRED) {
             if (conn != null) {

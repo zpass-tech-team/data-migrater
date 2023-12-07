@@ -20,11 +20,11 @@ public class TableWriterQuery {
         insertMap=new LinkedHashMap<>();
 
         LinkedHashMap<String, String> rowQueryMap = new LinkedHashMap<>();
-        rowQueryMap.put("Excellent Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> >= 80");
-        rowQueryMap.put("Very Good Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> > 60 AND <$COLUMN_NAME> <= 80");
-        rowQueryMap.put("Good Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> > 40 AND <$COLUMN_NAME> <= 60");
-        rowQueryMap.put("Average Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> > 20 AND <$COLUMN_NAME> <= 40");
-        rowQueryMap.put("Bad Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> <=  20");
+        rowQueryMap.put("Excellent Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> >= 81");
+        rowQueryMap.put("Very Good Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> >= 61 AND <$COLUMN_NAME> < 81");
+        rowQueryMap.put("Good Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> >= 41 AND <$COLUMN_NAME> < 61");
+        rowQueryMap.put("Average Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> >= 21 AND <$COLUMN_NAME> < 41");
+        rowQueryMap.put("Bad Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> < 21");
         rowQueryMap.put("No Biometric Captured", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> IS NULL");
         rowQueryMap.put("Min Quality of Biometric Captured", "SELECT MIN(<$COLUMN_NAME>) FROM <$TABLE_NAME>");
         rowQueryMap.put("Max Quality of Biometric Captured", "SELECT MAX(<$COLUMN_NAME>) FROM <$TABLE_NAME>");

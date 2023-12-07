@@ -13,7 +13,7 @@ import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.dto.dbimport.QueryFilter;
 import io.mosip.packet.core.dto.dbimport.TableRequestDto;
 import io.mosip.packet.core.logger.DataProcessLogger;
-import io.mosip.packet.core.service.thread.BaseThreadDBController;
+import io.mosip.packet.core.service.thread.ThreadDBController;
 import io.mosip.packet.core.service.thread.CustomizedThreadPoolExecutor;
 import io.mosip.packet.core.service.thread.ResultSetter;
 import io.mosip.packet.core.service.thread.ThreadDBProcessor;
@@ -44,6 +44,9 @@ public class DataBaseUtil {
 
     @Autowired
     private TrackerUtil trackerUtil;
+
+    @Autowired
+    private CommonUtil commonUtil;
 
     @Value("${mosip.database.reader.max-threadpool-count:1}")
     private Integer dbReaderMaxThreadPoolCount;
@@ -81,6 +84,7 @@ public class DataBaseUtil {
         Statement statement1 = conn.createStatement();
         ResultSet resultSetCount = null;
         ResultSet resultSet = null;
+        CustomizedThreadPoolExecutor threadPool = null;
 
         try {
             if(conn != null) {
@@ -93,12 +97,12 @@ public class DataBaseUtil {
 
                 resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, false);
                 if (resultSet != null) {
-                    CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(dbReaderMaxThreadPoolCount, dbReaderMaxRecordsCountPerThreadPool, dbReaderMaxThreadExecCount, "DATABASE READER", false);
+                    threadPool = new CustomizedThreadPoolExecutor(dbReaderMaxThreadPoolCount, dbReaderMaxRecordsCountPerThreadPool, dbReaderMaxThreadExecCount, "DATABASE READER", true);
 
                     while(resultSet.next()) {
                         try {
                             Map<String, Object> resultData = extractResultSet(resultSet);
-                            BaseThreadDBController baseDbThreadController = new BaseThreadDBController();
+                            ThreadDBController baseDbThreadController = new ThreadDBController();
                             baseDbThreadController.setSetter(setter);
                             baseDbThreadController.setResultMap(resultData);
                             baseDbThreadController.setProcessor(new ThreadDBProcessor() {
@@ -137,9 +141,7 @@ public class DataBaseUtil {
                             });
                             threadPool.ExecuteTask(baseDbThreadController);
                         } catch (Exception e) {
-                            FAILED_RECORDS++;
-                            System.out.println("FAILED Record Count " + FAILED_RECORDS);
-                            e.printStackTrace();
+                            threadPool.increaseFailedRecordCount();
                             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
                         }
                     }
@@ -148,8 +150,8 @@ public class DataBaseUtil {
             } else
                 throw new SQLException("Unable to Connect With Database. Please check the Configuration");
         } catch(Exception e) {
-            FAILED_RECORDS++;
-            System.out.println("FAILED Record Count " + FAILED_RECORDS);
+            if(threadPool != null)
+                threadPool.increaseFailedRecordCount();
             throw e;
         } finally {
             if(resultSetCount != null)
@@ -166,29 +168,34 @@ public class DataBaseUtil {
     private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Statement statement, boolean fetchCount) throws Exception {
         if (tableRequestDto.getQueryType().equals(QuerySelection.TABLE)) {
             String tableName = tableRequestDto.getTableNameWithOutSchema();
+            List<String> ignoreFields = commonUtil.getNonIdSchemaNonTableFieldsMap();
 
             String columnNames = null;
 
             for(String column : fieldsCategoryMap.get(tableName)) {
-                if (columnNames == null)
-                    columnNames = column;
-                else
-                    columnNames += "," + column;
-            }
-
-            if(fieldsCategoryMap.containsKey(DEFAULT_TABLE))
-                for(String column : fieldsCategoryMap.get(DEFAULT_TABLE)) {
+                if(!ignoreFields.contains(column)) {
                     if (columnNames == null)
                         columnNames = column;
                     else
                         columnNames += "," + column;
+                }
+            }
+
+            if(fieldsCategoryMap.containsKey(DEFAULT_TABLE))
+                for(String column : fieldsCategoryMap.get(DEFAULT_TABLE)) {
+                    if(!ignoreFields.contains(column)) {
+                        if (columnNames == null)
+                            columnNames = column;
+                        else
+                            columnNames += "," + column;
+                    }
                 }
 
             String filterCondition = null;
             boolean whereCondition= false;
 
             String selectSql = "SELECT " + columnNames + "  from " + tableRequestDto.getTableName();
-            String countSql = "SELECT COUNT(*) from " + tableRequestDto.getTableName();
+            String countSql = "SELECT COUNT(*) from (" + tableRequestDto.getTableName() + ")";
 
             if(tableRequestDto.getFilters() != null) {
                 for (QueryFilter queryFilter : tableRequestDto.getFilters()) {
@@ -199,7 +206,13 @@ public class DataBaseUtil {
                         filterCondition += " AND ";
                     }
 
-                    filterCondition += queryFilter.getFilterField() + " " + queryFilter.getFilterCondition().format(queryFilter.getFromValue(), queryFilter.getToValue(), queryFilter.getFieldType());
+                    String condition1 = queryFilter.getFilterField() + " " + queryFilter.getFilterCondition().format(queryFilter.getFromValue(), queryFilter.getToValue(), queryFilter.getFieldType());
+
+                    if(queryFilter.getConjunctionFilter() != null) {
+                        condition1 = PrepareConjuctionQuery(queryFilter, condition1);
+                    }
+
+                    filterCondition +=condition1;
                 }
 
                 selectSql += filterCondition;
@@ -226,8 +239,7 @@ public class DataBaseUtil {
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(selectSql, dataMap));
         } else if (tableRequestDto.getQueryType().equals(QuerySelection.SQL_QUERY)) {
             String sqlQuery = tableRequestDto.getSqlQuery().toUpperCase();
-            int fromIndex = sqlQuery.indexOf("FROM");
-            String countSql = "SELECT COUNT(*) " + sqlQuery.substring(fromIndex);
+            String countSql = "SELECT COUNT(*) FROM (" + sqlQuery + ")";
 
             if(fetchCount)
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(countSql, dataMap));
@@ -273,5 +285,24 @@ public class DataBaseUtil {
             resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
         }
         return resultMap;
+    }
+
+    private String PrepareConjuctionQuery(QueryFilter queryFilter, String mainCondition) throws Exception {
+        String condition = "";
+        String conjCondition = queryFilter.getConjunctionFilter().getConjuctionType().toString();
+
+        for(QueryFilter queryFilter1 : queryFilter.getConjunctionFilter().getFilters()) {
+            condition += " " + conjCondition + " ";
+
+            condition += queryFilter1.getFilterField() + " " + queryFilter1.getFilterCondition().format(queryFilter1.getFromValue(), queryFilter1.getToValue(), queryFilter1.getFieldType());
+
+            if(queryFilter1.getConjunctionFilter() != null) {
+                String subCondition =PrepareConjuctionQuery(queryFilter1, condition);
+                condition +=subCondition;
+
+            }
+        }
+
+        return  "(" + mainCondition + " " + condition + ")";
     }
 }

@@ -27,9 +27,9 @@ public class GlobalConfig {
 
     public static Long TOTAL_RECORDS_FOR_PROCESS = 0l;
 
-    public static Long ALREADY_PROCESSED_RECORDS = 0L;
+    public static Long TOTAL_FAILED_RECORDS = 0l;
 
-    public static Long FAILED_RECORDS = 0L;
+    public static Long ALREADY_PROCESSED_RECORDS = 0L;
 
     public static Boolean IS_TPM_AVAILABLE;
 
@@ -61,9 +61,9 @@ public class GlobalConfig {
                     isCompleted = false;
                     break;
                 } else {
-                    if(executor.getInputProcessCompleted() && (entry.getTaskCount() - entry.getCompletedTaskCount() <= 0)) {
+                    if(executor.getInputProcessCompleted() && (entry.getTaskCount() - entry.getCompletedTaskCount() <= 0) && executor.isBatchAcceptRequest()) {
                         if(executor.getNAME().equals("QUALITY ANALYSIS")) {
-                            if(TOTAL_RECORDS_FOR_PROCESS - FAILED_RECORDS - executor.getTotalCompletedTaskCount() <= 0) {
+                            if(TOTAL_RECORDS_FOR_PROCESS - TOTAL_FAILED_RECORDS - executor.getCurrentCompletedTask() <= 0) {
                                 if(executor.getWatch() != null)
                                     executor.getWatch().cancel();
                                 if(executor.getEstimateTimer() != null)

@@ -16,11 +16,9 @@ import io.mosip.packet.core.dto.masterdata.DocumentTypeExtnDto;
 import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
 import io.mosip.packet.core.dto.upload.PacketUploadDTO;
 import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
-import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.PacketTrackerRepository;
 import io.mosip.packet.core.service.CustomNativeRepository;
-import io.mosip.packet.core.service.impl.CustomNativeRepositoryImpl;
 import io.mosip.packet.core.service.thread.*;
 import io.mosip.packet.core.spi.QualityWriterFactory;
 import io.mosip.packet.core.util.CommonUtil;
@@ -44,13 +42,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
-import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Clob;
 import java.sql.ResultSet;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -206,14 +201,12 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         packetCreatorResponse.setRID(new ArrayList<>());
         PacketDto packetDto = null;
         TOTAL_RECORDS_FOR_PROCESS=0L;
-        FAILED_RECORDS=0L;
         //Timer processor = null;
         //Long DELAY_SECONDS = 10000L;
 
 
         try {
-            commonUtil.updateFieldCategory(dbImportRequest);
-            commonUtil.updateBioDestFormat(dbImportRequest);
+            commonUtil.initialize(dbImportRequest);
             List<ValidatorEnum> enumList = new ArrayList<>();
             enumList.add(ValidatorEnum.ID_SCHEMA_VALIDATOR);
             enumList.add(ValidatorEnum.FILTER_VALIDATOR);
@@ -221,13 +214,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             populateTableFields(dbImportRequest);
             dataBaseUtil.connectDatabase(dbImportRequest);
             CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount, GlobalConfig.getActivityName());
-            Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
+/*            Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
 
                 @Override
                 public void uncaughtException(Thread t, Throwable e) {
-                    LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + t.getName() + " ERROR : " + e.getMessage());
+                    FAILED_RECORDS++;
+                    LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + t.getName(), e);
                 }
-            };
+            };*/
 
             ResultSetter setter = new ResultSetter() {
                 @SneakyThrows
@@ -252,11 +246,11 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 @SneakyThrows
                 @Override
                 public void setResult(Object obj) {
-                    BaseThreadController baseThreadController = new BaseThreadController();
-                    baseThreadController.setSetter(setter);
+                    ThreadDataProcessController threadDataProcessController = new ThreadDataProcessController();
+                    threadDataProcessController.setSetter(setter);
                     Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap = (Map<FieldCategory, LinkedHashMap<String, Object>>) obj;
-                    if(processPacket(dbImportRequest, packetCreatorResponse, baseThreadController, dataHashMap))
-                        threadPool.ExecuteTask(baseThreadController);
+                    if(processPacket(dbImportRequest, packetCreatorResponse, threadDataProcessController, dataHashMap))
+                        threadPool.ExecuteTask(threadDataProcessController);
                     trackerUtil.addTrackerLocalEntry(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()).toString(), null, TrackerStatus.STARTED, dbImportRequest.getProcess(), null, SESSION_KEY, getActivityName());
                 }
             };
@@ -304,6 +298,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap, DataProcessor);
             threadPool.setInputProcessCompleted(true);
 
+
             do {
                 Thread.sleep(10000);
             } while(!GlobalConfig.isThreadPoolCompleted());
@@ -313,6 +308,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
  //           if(threadPool.isTaskCompleted())
  //               processor.cancel();
+        } catch (Exception e) {
+          e.printStackTrace();
         } finally {
             dataBaseUtil.closeConnection();
             if(!IS_ONLY_FOR_QUALITY_CHECK)
@@ -328,7 +325,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         return packetCreatorResponse;
     }
 
-    private boolean processPacket(DBImportRequest dbImportRequest, PacketCreatorResponse packetCreatorResponse, BaseThreadController baseThreadController, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception {
+    private boolean processPacket(DBImportRequest dbImportRequest, PacketCreatorResponse packetCreatorResponse, ThreadDataProcessController threadDataProcessController, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception {
         if ( dataHashMap != null) {
             String registrationId = null;
 
@@ -345,12 +342,12 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 }
             }
 
-            baseThreadController.setDataHashMap(dataHashMap);
-            baseThreadController.setRegistrationId(registrationId);
-            baseThreadController.setTrackerColumn(dbImportRequest.getTrackerInfo().getTrackerColumn());
-            baseThreadController.setProcessor(new ThreadProcessor() {
+            threadDataProcessController.setDataHashMap(dataHashMap);
+            threadDataProcessController.setRegistrationId(registrationId);
+            threadDataProcessController.setTrackerColumn(dbImportRequest.getTrackerInfo().getTrackerColumn());
+            threadDataProcessController.setProcessor(new ThreadProcessor() {
                 @Override
-                public void processData(ResultSetter setter, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, String registrationId, String trackerColumn) {
+                public void processData(ResultSetter setter, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, String registrationId, String trackerColumn) throws Exception {
                     Long startTime = System.nanoTime();
                     LinkedHashMap<String, Object> demoDetails = dataHashMap.get(FieldCategory.DEMO);
                     LinkedHashMap<String, Object> bioDetails = dataHashMap.get(FieldCategory.BIO);
@@ -477,13 +474,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                             setter.setResult(resultDto);
                         }
                     } catch (Exception e) {
-                        LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Exception : " + e.getMessage() + e.toString());
+                        LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Exception : " + e.getMessage(), e);
                         ResultDto resultDto = new ResultDto();
                         resultDto.setRegNo(null);
                         resultDto.setRefId(demoDetails.get(trackerColumn).toString());
                         resultDto.setComments(e.getMessage());
                         resultDto.setStatus(TrackerStatus.FAILED);
                         setter.setResult(resultDto);
+                        throw e;
                     }
                     LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + (registrationId == null ? demoDetails.get(trackerColumn).toString() : registrationId) + " Process Ended");
                     Long endTime = System.nanoTime();

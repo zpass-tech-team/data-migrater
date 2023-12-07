@@ -105,7 +105,7 @@ public class Reprocessor {
         List<PacketTracker> trackerList =  packetTrackerRepository.findByStatusIn(statusList);
 
         for(PacketTracker packetTracker : trackerList) {
-            BaseThreadReprocessorController controller = new BaseThreadReprocessorController();
+            ThreadReprocessorController controller = new ThreadReprocessorController();
             controller.setPacketTracker(packetTracker);
             controller.setSetter(setter);
             controller.setProcessor(new ThreadReprocessor() {

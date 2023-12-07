@@ -24,8 +24,6 @@ public class IdSchemaFieldValidator implements Validator {
 
     List<String> idFields;
 
-    List<String> nonIdSchemaFieldsMap;
-
     private List<String> getIdFields() throws ApisResourceAccessException, IOException, ParseException {
         if (idFields == null) {
             idFields = new ArrayList<>();
@@ -48,23 +46,13 @@ public class IdSchemaFieldValidator implements Validator {
         return idFields;
     }
 
-    public void populateNonIdSchemaFields(DBImportRequest dbImportRequest) {
-        nonIdSchemaFieldsMap = new ArrayList<>();
-
-        for (TableRequestDto tableRequestDto: dbImportRequest.getTableDetails()) {
-            if(tableRequestDto.getNonIdSchemaFields() != null) {
-                List<String> nonIdSchemaFieldList = Arrays.asList(tableRequestDto.getNonIdSchemaFields());
-                nonIdSchemaFieldsMap.addAll(nonIdSchemaFieldList);
-            }
-        }
-    }
     @Override
     public Boolean validate(DBImportRequest dbImportRequest) throws Exception {
         List<String> idFieldsList = getIdFields();
-        populateNonIdSchemaFields(dbImportRequest);
+        List<String> nonIdSchemaTableFieldsMap = commonUtil.getNonIdSchemaFieldsMap();
 
         for(FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
-            if(nonIdSchemaFieldsMap == null || (nonIdSchemaFieldsMap != null && nonIdSchemaFieldsMap.size() > 0 && !nonIdSchemaFieldsMap.contains(fieldFormatRequest.getFieldToMap())))
+            if(nonIdSchemaTableFieldsMap == null || (nonIdSchemaTableFieldsMap != null && nonIdSchemaTableFieldsMap.size() > 0 && !nonIdSchemaTableFieldsMap.contains(fieldFormatRequest.getFieldToMap())))
                 for(String fieldName : fieldFormatRequest.getFieldToMap().split(","))
                     if(!idFieldsList.contains(fieldName))
                         throw new Exception(fieldFormatRequest.getFieldToMap() + " is not found in Id Schema.");
