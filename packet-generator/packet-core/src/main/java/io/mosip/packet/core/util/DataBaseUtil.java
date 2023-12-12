@@ -285,7 +285,7 @@ public class DataBaseUtil {
         ResultSetMetaData metadata = resultSet.getMetaData();
         int columnCount = metadata.getColumnCount();
         for (int i = 1; i <= columnCount; i++) {
-            resultData.put(metadata.getColumnName(i), null);
+            resultData.put(metadata.getColumnName(i).toUpperCase(), null);
         }
         Map<String, Object> resultMap = (LinkedHashMap<String, Object>) resultData.clone();
 
