@@ -69,14 +69,14 @@ public class TableDataMapperUtil implements DataMapperUtil {
     }
 
     @Override
-    public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
+    public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName, Map<String, HashMap<String, String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         DataFormat destFormat = fieldFormatRequest.getDestFormat() != null ? fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1) : null;
         List<FieldName> fieldNames = fieldFormatRequest.getFieldList();
         String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldNames.get(0).getFieldName().toLowerCase();
         String originalField = fieldFormatRequest.getFieldName();
 
-        if(!dataMap2.get(fieldFormatRequest.getFieldCategory()).containsKey(originalField) && fieldsCategoryMap.get(tableName).contains(fieldNames.get(0).getFieldName())) {
+        if(!dataMap2.get(fieldFormatRequest.getFieldCategory()).containsKey(originalField) && fieldsCategoryMap.get(tableName).containsKey(fieldNames.get(0).getFieldName())) {
             String mvelValue = null;
             if (fieldFormatRequest.getMvelExpressions() != null) {
                 Map map = new HashMap();
@@ -120,7 +120,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
 
                         initialEntry=false;
 
-                        if(fieldsCategoryMap.get(tableName).contains(field.getFieldName()))
+                        if(fieldsCategoryMap.get(tableName).containsKey(field.getFieldName()))
                             if(demoValue == null)
                                 demoValue = resultSet.get(field.getFieldName());
                             else {
@@ -181,7 +181,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
                 String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
                 Map<String, byte[]> map = new HashMap<>();
 
-                if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
+                if(fieldsCategoryMap.get(tableName).containsKey(fieldName))  {
                     byte[] byteVal = null;
                     if(fieldFormatRequest.getMvelExpressions() != null && mvelValue != null) {
                         byteVal = convertObjectToByteArray(mvelValue);;
@@ -214,7 +214,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
                 String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
 
-                if(fieldsCategoryMap.get(tableName).contains(fieldName))  {
+                if(fieldsCategoryMap.get(tableName).containsKey(fieldName))  {
                     Document document = new Document();
                     byte[] byteVal = convertObjectToByteArray(resultSet.get(fieldName));
                     if(objectStoreFetchEnabled)

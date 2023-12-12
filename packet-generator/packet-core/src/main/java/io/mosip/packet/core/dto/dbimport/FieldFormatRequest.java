@@ -26,6 +26,7 @@ public class FieldFormatRequest {
     private DocumentAttributes documentAttributes;
     private MvelDto mvelExpressions;
     private List<FieldName> fieldList;
+    private String staticValue;
 
     public List<FieldName> getFieldList() {
         if(fieldList != null && fieldList.size() > 0)

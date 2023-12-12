@@ -80,7 +80,7 @@ public class DataBaseUtil {
 
     }
 
-    public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashSet<String>> fieldsCategoryMap, ResultSetter setter) throws Exception {
+    public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashMap<String, String>> fieldsCategoryMap, ResultSetter setter) throws Exception {
         Statement statement1 = conn.createStatement();
         ResultSet resultSetCount = null;
         ResultSet resultSet = null;
@@ -133,7 +133,7 @@ public class DataBaseUtil {
                                         }
                                         setter.setResult(dataHashMap);
                                     } else {
-                                        ALREADY_PROCESSED_RECORDS++;
+ //                                       ALREADY_PROCESSED_RECORDS++;
                                         LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Record Already Processed for ref_id" +  dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()));
                                     }
 
@@ -165,15 +165,19 @@ public class DataBaseUtil {
         }
     }
 
-    private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Statement statement, boolean fetchCount) throws Exception {
+    private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashMap<String, String>> fieldsCategoryMap, Statement statement, boolean fetchCount) throws Exception {
         if (tableRequestDto.getQueryType().equals(QuerySelection.TABLE)) {
             String tableName = tableRequestDto.getTableNameWithOutSchema();
             List<String> ignoreFields = commonUtil.getNonIdSchemaNonTableFieldsMap();
 
             String columnNames = null;
 
-            for(String column : fieldsCategoryMap.get(tableName)) {
+            for(Map.Entry<String, String> entry : fieldsCategoryMap.get(tableName).entrySet()) {
+                String column = entry.getKey();
                 if(!ignoreFields.contains(column)) {
+                    if(entry.getValue() != null)
+                        column = "'"+entry.getValue()+"'" + " AS " + column;
+
                     if (columnNames == null)
                         columnNames = column;
                     else
@@ -182,8 +186,13 @@ public class DataBaseUtil {
             }
 
             if(fieldsCategoryMap.containsKey(DEFAULT_TABLE))
-                for(String column : fieldsCategoryMap.get(DEFAULT_TABLE)) {
+                for(Map.Entry<String, String> entry : fieldsCategoryMap.get(DEFAULT_TABLE).entrySet()) {
+                    String column = entry.getKey();
+
                     if(!ignoreFields.contains(column)) {
+                        if(entry.getValue() != null)
+                            column = "'"+entry.getValue()+"'" + " AS " + column;
+
                         if (columnNames == null)
                             columnNames = column;
                         else
@@ -195,7 +204,6 @@ public class DataBaseUtil {
             boolean whereCondition= false;
 
             String selectSql = "SELECT " + columnNames + "  from " + tableRequestDto.getTableName();
-            String countSql = "SELECT COUNT(*) from (" + tableRequestDto.getTableName() + ")";
 
             if(tableRequestDto.getFilters() != null) {
                 for (QueryFilter queryFilter : tableRequestDto.getFilters()) {
@@ -216,7 +224,6 @@ public class DataBaseUtil {
                 }
 
                 selectSql += filterCondition;
-                countSql += filterCondition;
             }
 
             filterCondition = "";
@@ -228,10 +235,11 @@ public class DataBaseUtil {
                     filterCondition += " AND ";
                 }
 
-                filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD') AND SESSION_KEY = %s) ", TRACKER_TABLE_NAME, SESSION_KEY);
+                filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD') AND SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
                 selectSql += filterCondition;
-                countSql += filterCondition;
             }
+
+            String countSql = "SELECT COUNT(*) from (" + selectSql + ") a"; //alias has been added for MSSQL
 
             if(fetchCount)
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(countSql, dataMap));
@@ -239,7 +247,7 @@ public class DataBaseUtil {
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(selectSql, dataMap));
         } else if (tableRequestDto.getQueryType().equals(QuerySelection.SQL_QUERY)) {
             String sqlQuery = tableRequestDto.getSqlQuery().toUpperCase();
-            String countSql = "SELECT COUNT(*) FROM (" + sqlQuery + ")";
+            String countSql = "SELECT COUNT(*) FROM (" + sqlQuery + ") a"; //alias has been added for MSSQL
 
             if(fetchCount)
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(countSql, dataMap));
@@ -260,7 +268,7 @@ public class DataBaseUtil {
         }
     }
 
-    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, Map<String, Object> resultData, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashSet<String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
+    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, Map<String, Object> resultData, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashMap<String, String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
         if (dataMap != null && dataMap.size() <= 0) {
             dataMap.put(FieldCategory.DEMO, new LinkedHashMap<>());
             dataMap.put(FieldCategory.BIO, new LinkedHashMap<>());

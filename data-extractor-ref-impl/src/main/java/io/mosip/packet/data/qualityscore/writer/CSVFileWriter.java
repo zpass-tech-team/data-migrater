@@ -8,6 +8,7 @@ import io.mosip.packet.core.spi.QualityWriterFactory;
 import io.mosip.packet.core.util.CommonUtil;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
@@ -20,6 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Component
+@ConditionalOnProperty(value = "mosip.data.quality.writer.classname", havingValue = "io.mosip.packet.data.qualityscore.writer.CSVFileWriter")
 public class CSVFileWriter implements QualityWriterFactory {
     private static File csvFile;
     private static Boolean isHeaderWritten = false;

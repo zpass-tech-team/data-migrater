@@ -209,21 +209,23 @@ public class TableWriter implements QualityWriterFactory {
             String updateField = "";
 
             for(String key : map.keySet()) {
-                if(columns.isEmpty())
-                    columns = key;
-                else
-                    columns += ", " + key;
+                if(!key.toLowerCase().contains("ref_id")) {
+                    if(columns.isEmpty())
+                        columns = key;
+                    else
+                        columns += ", " + key;
 
-                if(values.isEmpty())
-                    values = "?";
-                else
-                    values += ", ?";
+                    if(values.isEmpty())
+                        values = "?";
+                    else
+                        values += ", ?";
 
-                if(!key.toLowerCase().contains("ref_id"))
                     if(updateField.isEmpty())
                         updateField = key + " = ?" ;
                     else
                         updateField += ", " + key + " = ?";
+                }
+
             }
 
             String query = TableWriterQuery.getInsertQueries(WRITER_TABLE_NAME).get(dbType);
@@ -239,24 +241,26 @@ public class TableWriter implements QualityWriterFactory {
 
             int i = 0;
             for(String key : map.keySet()) {
-                i++;
-                switch(columnMap.get(key.toUpperCase()).getSimpleName()) {
-                    case "String" :
-                        preparedStatement.setString(i, csvMap.get(key));
-                        if(updateColumnPresent && !key.toLowerCase().contains("ref_id"))
-                            preparedStatement.setString(map.size() + i-1, csvMap.get(key));
-                        break;
-                    case "Number" :
-                        if(csvMap.get(key) == null) {
-                            preparedStatement.setNull(i, Types.FLOAT);
-                            if(updateColumnPresent && !key.toLowerCase().contains("ref_id"))
-                                preparedStatement.setNull(map.size() + i-1, Types.FLOAT);
-                        } else {
-                            preparedStatement.setFloat(i, Float.valueOf(csvMap.get(key)));
-                            if(updateColumnPresent && !key.toLowerCase().contains("ref_id"))
-                                preparedStatement.setFloat(map.size() + i-1, Float.valueOf(csvMap.get(key)));
-                        }
-                        break;
+                if(!key.toLowerCase().contains("ref_id")) {
+                    i++;
+                    switch(columnMap.get(key.toUpperCase()).getSimpleName()) {
+                        case "String" :
+                            preparedStatement.setString(i, csvMap.get(key));
+                            if(updateColumnPresent)
+                                preparedStatement.setString(map.size() + i-1, csvMap.get(key));
+                            break;
+                        case "Number" :
+                            if(csvMap.get(key) == null) {
+                                preparedStatement.setNull(i, Types.FLOAT);
+                                if(updateColumnPresent)
+                                    preparedStatement.setNull(map.size() + i-1, Types.FLOAT);
+                            } else {
+                                preparedStatement.setFloat(i, Float.valueOf(csvMap.get(key)));
+                                if(updateColumnPresent)
+                                    preparedStatement.setFloat(map.size() + i-1, Float.valueOf(csvMap.get(key)));
+                            }
+                            break;
+                    }
                 }
             }
 

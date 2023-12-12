@@ -149,7 +149,8 @@ public class CustomizedThreadPoolExecutor {
                         completedCount+= entry.getCompletedTaskCount();
                     }
 
-                    completedCount+= totalCompletedTaskCount + ALREADY_PROCESSED_RECORDS;
+ //                   completedCount+= totalCompletedTaskCount + ALREADY_PROCESSED_RECORDS;
+                    completedCount+= totalCompletedTaskCount;
 
                     if(totalTaskCount > 0 || totalCount > 0) {
                         // Calculating Estimated Time of Process Completion

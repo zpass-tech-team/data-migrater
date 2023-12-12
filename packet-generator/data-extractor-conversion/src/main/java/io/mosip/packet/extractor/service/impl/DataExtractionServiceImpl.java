@@ -122,7 +122,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     private CustomNativeRepository customNativeRepository;
     private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
-    private Map<String, HashSet<String>> fieldsCategoryMap = new HashMap<>();
+    private Map<String, HashMap<String, String>> fieldsCategoryMap = new HashMap<>();
     private ObjectMapper objectMapper = new ObjectMapper();
     //private boolean backendProcess = false;
     //private boolean isRecordPresentForProcess = true;
@@ -475,7 +475,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         }
                     } catch (Exception e) {
                         LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Exception : " + e.getMessage(), e);
-                        ResultDto resultDto = new ResultDto();
+                            ResultDto resultDto = new ResultDto();
                         resultDto.setRegNo(null);
                         resultDto.setRefId(demoDetails.get(trackerColumn).toString());
                         resultDto.setComments(e.getMessage());
@@ -509,9 +509,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 tableName = fieldName.getTableName();
 
                             if (!fieldsCategoryMap.containsKey(tableName))
-                                fieldsCategoryMap.put(tableName, new HashSet<>());
+                                fieldsCategoryMap.put(tableName, new HashMap<>());
 
-                            fieldsCategoryMap.get(tableName).add(fieldName.getFieldName());
+                            fieldsCategoryMap.get(tableName).put(fieldName.getFieldName(), fieldFormatRequest.getStaticValue());
                         }
                         break;
 
@@ -524,24 +524,24 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     tableName = fieldName.getTableName();
 
                 if (!fieldsCategoryMap.containsKey(tableName))
-                    fieldsCategoryMap.put(tableName, new HashSet<>());
+                    fieldsCategoryMap.put(tableName, new HashMap<>());
 
-                fieldsCategoryMap.get(tableName).add(fieldName.getFieldName());
+                fieldsCategoryMap.get(tableName).put(fieldName.getFieldName(), fieldFormatRequest.getStaticValue());
             }
 
             if(fieldFormatRequest.getPrimaryField() != null)
-                fieldsCategoryMap.get(tableName).add(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getPrimaryField()));
+                fieldsCategoryMap.get(tableName).put(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getPrimaryField()),null);
             if(fieldFormatRequest.getSrcFieldForQualityScore() != null)
-                fieldsCategoryMap.get(tableName).add(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore()));
+                fieldsCategoryMap.get(tableName).put(fieldFormatRequest.getFieldNameWithoutSchema(fieldFormatRequest.getSrcFieldForQualityScore()), null);
 
             if(fieldFormatRequest.getDocumentAttributes() != null) {
                 DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
-                fieldsCategoryMap.get(tableName).add(documentAttributes.getDocumentRefNoField().contains("STATIC") ? "'" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField()) + "' AS STATIC_" +  commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
-                        :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentRefNoField()));
-                fieldsCategoryMap.get(tableName).add(documentAttributes.getDocumentFormatField().contains("STATIC") ? "'" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField()) + "' AS STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
-                        :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentFormatField()));
-                fieldsCategoryMap.get(tableName).add(documentAttributes.getDocumentCodeField().contains("STATIC") ? "'" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField()) + "' AS STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
-                        :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField()));
+                fieldsCategoryMap.get(tableName).put(documentAttributes.getDocumentRefNoField().contains("STATIC") ? "'" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField()) + "' AS STATIC_" +  commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
+                        :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentRefNoField()), null);
+                fieldsCategoryMap.get(tableName).put(documentAttributes.getDocumentFormatField().contains("STATIC") ? "'" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField()) + "' AS STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
+                        :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentFormatField()),null);
+                fieldsCategoryMap.get(tableName).put(documentAttributes.getDocumentCodeField().contains("STATIC") ? "'" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField()) + "' AS STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
+                        :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField()), null);
             }
         }
     }

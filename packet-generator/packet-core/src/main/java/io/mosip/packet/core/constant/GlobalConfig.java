@@ -29,7 +29,7 @@ public class GlobalConfig {
 
     public static Long TOTAL_FAILED_RECORDS = 0l;
 
-    public static Long ALREADY_PROCESSED_RECORDS = 0L;
+ //   public static Long ALREADY_PROCESSED_RECORDS = 0L;
 
     public static Boolean IS_TPM_AVAILABLE;
 
