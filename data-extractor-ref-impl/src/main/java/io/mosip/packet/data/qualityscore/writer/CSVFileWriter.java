@@ -96,7 +96,6 @@ public class CSVFileWriter implements QualityWriterFactory {
         }
     }
 
-    @PreDestroy
     @Override
     public void preDestroyProcess() throws SQLException {
         CSVWriter WRITER = null;
