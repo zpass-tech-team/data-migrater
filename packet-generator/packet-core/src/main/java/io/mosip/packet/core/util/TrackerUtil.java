@@ -170,7 +170,7 @@ public class TrackerUtil {
         }
     }
 
-    public boolean isRecordPresent(Object value, String activity) throws SQLException {
+    public synchronized boolean isRecordPresent(Object value, String activity) throws SQLException {
         if(IS_TRACKER_REQUIRED) {
             PreparedStatement statement = null;
             ResultSet resultSet = null;
