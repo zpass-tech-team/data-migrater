@@ -136,6 +136,16 @@ public class TrackerUtil {
                 preparedStatement.setString(9, trackerRequestDto.getComments());
                 preparedStatement.addBatch();
             } catch (SQLException throwables) {
+                if(throwables.getMessage().contains("ORA-01000")) {
+                    try {
+                        conn.close();
+                        conn=null;
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                    this.initialize();
+                    addTrackerEntry(trackerRequestDto);
+                }
                 LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
                         "Exception encountered during Tracker record insertion - TrackerUtil "
                                 + ExceptionUtils.getStackTrace(throwables));
@@ -176,6 +186,12 @@ public class TrackerUtil {
                 else
                     return false;
             } catch (SQLException throwables) {
+                if(throwables.getMessage().contains("ORA-01000")) {
+                    conn.close();
+                    conn=null;
+                    this.initialize();
+                    return isRecordPresent(value, activity);
+                }
                 LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
                         "Exception encountered while checking Tracker Record present - TrackerUtil "
                                 + ExceptionUtils.getStackTrace(throwables));

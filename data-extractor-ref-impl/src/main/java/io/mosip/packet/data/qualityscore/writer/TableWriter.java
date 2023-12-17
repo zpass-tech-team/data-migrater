@@ -14,6 +14,7 @@ import io.mosip.packet.data.qualityscore.writer.constant.TableWriterConstant;
 import io.mosip.packet.data.qualityscore.writer.constant.TableWriterQuery;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,7 @@ import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
 
 @Component
+@ConditionalOnProperty(value = "mosip.data.quality.writer.classname", havingValue = "io.mosip.packet.data.qualityscore.writer.TableWriter")
 public class TableWriter implements QualityWriterFactory {
     private static final Logger LOGGER = DataProcessLogger.getLogger(TableWriter.class);
     private static Connection conn = null;
@@ -311,7 +313,6 @@ public class TableWriter implements QualityWriterFactory {
 
     }
 
-    @PreDestroy
     @Override
     public void preDestroyProcess() throws SQLException {
         Statement statement = null;

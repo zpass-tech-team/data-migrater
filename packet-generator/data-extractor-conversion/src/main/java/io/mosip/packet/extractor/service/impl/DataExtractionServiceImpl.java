@@ -315,8 +315,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             if(!IS_ONLY_FOR_QUALITY_CHECK)
                 trackerUtil.closeStatement();
 
-            if(IS_RUNNING_AS_BATCH)
-                qualityWriterFactory.preDestroyProcess();
+            qualityWriterFactory.preDestroyProcess();
         }
         System.out.println("Packet Uploaded List : " + (new Gson()).toJson(packetCreatorResponse));
         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploaded List : " + (new Gson()).toJson(packetCreatorResponse));
