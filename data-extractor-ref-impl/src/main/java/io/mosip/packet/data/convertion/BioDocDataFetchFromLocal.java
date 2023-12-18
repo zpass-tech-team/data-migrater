@@ -1,6 +1,7 @@
 package io.mosip.packet.data.convertion;
 
 import io.mosip.packet.core.spi.BioDocApiFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@ConditionalOnProperty(value = "mosip.packet.bio.doc.data.converter.classname", havingValue = "BioDocDataFetchFromLocal")
 public class BioDocDataFetchFromLocal implements BioDocApiFactory {
     @Override
     public Map<String, byte[]> getBioData(byte[] byteval, String fieldName) throws IOException {

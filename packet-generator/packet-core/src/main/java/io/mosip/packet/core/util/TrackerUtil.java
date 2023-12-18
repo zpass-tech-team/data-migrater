@@ -138,6 +138,11 @@ public class TrackerUtil {
             } catch (SQLException throwables) {
                 if(throwables.getMessage().contains("ORA-01000")) {
                     try {
+                        preparedStatement.executeBatch();
+                        preparedStatement.clearBatch();
+                        preparedStatement.closeOnCompletion();
+                        preparedStatement = null;
+                        batchSize = 1;
                         conn.close();
                         conn=null;
                     } catch (SQLException e) {
@@ -145,10 +150,11 @@ public class TrackerUtil {
                     }
                     this.initialize();
                     addTrackerEntry(trackerRequestDto);
+                } else {
+                    LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
+                            "Exception encountered during Tracker record insertion - TrackerUtil "
+                                    + ExceptionUtils.getStackTrace(throwables));
                 }
-                LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
-                        "Exception encountered during Tracker record insertion - TrackerUtil "
-                                + ExceptionUtils.getStackTrace(throwables));
             }
         }
     }
@@ -187,15 +193,21 @@ public class TrackerUtil {
                     return false;
             } catch (SQLException throwables) {
                 if(throwables.getMessage().contains("ORA-01000")) {
+                    preparedStatement.executeBatch();
+                    preparedStatement.clearBatch();
+                    preparedStatement.closeOnCompletion();
+                    preparedStatement = null;
+                    batchSize = 1;
                     conn.close();
                     conn=null;
                     this.initialize();
                     return isRecordPresent(value, activity);
+                } else {
+                    LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
+                            "Exception encountered while checking Tracker Record present - TrackerUtil "
+                                    + ExceptionUtils.getStackTrace(throwables));
+                    throw throwables;
                 }
-                LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
-                        "Exception encountered while checking Tracker Record present - TrackerUtil "
-                                + ExceptionUtils.getStackTrace(throwables));
-                throw throwables;
             } finally {
                 try {
                     resultSet.close();

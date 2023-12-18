@@ -31,7 +31,7 @@ import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
 
 @Component
-@ConditionalOnProperty(value = "mosip.data.quality.writer.classname", havingValue = "io.mosip.packet.data.qualityscore.writer.TableWriter")
+@ConditionalOnProperty(value = "mosip.data.quality.writer.classname", havingValue = "TableWriter")
 public class TableWriter implements QualityWriterFactory {
     private static final Logger LOGGER = DataProcessLogger.getLogger(TableWriter.class);
     private static Connection conn = null;

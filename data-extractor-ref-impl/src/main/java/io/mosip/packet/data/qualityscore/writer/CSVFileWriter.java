@@ -21,7 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Component
-@ConditionalOnProperty(value = "mosip.data.quality.writer.classname", havingValue = "io.mosip.packet.data.qualityscore.writer.CSVFileWriter")
+@ConditionalOnProperty(value = "mosip.data.quality.writer.classname", havingValue = "CSVFileWriter")
 public class CSVFileWriter implements QualityWriterFactory {
     private static File csvFile;
     private static Boolean isHeaderWritten = false;

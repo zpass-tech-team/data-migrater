@@ -110,6 +110,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Autowired
     private TrackerUtil trackerUtil;
 
+    @Autowired
     private QualityWriterFactory qualityWriterFactory;
 
     @Autowired
@@ -124,22 +125,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
     private Map<String, HashMap<String, String>> fieldsCategoryMap = new HashMap<>();
     private ObjectMapper objectMapper = new ObjectMapper();
-    //private boolean backendProcess = false;
-    //private boolean isRecordPresentForProcess = true;
-
-    @Value("${mosip.data.quality.writer.classname:io.mosip.packet.data.quality.writer.CSVFileWriter}")
-    private String qualityWriterClassName;
-
-    @Autowired
-    private List<QualityWriterFactory> qualityWriterFactoryList;
-
-    @PostConstruct
-    public void loadConfiguration() {
-        for(QualityWriterFactory factory : qualityWriterFactoryList) {
-            if(factory.getClass().getName().equals(qualityWriterClassName))
-                qualityWriterFactory = factory;
-        }
-    }
 
     @Override
     public LinkedHashMap<String, Object> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {

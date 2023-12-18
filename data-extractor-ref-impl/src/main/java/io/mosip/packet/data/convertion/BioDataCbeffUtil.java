@@ -14,12 +14,14 @@ import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.core.spi.BioDocApiFactory;
 import io.mosip.packet.core.util.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 @Component
+@ConditionalOnProperty(value = "mosip.packet.bio.doc.data.converter.classname", havingValue = "BioDataCbeffUtil")
 public class BioDataCbeffUtil implements BioDocApiFactory {
 
     @Autowired

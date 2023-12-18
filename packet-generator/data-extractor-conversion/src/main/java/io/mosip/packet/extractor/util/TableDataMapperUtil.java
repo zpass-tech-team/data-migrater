@@ -47,26 +47,13 @@ public class TableDataMapperUtil implements DataMapperUtil {
     @Value("${mosip.packet.objectstore.fetch.enabled:false}")
     private boolean objectStoreFetchEnabled;
 
-    @Value("${mosip.packet.bio.doc.data.converter.classname:io.mosip.packet.data.convertion.BioDocDataConverter}")
-    private String bioDocApiClassName;
-
     @Autowired
-    private List<BioDocApiFactory> bioDocApiFactoryList;
-
     private BioDocApiFactory bioDocApiFactory;
 
     private String VALUE_SPLITTER = " ";
 
     @Autowired
     private QueryFormatter formatter;
-
-    @PostConstruct
-    public void loadConfiguration() {
-        for(BioDocApiFactory factory : bioDocApiFactoryList) {
-            if(factory.getClass().getName().equals(bioDocApiClassName))
-                bioDocApiFactory = factory;
-        }
-    }
 
     @Override
     public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName, Map<String, HashMap<String, String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
