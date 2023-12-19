@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<GridPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="io.mosip.packet.client.controller.DBLoginController">
+    <rowConstraints>
+        <RowConstraints maxHeight="100.0"/>
+        <RowConstraints maxHeight="100.0"/>
+        <RowConstraints maxHeight="100.0"/>
+        <RowConstraints maxHeight="100.0"/>
+        <RowConstraints maxHeight="100.0"/>
+        <RowConstraints maxHeight="100.0"/>
+        <RowConstraints maxHeight="100.0"/>
+        <RowConstraints maxHeight="100.0"/>
+    </rowConstraints>
+
+    <columnConstraints>
+        <ColumnConstraints percentWidth="10.0"/>
+        <ColumnConstraints percentWidth="20.0" halignment="LEFT"/>
+        <ColumnConstraints percentWidth="1.0" halignment="CENTER"/>
+        <ColumnConstraints percentWidth="29.0" halignment="LEFT"/>
+        <ColumnConstraints percentWidth="40.0"/>
+    </columnConstraints>
+
+    <children>
+        <Label GridPane.columnIndex="1" GridPane.rowIndex="0" text="Database Type"/>
+        <Label GridPane.columnIndex="1" GridPane.rowIndex="1" text="Database IP"/>
+        <Label GridPane.columnIndex="1" GridPane.rowIndex="2" text="Database Port"/>
+        <Label GridPane.columnIndex="1" GridPane.rowIndex="3" text="Database Name"/>
+        <Label GridPane.columnIndex="1" GridPane.rowIndex="4" text="Database User Name"/>
+        <Label GridPane.columnIndex="1" GridPane.rowIndex="5" text="Database Password"/>
+
+        <Label GridPane.columnIndex="2" GridPane.rowIndex="0" text=":"/>
+        <Label GridPane.columnIndex="2" GridPane.rowIndex="1" text=":"/>
+        <Label GridPane.columnIndex="2" GridPane.rowIndex="2" text=":"/>
+        <Label GridPane.columnIndex="2" GridPane.rowIndex="3" text=":"/>
+        <Label GridPane.columnIndex="2" GridPane.rowIndex="4" text=":"/>
+        <Label GridPane.columnIndex="2" GridPane.rowIndex="5" text=":"/>
+
+        <ComboBox GridPane.columnIndex="3" GridPane.rowIndex="0" promptText="Database Type" fx:id="databaseType"/>
+        <TextField GridPane.columnIndex="3" GridPane.rowIndex="1" alignment="CENTER_LEFT" promptText="Database Url" fx:id="databaseUrl"/>
+        <TextField GridPane.columnIndex="3" GridPane.rowIndex="2" alignment="CENTER_LEFT" promptText="Database Port" fx:id="databasePort"/>
+        <TextField GridPane.columnIndex="3" GridPane.rowIndex="3" alignment="CENTER_LEFT" promptText="Database Name" fx:id="databaseName"/>
+        <TextField GridPane.columnIndex="3" GridPane.rowIndex="4" alignment="CENTER_LEFT" promptText="Database User Name" fx:id="databaseUser"/>
+        <PasswordField GridPane.columnIndex="3" GridPane.rowIndex="5" alignment="CENTER_LEFT" promptText="Database Password" fx:id="databasePassword"/>
+
+        <Label GridPane.columnIndex="4" GridPane.rowIndex="0" textAlignment="LEFT" fx:id="dbTypeErrorLabel"/>
+        <Label GridPane.columnIndex="4" GridPane.rowIndex="1" textAlignment="LEFT" fx:id="dbIPErrorLabel"/>
+        <Label GridPane.columnIndex="4" GridPane.rowIndex="2" textAlignment="LEFT" fx:id="dbPortErrorLabel"/>
+        <Label GridPane.columnIndex="4" GridPane.rowIndex="3" textAlignment="LEFT" fx:id="dbNameErrorLabel"/>
+        <Label GridPane.columnIndex="4" GridPane.rowIndex="4" textAlignment="LEFT" fx:id="dbUserErrorLabel"/>
+        <Label GridPane.columnIndex="4" GridPane.rowIndex="5" textAlignment="LEFT" fx:id="dbPasswordErrorLabel"/>
+
+        <HBox GridPane.columnIndex="4" GridPane.rowIndex="7" alignment="CENTER" spacing="10.0">
+            <children>
+                <Button text="Login" textAlignment="CENTER" onAction="#loginDataBase"/>
+                <Button text="Clear" textAlignment="CENTER" onAction="#clearDatabase"/>
+            </children>
+        </HBox>
+    </children>
+</GridPane>
