@@ -66,9 +66,9 @@ public class DataBaseUtil {
                 DriverManager.registerDriver((Driver) driverClass.newInstance());
                 String connectionHost = String.format(dbType.getDriverUrl(), dbImportRequest.getUrl(), dbImportRequest.getPort(), dbImportRequest.getDatabaseName());
                 conn = DriverManager.getConnection(connectionHost, dbImportRequest.getUserId(), dbImportRequest.getPassword());
-                if(!IS_ONLY_FOR_QUALITY_CHECK)
-                    if(isTrackerSameHost = trackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
-                        trackColumn = dbImportRequest.getTrackerInfo().getTrackerColumn();
+
+                if(isTrackerSameHost = trackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
+                    trackColumn = dbImportRequest.getTrackerInfo().getTrackerColumn();
 
                 LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "External DataBase" + dbImportRequest.getUrl() +  "Database Successfully connected");
                 System.out.println("External DataBase " + dbImportRequest.getUrl() + " Successfully connected");
