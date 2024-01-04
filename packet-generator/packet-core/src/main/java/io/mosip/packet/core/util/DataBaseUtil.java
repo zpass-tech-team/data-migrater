@@ -239,7 +239,7 @@ public class DataBaseUtil {
                     filterCondition += " AND ";
                 }
 
-                filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD') AND SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
+                filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD', 'FAILED') AND SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
                 selectSql += filterCondition;
             }
 
