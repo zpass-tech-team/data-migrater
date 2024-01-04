@@ -229,6 +229,9 @@ public class TrackerUtil {
     }
 
     public boolean isTrackerHostSame(String sourceHost, String databaseName) {
+        System.out.println("Connection Host" + connectionHost);
+        System.out.println("Source Host" + sourceHost);
+        System.out.println("Database Name" + databaseName);
         return connectionHost != null && connectionHost.equalsIgnoreCase(sourceHost) && databaseName.equalsIgnoreCase(env.getProperty("spring.datasource.tracker.database"));
     }
 
