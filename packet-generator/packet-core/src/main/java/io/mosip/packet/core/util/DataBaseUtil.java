@@ -244,7 +244,6 @@ public class DataBaseUtil {
             if(fetchCount)
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(countSql, dataMap));
             else {
-                System.out.println(selectSql);
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(selectSql, dataMap));
             }
         } else if (tableRequestDto.getQueryType().equals(QuerySelection.SQL_QUERY)) {
