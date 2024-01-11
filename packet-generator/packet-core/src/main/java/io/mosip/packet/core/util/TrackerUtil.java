@@ -130,7 +130,6 @@ public class TrackerUtil {
                     isConnCreation=false;
                 }
 
-                System.out.println(String.format("INSERT INTO %s (REF_ID, REG_NO, STATUS, CR_BY, CR_DTIMES, SESSION_KEY, ACTIVITY, PROCESS, COMMENTS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", TRACKER_TABLE_NAME));
                 if(preparedStatement == null)
                     preparedStatement = conn.prepareStatement(String.format("INSERT INTO %s (REF_ID, REG_NO, STATUS, CR_BY, CR_DTIMES, SESSION_KEY, ACTIVITY, PROCESS, COMMENTS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", TRACKER_TABLE_NAME));
 
