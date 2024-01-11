@@ -29,6 +29,7 @@ import io.mosip.packet.core.dto.packet.metadata.BiometricsMetaInfoDto;
 import io.mosip.packet.core.dto.packet.metadata.DocumentMetaInfoDTO;
 import io.mosip.packet.core.dto.packet.type.IndividualBiometricType;
 import io.mosip.packet.core.dto.packet.type.SimpleType;
+import io.mosip.packet.core.exception.ExceptionUtils;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.BlocklistedWordsRepository;
 import io.mosip.packet.core.service.DataRestClientService;
@@ -294,6 +295,7 @@ public class PacketCreator {
                                         requestWrapper.setFormat(bioData.getFormat().toString());
                                         requestWrapper.setInputObject(csvMap);
                                         requestWrapper.setIsOnlyForQualityCheck(IS_ONLY_FOR_QUALITY_CHECK);
+                                        String biosdkVendor = null;
 
                                         try {
                                             if(IS_ONLY_FOR_QUALITY_CHECK) {
@@ -301,7 +303,8 @@ public class PacketCreator {
                                                 LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Fetch BIOSDK List from Configuration " + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
 
                                                 for(Map.Entry<String, BioSdkApiFactory> bioSdkEntry : bioSdkMap.entrySet()) {
-                                                    requestWrapper.setBiometricField(entry.getKey() + "_" + bioSdkEntry.getKey());
+                                                    biosdkVendor = bioSdkEntry.getKey();
+                                                    requestWrapper.setBiometricField(entry.getKey() + "_" + biosdkVendor);
 
                                                     LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Before Calling BIOSDK Call" + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
 
@@ -311,9 +314,9 @@ public class PacketCreator {
                                                     String currentVal = csvMap.get(entry.getKey());
                                                     if(bioSDKConfig.getBioSDKList().get(biometricType).size() > 1) {
                                                         if(currentVal == null)
-                                                            currentVal = bioSdkEntry.getKey() + "(" + score.toString() + ")";
+                                                            currentVal = biosdkVendor + "(" + score.toString() + ")";
                                                         else
-                                                            currentVal+= "," + bioSdkEntry.getKey() + "(" + score.toString() + ")";
+                                                            currentVal+= "," + biosdkVendor + "(" + score.toString() + ")";
                                                     } else {
                                                         currentVal = score.toString();
                                                     }
@@ -330,7 +333,9 @@ public class PacketCreator {
                                             LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Calculation of Quality from BIOSDK " + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
                                         } catch (Exception e) {
                                             e.printStackTrace();
-                                            throw new Exception(trackerColumn + " Error : " + biometricType.toString() + ", " + bioAttribute + " Error Message :" + e.getLocalizedMessage());
+                                            bir.getBdbInfo().getQuality().setScore(0L);
+                                            csvMap.put(entry.getKey() + "_" + biosdkVendor, e.getMessage() + ExceptionUtils.getStackTrace(e));
+                                //            throw new Exception(trackerColumn + " Error : " + biometricType.toString() + ", " + bioAttribute + " Error Message :" + e.getLocalizedMessage());
                                         }
                                     } else {
                                         bir.getBdbInfo().getQuality().setScore(0L);
