@@ -115,7 +115,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			} catch (Exception e) {
 				LOGGER.error(e.getMessage() , e);
 				throw new ApisResourceAccessException(
-						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(), e);
+						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(), e.getMessage(), e);
 
 			}
 		}
@@ -166,7 +166,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 				LOGGER.error(e.getMessage() , e);
 
 				throw new ApisResourceAccessException(
-						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(), e);
+						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(), e.getMessage(), e);
 
 			}
 		}
@@ -205,7 +205,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 				LOGGER.error(e.getMessage() , e);
 
 				throw new ApisResourceAccessException(PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(),
-						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getMessage(), e);
+						e.getMessage(), e);
 
 			}
 		}
@@ -283,7 +283,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 				LOGGER.error(e.getMessage() , e);
 
 				throw new ApisResourceAccessException(PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(),
-						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getMessage(), e);
+						e.getMessage(), e);
 
 			}
 		}
@@ -329,7 +329,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			} catch (Exception e) {
 				LOGGER.error(e.getMessage() , e);
 				throw new ApisResourceAccessException(PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(),
-						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getMessage(), e);
+						e.getMessage(), e);
 
 			}
 		}
