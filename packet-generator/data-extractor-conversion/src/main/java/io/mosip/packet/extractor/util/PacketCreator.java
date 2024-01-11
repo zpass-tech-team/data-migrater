@@ -333,7 +333,7 @@ public class PacketCreator {
                                             LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Calculation of Quality from BIOSDK " + trackerColumn + " - " + entry.getKey() + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
                                         } catch (Exception e) {
                                             e.printStackTrace();
-                                            bir.getBdbInfo().getQuality().setScore(0L);
+                                            bir.getBdbInfo().getQuality().setScore(null);
                                             csvMap.put(entry.getKey() + "_" + biosdkVendor, e.getMessage() + ExceptionUtils.getStackTrace(e));
                                 //            throw new Exception(trackerColumn + " Error : " + biometricType.toString() + ", " + bioAttribute + " Error Message :" + e.getLocalizedMessage());
                                         }
