@@ -379,6 +379,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 				Integer.parseInt((String) env.getProperty(RegistrationConstants.HTTP_API_READ_TIMEOUT)));
 		requestFactory.setConnectTimeout(
 				Integer.parseInt((String) env.getProperty(RegistrationConstants.HTTP_API_WRITE_TIMEOUT)));
+		requestFactory.setBufferRequestBody(false);
 		return requestFactory;
 	}
 
