@@ -24,6 +24,7 @@ public class BiometricsDto {
 	private String payLoad;
 	private String signature;
 	private String specVersion;
+	private String remarks;
 	
 
 		
