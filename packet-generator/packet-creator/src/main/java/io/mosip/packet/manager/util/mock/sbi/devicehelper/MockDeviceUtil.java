@@ -19,6 +19,7 @@ import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 import io.mosip.kernel.core.logger.spi.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,6 +57,11 @@ public class MockDeviceUtil {
     private SBIJsonInfo sbiJsonInfo;
 
     protected HashMap<String, SBIDeviceHelper> deviceHelpers = new HashMap<>();
+
+    private LocalDateTime lastInitializedTime;
+
+    @Value("${mosip.mock.sbi.device.re-initialization.minutes:10}")
+    private Integer reInitMiniutes;
 
     public BioMetricsDto getBiometricData (String deviceTypeName, CaptureRequestDto requestObject, String bioValue,
                                             String lang, String errorCode) throws JsonGenerationException, JsonMappingException, IOException, NoSuchAlgorithmException, DecoderException
@@ -127,6 +135,7 @@ public class MockDeviceUtil {
         this.deviceHelpers.put(SBIConstant.MOSIP_BIOMETRIC_TYPE_FINGER , sbiFingerSlapHelper.getInstance(env));
         this.deviceHelpers.put(SBIConstant.MOSIP_BIOMETRIC_TYPE_IRIS , sbiIrisDoubleHelper.getInstance(env));
         this.deviceHelpers.put(SBIConstant.MOSIP_BIOMETRIC_TYPE_FACE , sbiFaceHelper.getInstance(env));
+        lastInitializedTime = LocalDateTime.now();
         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "MockDeviceUtil :: initDeviceHelpers():: exit");
     }
 
@@ -139,6 +148,11 @@ public class MockDeviceUtil {
 
     public SBIDeviceHelper getDeviceHelper (String deviceTypeName)
     {
+        if(lastInitializedTime ==null || (ChronoUnit.MINUTES.between(lastInitializedTime, LocalDateTime.now()) > reInitMiniutes)) {
+            resetDevices();
+            initDeviceHelpers();
+        }
+
         if (this.deviceHelpers != null && this.deviceHelpers.size() >= 0)
         {
             if (this.deviceHelpers.containsKey(deviceTypeName) )
