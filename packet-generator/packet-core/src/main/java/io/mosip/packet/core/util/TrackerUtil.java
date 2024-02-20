@@ -13,6 +13,7 @@ import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.PacketTrackerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -37,9 +38,13 @@ public class TrackerUtil {
     private static final Logger LOGGER = DataProcessLogger.getLogger(TrackerUtil.class);
     private static Connection conn = null;
     private PreparedStatement preparedStatement = null;
-    private int batchLimit = 2;
+
+    @Value("${mosip.packet.creator.tracking.batch.size:10}")
+    private int batchLimit;
+
     private int batchSize = 0;
     private static String connectionHost = null;
+    private boolean isConnCreation = false;
 
     @Autowired
     private PacketTrackerRepository packetTrackerRepository;
@@ -118,6 +123,11 @@ public class TrackerUtil {
                     preparedStatement.closeOnCompletion();
                     preparedStatement = null;
                     batchSize = 1;
+                    isConnCreation=true;
+                    conn.close();
+                    conn=null;
+                    this.initialize();
+                    isConnCreation=false;
                 }
 
                 if(preparedStatement == null)
@@ -138,11 +148,7 @@ public class TrackerUtil {
             } catch (SQLException throwables) {
                 if(throwables.getMessage().contains("ORA-01000")) {
                     try {
-                        preparedStatement.executeBatch();
-                        preparedStatement.clearBatch();
-                        preparedStatement.closeOnCompletion();
-                        preparedStatement = null;
-                        batchSize = 1;
+                        batchSize = 0;
                         conn.close();
                         conn=null;
                     } catch (SQLException e) {
@@ -176,10 +182,14 @@ public class TrackerUtil {
         }
     }
 
-    public synchronized boolean isRecordPresent(Object value, String activity) throws SQLException {
+    public synchronized boolean isRecordPresent(Object value, String activity) throws SQLException, InterruptedException {
         if(IS_TRACKER_REQUIRED) {
             PreparedStatement statement = null;
             ResultSet resultSet = null;
+
+            while(isConnCreation)
+                Thread.sleep(10000);
+
             try {
                 statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ? AND ACTIVITY = ? AND SESSION_KEY = ?", TRACKER_TABLE_NAME));
                 statement.setString(1, value.toString());
@@ -193,11 +203,7 @@ public class TrackerUtil {
                     return false;
             } catch (SQLException throwables) {
                 if(throwables.getMessage().contains("ORA-01000")) {
-                    preparedStatement.executeBatch();
-                    preparedStatement.clearBatch();
-                    preparedStatement.closeOnCompletion();
-                    preparedStatement = null;
-                    batchSize = 1;
+                    batchSize = 0;
                     conn.close();
                     conn=null;
                     this.initialize();
@@ -223,6 +229,9 @@ public class TrackerUtil {
     }
 
     public boolean isTrackerHostSame(String sourceHost, String databaseName) {
+        System.out.println("Connection Host" + connectionHost);
+        System.out.println("Source Host" + sourceHost);
+        System.out.println("Database Name" + databaseName);
         return connectionHost != null && connectionHost.equalsIgnoreCase(sourceHost) && databaseName.equalsIgnoreCase(env.getProperty("spring.datasource.tracker.database"));
     }
 

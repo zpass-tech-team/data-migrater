@@ -63,7 +63,7 @@ public class GlobalConfig {
                 } else {
                     if(executor.getInputProcessCompleted() && (entry.getTaskCount() - entry.getCompletedTaskCount() <= 0) && executor.isBatchAcceptRequest()) {
                         if(executor.getNAME().equals("QUALITY ANALYSIS")) {
-                            if(TOTAL_RECORDS_FOR_PROCESS - TOTAL_FAILED_RECORDS - executor.getCurrentCompletedTask() <= 0) {
+                            if(TOTAL_RECORDS_FOR_PROCESS - TOTAL_FAILED_RECORDS - executor.getCurrentCompletedTask() <= 0 || executor.getCountOfZeroActiveCount() > 10) {
                                 if(executor.getWatch() != null)
                                     executor.getWatch().cancel();
                                 if(executor.getEstimateTimer() != null)

@@ -19,6 +19,11 @@ public class CustomizedThreadPoolExecutor {
     private long totalCompletedTaskCount = 0;
     private long failedRecordCount = 0;
     private Long completedCount = 0L;
+    private int countOfZeroActiveCount = 0;
+
+    public int getCountOfZeroActiveCount() {
+        return countOfZeroActiveCount;
+    }
 
     public long getFailedRecordCount() {
         return failedRecordCount;
@@ -148,6 +153,11 @@ public class CustomizedThreadPoolExecutor {
                         activeCount+= entry.getActiveCount();
                         completedCount+= entry.getCompletedTaskCount();
                     }
+
+                    if(activeCount <= 0)
+                        countOfZeroActiveCount++;
+                    else
+                        countOfZeroActiveCount=0;
 
  //                   completedCount+= totalCompletedTaskCount + ALREADY_PROCESSED_RECORDS;
                     completedCount+= totalCompletedTaskCount;

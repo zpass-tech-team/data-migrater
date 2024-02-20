@@ -66,9 +66,9 @@ public class DataBaseUtil {
                 DriverManager.registerDriver((Driver) driverClass.newInstance());
                 String connectionHost = String.format(dbType.getDriverUrl(), dbImportRequest.getUrl(), dbImportRequest.getPort(), dbImportRequest.getDatabaseName());
                 conn = DriverManager.getConnection(connectionHost, dbImportRequest.getUserId(), dbImportRequest.getPassword());
-                if(!IS_ONLY_FOR_QUALITY_CHECK)
-                    if(isTrackerSameHost = trackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
-                        trackColumn = dbImportRequest.getTrackerInfo().getTrackerColumn();
+
+                if(isTrackerSameHost = trackerUtil.isTrackerHostSame(connectionHost, dbImportRequest.getDatabaseName()))
+                    trackColumn = dbImportRequest.getTrackerInfo().getTrackerColumn();
 
                 LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "External DataBase" + dbImportRequest.getUrl() +  "Database Successfully connected");
                 System.out.println("External DataBase " + dbImportRequest.getUrl() + " Successfully connected");
@@ -235,7 +235,7 @@ public class DataBaseUtil {
                     filterCondition += " AND ";
                 }
 
-                filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD') AND SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
+                filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD', 'FAILED') AND SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
                 selectSql += filterCondition;
             }
 
@@ -243,8 +243,9 @@ public class DataBaseUtil {
 
             if(fetchCount)
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(countSql, dataMap));
-            else
+            else {
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(selectSql, dataMap));
+            }
         } else if (tableRequestDto.getQueryType().equals(QuerySelection.SQL_QUERY)) {
             String sqlQuery = tableRequestDto.getSqlQuery().toUpperCase();
             String countSql = "SELECT COUNT(*) FROM (" + sqlQuery + ") a"; //alias has been added for MSSQL
