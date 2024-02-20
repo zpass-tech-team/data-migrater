@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import com.sun.javafx.webkit.theme.RenderThemeImpl.FormRadioButton?>
+<GridPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="io.mosip.packet.client.mvp.HomePage" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" fx:id="mainPane">
+   <rowConstraints>
+       <RowConstraints percentHeight="10.0" />
+       <RowConstraints percentHeight="85.0" />
+       <RowConstraints percentHeight="5.0" prefHeight="30.0"/>
+   </rowConstraints>
+
+   <columnConstraints>
+       <ColumnConstraints percentWidth="100.0" />
+   </columnConstraints>
+
+   <children>
+       <GridPane GridPane.rowIndex="0" GridPane.halignment="CENTER" GridPane.valignment="TOP">
+           <children >
+               <fx:include source="Header.fxml" prefWidth="${mainPane.width}"/>
+           </children>
+       </GridPane>
+       <VBox GridPane.rowIndex="1" GridPane.halignment="CENTER" GridPane.valignment="CENTER" fx:id="bodyPane" prefWidth="${mainPane.width}">
+
+       </VBox>
+       <GridPane GridPane.rowIndex="2" GridPane.halignment="CENTER" GridPane.valignment="BOTTOM">
+           <children >
+               <fx:include source="Footer.fxml" prefWidth="${mainPane.width}" GridPane.valignment="BOTTOM"/>
+           </children>
+       </GridPane>
+   </children>
+</GridPane>
+

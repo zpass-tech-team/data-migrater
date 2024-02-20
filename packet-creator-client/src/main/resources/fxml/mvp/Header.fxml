@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<GridPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" maxWidth="-Infinity" minWidth="-Infinity" fx:id="header">
+    <rowConstraints>
+        <RowConstraints prefHeight="75.0" maxHeight="75.0"/>
+    </rowConstraints>
+
+    <columnConstraints>
+        <ColumnConstraints percentWidth="10.0"/>
+        <ColumnConstraints percentWidth="80.0" />
+        <ColumnConstraints percentWidth="10.0"/>
+    </columnConstraints>
+
+    <children>
+        <ImageView fitHeight="70.0" fitWidth="70.0" layoutY="50.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="0" GridPane.valignment="CENTER" GridPane.halignment="CENTER">
+            <image>
+                <Image url="@../../images/logo-final-small.png" />
+            </image>
+        </ImageView>
+        <Label fx:id="headerTitle" alignment="CENTER" textAlignment="CENTER" text="Migration Utility" GridPane.columnIndex="1" prefWidth="${header.width}"></Label>
+        <ImageView fitHeight="70.0" fitWidth="70.0" layoutY="50.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="2" GridPane.valignment="CENTER" GridPane.halignment="CENTER">
+            <image>
+                <Image url="@../../images/logo-final-small.png" />
+            </image>
+        </ImageView>
+    </children>
+</GridPane>

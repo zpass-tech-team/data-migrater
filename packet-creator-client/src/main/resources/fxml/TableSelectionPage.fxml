@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<GridPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:id="tableViewPane" fx:controller="io.mosip.packet.client.controller.TableSelectionController">
+    <rowConstraints>
+        <RowConstraints />
+        <RowConstraints/>
+    </rowConstraints>
+
+    <columnConstraints>
+        <ColumnConstraints percentWidth="100.0"/>
+    </columnConstraints>
+
+    <children>
+        <GridPane GridPane.rowIndex="0"  GridPane.columnIndex="0">
+            <rowConstraints>
+                <RowConstraints />
+                <RowConstraints/>
+            </rowConstraints>
+
+            <columnConstraints>
+                <ColumnConstraints percentWidth="33.0"/>
+                <ColumnConstraints percentWidth="33.0"/>
+                <ColumnConstraints percentWidth="33.0"/>
+            </columnConstraints>
+
+            <children>
+                <HBox GridPane.columnIndex="0" GridPane.rowIndex="0" styleClass="tableviewhpane">
+                    <Label  text="Database Type" styleClass="tableview-header-label"/>
+                    <Label  text=":"/>
+                    <Label fx:id="t1DatabaseType"/>
+                </HBox>
+
+                <HBox GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.columnSpan="2" styleClass="tableviewhpane">
+                    <Label  text="Database URL" styleClass="tableview-header-label"/>
+                    <Label  text=":"/>
+                    <Label fx:id="t1Databaseurl"/>
+                </HBox>
+
+                <HBox GridPane.columnIndex="0" GridPane.rowIndex="1" styleClass="tableviewhpane">
+                    <Label  text="Database Name" styleClass="tableview-header-label"/>
+                    <Label  text=":"/>
+                    <Label fx:id="t1DatabaseName"/>
+                </HBox>
+
+                <HBox GridPane.columnIndex="1" GridPane.rowIndex="1" styleClass="tableviewhpane">
+                    <Label  text="Database Port" styleClass="tableview-header-label"/>
+                    <Label  text=":"/>
+                    <Label fx:id="t1DatabasePort"/>
+                </HBox>
+
+                <HBox GridPane.columnIndex="2" GridPane.rowIndex="1" styleClass="tableviewhpane">
+                    <Label  text="Database User" styleClass="tableview-header-label"/>
+                    <Label  text=":"/>
+                    <Label fx:id="t1DatabaseUser"/>
+                </HBox>
+            </children>
+        </GridPane>
+
+        <HBox GridPane.rowIndex="1"  GridPane.columnIndex="0" spacing="10" GridPane.halignment="CENTER" alignment="CENTER">
+            <GridPane>
+                <rowConstraints>
+                    <RowConstraints prefHeight="40.0"/>
+                    <RowConstraints/>
+                    <RowConstraints prefHeight="40.0"/>
+                </rowConstraints>
+
+                <columnConstraints>
+                    <ColumnConstraints/>
+                    <ColumnConstraints/>
+                </columnConstraints>
+
+                <children>
+                    <Button GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.halignment="RIGHT" alignment="CENTER" text="Freeze" textAlignment="CENTER"  onAction="#freezeTableSelection"/>
+                    <Button GridPane.columnIndex="1" GridPane.rowIndex="0" GridPane.halignment="RIGHT" alignment="CENTER" text="Clear" textAlignment="CENTER" onAction="#clearTableSelection"/>
+
+                    <TableView fx:id="t1TableView1" GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.halignment="CENTER">
+
+                    </TableView>
+                    <TableView fx:id="t1TableView2" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.halignment="CENTER">
+
+                    </TableView>
+                    <Button textAlignment="CENTER" onAction="#next" GridPane.halignment="RIGHT" alignment="CENTER" text="Next" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                </children>
+
+            </GridPane>
+        </HBox>
+    </children>
+</GridPane>

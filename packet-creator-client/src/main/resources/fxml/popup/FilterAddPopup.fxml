@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<GridPane fx:id="filterAddView" stylesheets="@../../application.css" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1">
+    <rowConstraints>
+        <RowConstraints percentHeight="20" />
+        <RowConstraints percentHeight="60" />
+        <RowConstraints percentHeight="20" />
+    </rowConstraints>
+
+    <columnConstraints>
+        <ColumnConstraints percentWidth="5.0" />
+        <ColumnConstraints percentWidth="90.0" />
+        <ColumnConstraints percentWidth="5.0" />
+    </columnConstraints>
+
+    <children>
+        <GridPane GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1">
+            <rowConstraints>
+                <RowConstraints prefHeight="40" />
+                <RowConstraints prefHeight="40" />
+                <RowConstraints prefHeight="40" />
+                <RowConstraints prefHeight="40" />
+                <RowConstraints prefHeight="40" />
+            </rowConstraints>
+
+            <columnConstraints>
+                <ColumnConstraints percentWidth="5.0" />
+                <ColumnConstraints percentWidth="30.0" />
+                <ColumnConstraints percentWidth="5.0" />
+                <ColumnConstraints percentWidth="55.0" />
+                <ColumnConstraints percentWidth="5.0" />
+            </columnConstraints>
+
+            <children>
+                <Label alignment="CENTER_RIGHT" text="Column Name" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="0" />
+                <Label alignment="CENTER_RIGHT" text="Column Type" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="1" />
+                <Label alignment="CENTER_RIGHT" text="Contition" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="2" />
+                <Label alignment="CENTER_RIGHT" text="From Value" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="3" />
+                <Label alignment="CENTER_RIGHT" text="To Value" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="4" />
+
+                <Label alignment="CENTER" text=" : " GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="0" />
+                <Label alignment="CENTER" text=" : " GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="1" />
+                <Label alignment="CENTER" text=" : " GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="2" />
+                <Label alignment="CENTER" text=" : " GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="3" />
+                <Label alignment="CENTER" text=" : " GridPane.columnIndex="2" GridPane.halignment="CENTER" GridPane.rowIndex="4" />
+
+                <ComboBox GridPane.columnIndex="3" GridPane.halignment="LEFT" GridPane.rowIndex="0" fx:id="columnName"/>
+                <ComboBox GridPane.columnIndex="3" GridPane.halignment="LEFT" GridPane.rowIndex="1" fx:id="columnType"/>
+                <ComboBox GridPane.columnIndex="3" GridPane.halignment="LEFT" GridPane.rowIndex="2" fx:id="condition" />
+                <TextField GridPane.columnIndex="3" GridPane.halignment="LEFT" GridPane.rowIndex="3" fx:id="fromValue"/>
+                <TextField GridPane.columnIndex="3" GridPane.halignment="LEFT" GridPane.rowIndex="4" fx:id="toValue" />
+            </children>
+        </GridPane>
+
+        <HBox GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="2" alignment="CENTER_RIGHT">
+            <Button  alignment="CENTER" text="Save" onAction="#saveColumn"/>
+        </HBox>
+    </children>
+</GridPane>
