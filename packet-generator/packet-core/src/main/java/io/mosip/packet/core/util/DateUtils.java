@@ -16,6 +16,7 @@
  */
 package io.mosip.packet.core.util;
 
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -888,9 +889,12 @@ public final class DateUtils {
 		for (io.mosip.packet.core.constant.DateFormat format : io.mosip.packet.core.constant.DateFormat.values()) {
 			SimpleDateFormat dateFormat = new SimpleDateFormat(format.getFormat());
 			try {
-				Date date =  dateFormat.parse(value);
+				Date date = dateFormat.parse(value);
+				Long formatedDate =  date.getTime();
+				Long currValue = Timestamp.valueOf(value).getTime();
 
-				if(value.toLowerCase().equals(dateFormat.format(date).toLowerCase()))
+
+				if(formatedDate.equals(currValue))
 					return date;
 			} catch (Exception e) {
 				//do nothing
