@@ -56,7 +56,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
     private QueryFormatter formatter;
 
     @Override
-    public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap2, String tableName, Map<String, HashMap<String, String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
+    public void dataMapper(FieldFormatRequest fieldFormatRequest, Map<String, Object> resultSet, Map<FieldCategory, HashMap<String, Object>> dataMap2, String tableName, Map<String, HashMap<String, String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         DataFormat destFormat = fieldFormatRequest.getDestFormat() != null ? fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1) : null;
         List<FieldName> fieldNames = fieldFormatRequest.getFieldList();

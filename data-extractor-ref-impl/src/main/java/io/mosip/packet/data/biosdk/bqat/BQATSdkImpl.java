@@ -20,7 +20,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -52,7 +51,7 @@ public class BQATSdkImpl implements BioSdkApiFactory {
         LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Request Preparation Completed " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
 
         BQATResponse response= (BQATResponse) restApiClient.postApi(ApiName.BQAT_BIOSDK_QUALITY_CHECK, null, "", request, BQATResponse.class, false);
-        LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResults();
+        HashMap<String, Object> bioSDKResponse = (HashMap<String, Object>) response.getResults();
         LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Rest Call Executed Successfully " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
         LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Time Taken to call BIOSDK is " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
 

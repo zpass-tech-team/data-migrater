@@ -121,14 +121,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     @Autowired
     private CustomNativeRepository customNativeRepository;
-    private LinkedHashMap<String, DocumentCategoryDto> documentCategory = new LinkedHashMap<>();
-    private LinkedHashMap<String, DocumentTypeExtnDto> documentType = new LinkedHashMap<>();
+    private HashMap<String, DocumentCategoryDto> documentCategory = new HashMap<>();
+    private HashMap<String, DocumentTypeExtnDto> documentType = new HashMap<>();
     private Map<String, HashMap<String, String>> fieldsCategoryMap = new HashMap<>();
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public LinkedHashMap<String, Object> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
-        LinkedHashMap<String, Object> biodata = new LinkedHashMap<>();
+    public HashMap<String, Object> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
+        HashMap<String, Object> biodata = new HashMap<>();
         dataBaseUtil.connectDatabase(dbImportRequest);
         populateTableFields(dbImportRequest);
         commonUtil.updateFieldCategory(dbImportRequest);
@@ -142,7 +142,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         if (resultSet != null) {
             dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null, dataMap, fieldsCategoryMap, localStoreRequired, false);
 
-            for (Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap : dataMap) {
+            for (Map<FieldCategory, HashMap<String, Object>> dataHashMap : dataMap) {
                 for (int i = 1; i < tableRequestDtoList.size(); i++) {
                     TableRequestDto tableRequestDto1 = tableRequestDtoList.get(i);
                     resultSet = dataBaseUtil.readDataFromDatabase(tableRequestDto1, dataHashMap, fieldsCategoryMap);
@@ -165,9 +165,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     }
 
     @Override
-    public LinkedHashMap<String, Object> extractBioDataFromDB(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
-        LinkedHashMap<String, Object> bioData = extractBioDataFromDBAsBytes(dbImportRequest, localStoreRequired);
-        LinkedHashMap<String, Object> convertedData = new LinkedHashMap<>();
+    public HashMap<String, Object> extractBioDataFromDB(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
+        HashMap<String, Object> bioData = extractBioDataFromDBAsBytes(dbImportRequest, localStoreRequired);
+        HashMap<String, Object> convertedData = new HashMap<>();
 
         for(Map.Entry<String, Object> entry : bioData.entrySet()) {
             String data = Base64.getEncoder().encodeToString((byte[])entry.getValue());
@@ -233,7 +233,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 public void setResult(Object obj) {
                     ThreadDataProcessController threadDataProcessController = new ThreadDataProcessController();
                     threadDataProcessController.setSetter(setter);
-                    Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap = (Map<FieldCategory, LinkedHashMap<String, Object>>) obj;
+                    Map<FieldCategory, HashMap<String, Object>> dataHashMap = (Map<FieldCategory, HashMap<String, Object>>) obj;
                     if(processPacket(dbImportRequest, packetCreatorResponse, threadDataProcessController, dataHashMap))
                         threadPool.ExecuteTask(threadDataProcessController);
                     trackerUtil.addTrackerLocalEntry(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()).toString(), null, TrackerStatus.STARTED, dbImportRequest.getProcess(), null, SESSION_KEY, getActivityName());
@@ -309,7 +309,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         return packetCreatorResponse;
     }
 
-    private boolean processPacket(DBImportRequest dbImportRequest, PacketCreatorResponse packetCreatorResponse, ThreadDataProcessController threadDataProcessController, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception {
+    private boolean processPacket(DBImportRequest dbImportRequest, PacketCreatorResponse packetCreatorResponse, ThreadDataProcessController threadDataProcessController, Map<FieldCategory, HashMap<String, Object>> dataHashMap) throws Exception {
         if ( dataHashMap != null) {
             String registrationId = null;
 
@@ -331,11 +331,11 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             threadDataProcessController.setTrackerColumn(dbImportRequest.getTrackerInfo().getTrackerColumn());
             threadDataProcessController.setProcessor(new ThreadProcessor() {
                 @Override
-                public void processData(ResultSetter setter, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, String registrationId, String trackerColumn) throws Exception {
+                public void processData(ResultSetter setter, Map<FieldCategory, HashMap<String, Object>> dataHashMap, String registrationId, String trackerColumn) throws Exception {
                     Long startTime = System.nanoTime();
-                    LinkedHashMap<String, Object> demoDetails = dataHashMap.get(FieldCategory.DEMO);
-                    LinkedHashMap<String, Object> bioDetails = dataHashMap.get(FieldCategory.BIO);
-                    LinkedHashMap<String, Object> docDetails = dataHashMap.get(FieldCategory.DOC);
+                    HashMap<String, Object> demoDetails = dataHashMap.get(FieldCategory.DEMO);
+                    HashMap<String, Object> bioDetails = dataHashMap.get(FieldCategory.BIO);
+                    HashMap<String, Object> docDetails = dataHashMap.get(FieldCategory.DOC);
                     String refId = registrationId == null ? demoDetails.get(trackerColumn).toString() : registrationId;
                     LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + refId + " Process Started");
 
@@ -343,7 +343,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), registrationId, TrackerStatus.STARTED, dbImportRequest.getProcess(), null, SESSION_KEY, getActivityName());
 
                         HashMap<String, String> csvMap = qualityWriterFactory.getDataMap();
-                        LinkedHashMap<String, String> metaInfo = new LinkedHashMap<>();
+                        HashMap<String, String> metaInfo = new HashMap<>();
 
                         PacketDto packetDto = new PacketDto();
                         packetDto.setProcess(dbImportRequest.getProcess());
@@ -384,7 +384,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                             packetDto.setMetaInfo(metaInfo);
                             packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
 
-                            LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
+                            HashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
                             packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
                             packetDto.setOfflineMode(true);
 
@@ -429,7 +429,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
                                 List<PacketUploadDTO> uploadList = new ArrayList<>();
                                 uploadList.add(uploadDTO);
-                                LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
+                                HashMap<String, PacketUploadResponseDTO> response = new HashMap<>();
 
                                 if (enablePaccketUploader) {
                                     packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);

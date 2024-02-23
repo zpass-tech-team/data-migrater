@@ -130,9 +130,9 @@ public class PacketCreator {
         qualityRangeMap.put("POOR", intMap);
     }
 
-    public LinkedHashMap<String, String> setDemographic(LinkedHashMap<String, Object> demoDetails, Boolean isBiometricPresent, List ignorableFields) throws Exception {
-        LinkedHashMap<String, String> demoMap = new LinkedHashMap<>();
-        LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
+    public HashMap<String, String> setDemographic(HashMap<String, Object> demoDetails, Boolean isBiometricPresent, List ignorableFields) throws Exception {
+        HashMap<String, String> demoMap = new HashMap<>();
+        HashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
         for(Object obj : (List)idSchema.get("schema")) {
             Map<String, Object> map = (Map<String, Object>) obj;
@@ -177,11 +177,11 @@ public class PacketCreator {
         return demoMap;
     }
 
-    public LinkedHashMap<String, Document> setDocuments(LinkedHashMap<String, Object> docDetails, List ignorableFields, LinkedHashMap<String, String> metaInfoMap, LinkedHashMap<String, Object> demoDetails)
+    public HashMap<String, Document> setDocuments(HashMap<String, Object> docDetails, List ignorableFields, HashMap<String, String> metaInfoMap, HashMap<String, Object> demoDetails)
             throws Exception {
 
-        LinkedHashMap<String, Document> docMap = new LinkedHashMap<>();
-        LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
+        HashMap<String, Document> docMap = new HashMap<>();
+        HashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
         for(Object obj : (List)idSchema.get("schema")) {
             Map<String, Object> map = (Map<String, Object>) obj;
@@ -229,13 +229,13 @@ public class PacketCreator {
         return docMap;
     }
 
-    public LinkedHashMap<String, BiometricRecord> setBiometrics(LinkedHashMap<String, Object> bioDetails, LinkedHashMap<String, String> metaInfoMap, HashMap<String, String> csvMap, String trackerColumn) throws Exception {
-        LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
+    public LinkedHashMap<String, BiometricRecord> setBiometrics(HashMap<String, Object> bioDetails, HashMap<String, String> metaInfoMap, HashMap<String, String> csvMap, String trackerColumn) throws Exception {
+        HashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
         LOGGER.debug("Adding Biometrics to packet manager started..");
-        LinkedHashMap<String, List<BIR>> capturedBiometrics = new LinkedHashMap<>();
-        Map<String, Map<String, Object>> capturedMetaInfo = new LinkedHashMap<>();
-        Map<String, Map<String, Object>> exceptionMetaInfo = new LinkedHashMap<>();
-        Map<String, DeviceMetaInfo> capturedRegisteredDevices = new LinkedHashMap<>();
+        HashMap<String, List<BIR>> capturedBiometrics = new HashMap<>();
+        Map<String, Map<String, Object>> capturedMetaInfo = new HashMap<>();
+        Map<String, Map<String, Object>> exceptionMetaInfo = new HashMap<>();
+        Map<String, DeviceMetaInfo> capturedRegisteredDevices = new HashMap<>();
 
         LinkedHashMap<String, BiometricRecord> biometricsMap = new LinkedHashMap<>();
 
@@ -565,7 +565,7 @@ public class PacketCreator {
 
         for (Map.Entry<String, String> fieldName : operationsDataMap.entrySet()) {
 
-            Map<String, String> map = new LinkedHashMap<>();
+            Map<String, String> map = new HashMap<>();
 
             map.put("label", fieldName.getKey());
             map.put("value", fieldName.getValue());

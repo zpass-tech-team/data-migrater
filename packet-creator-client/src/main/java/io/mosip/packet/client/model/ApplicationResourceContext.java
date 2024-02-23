@@ -5,7 +5,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -14,7 +14,7 @@ public class ApplicationResourceContext {
     String applicatioLanguage;
     String supportedLanguage;
     ResourceBundle labelBundle;
-    LinkedHashMap<String, ResourceBundle> supportedLabelBundle;
+    HashMap<String, ResourceBundle> supportedLabelBundle;
     private ApplicationContext applicationContext;
 
     private static ApplicationResourceContext context;
@@ -25,7 +25,7 @@ public class ApplicationResourceContext {
     private void loadResource(){
         Locale applicationPrimaryLanguageLocale = new Locale(applicatioLanguage != null ? applicatioLanguage.substring(0, 2) : "en");
 
-        supportedLabelBundle = new LinkedHashMap<>();
+        supportedLabelBundle = new HashMap<>();
         labelBundle = ResourceBundle.getBundle("labels", applicationPrimaryLanguageLocale);
         supportedLabelBundle.put(applicatioLanguage != null ? applicatioLanguage : "eng", labelBundle);
         if(supportedLanguage != null)

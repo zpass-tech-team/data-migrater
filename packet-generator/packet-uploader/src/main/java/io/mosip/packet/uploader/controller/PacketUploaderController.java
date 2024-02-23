@@ -1,6 +1,5 @@
 package io.mosip.packet.uploader.controller;
 
-import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.kernel.core.http.RequestWrapper;
 import io.mosip.kernel.core.http.ResponseFilter;
 import io.mosip.kernel.core.http.ResponseWrapper;
@@ -18,8 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 
 @RestController
@@ -39,7 +37,7 @@ public class PacketUploaderController {
             @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(schema = @Schema(hidden = true))),
             @ApiResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(hidden = true))) })
     public ResponseWrapper<List<PacketUploadResponseDTO>> uploadPackets(@PathVariable("Center_ID") String centerId, @PathVariable("Machine_ID") String machineId, @RequestBody(required = true) RequestWrapper<List<PacketUploadDTO>> request) {
-        LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
+        HashMap<String, PacketUploadResponseDTO> response = new HashMap<>();
         try {
             packetUploaderService.syncPacket(request.getRequest(), centerId, machineId, response);
             packetUploaderService.uploadSyncedPacket(request.getRequest(), response);
@@ -50,7 +48,7 @@ public class PacketUploaderController {
         return apiResponse;
     }
 
-    public ResponseWrapper<List<PacketUploadResponseDTO>> getResponseWrapper(LinkedHashMap<String, PacketUploadResponseDTO> response) {
+    public ResponseWrapper<List<PacketUploadResponseDTO>> getResponseWrapper(HashMap<String, PacketUploadResponseDTO> response) {
         List<PacketUploadResponseDTO> responseList= List.copyOf(response.values());
         ResponseWrapper<List<PacketUploadResponseDTO>> wrapper = new ResponseWrapper();
         wrapper.setResponse(responseList);

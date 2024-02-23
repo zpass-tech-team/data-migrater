@@ -33,7 +33,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -116,7 +116,6 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 				LOGGER.error(e.getMessage() , e);
 				throw new ApisResourceAccessException(
 						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(), e.getMessage(), e);
-
 			}
 		}
 		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::getApi()::exit");
@@ -362,11 +361,11 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 		Map<String, Object> responseMap = null;
 
 		addAuthZToken(requestHTTPDTO);
-		LinkedHashMap responseEntity = restApiClient.invoke(requestHTTPDTO.getUri(), requestHTTPDTO.getHttpMethod(),
+		HashMap responseEntity = restApiClient.invoke(requestHTTPDTO.getUri(), requestHTTPDTO.getHttpMethod(),
 				requestHTTPDTO.getHttpEntity(), requestHTTPDTO.getClazz(), getHttpRequestFactory());
 
 		if (responseEntity != null) {
-			responseMap = new LinkedHashMap<>();
+			responseMap = new HashMap<>();
 			responseMap.put(RegistrationConstants.REST_RESPONSE_BODY, responseEntity.get("response"));
 			responseMap.put(RegistrationConstants.ERROR, responseEntity.get("errors"));
 		}

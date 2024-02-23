@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 
 @Component
@@ -26,11 +26,11 @@ public class ValidationUtil {
     @Autowired
     private OrderByValidator orderByValidator;
 
-    private LinkedHashMap<ValidatorEnum, Validator> validatorList = null;
+    private HashMap<ValidatorEnum, Validator> validatorList = null;
 
-    public LinkedHashMap<ValidatorEnum, Validator> getValidatorMap() {
+    public HashMap<ValidatorEnum, Validator> getValidatorMap() {
         if(validatorList == null) {
-            validatorList= new LinkedHashMap<>();
+            validatorList= new HashMap<>();
             validatorList.put(ValidatorEnum.ID_SCHEMA_VALIDATOR, idSchemaFieldValidator);
             validatorList.put(ValidatorEnum.FILTER_VALIDATOR, filterValidation);
             validatorList.put(ValidatorEnum.ORDERBY_VALIDATOR, orderByValidator);

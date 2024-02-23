@@ -44,7 +44,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -96,7 +96,7 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
     }
 
     @Override
-    public void syncPacket(@NonNull List<PacketUploadDTO> packets, String centerId, String machineId, LinkedHashMap<String, PacketUploadResponseDTO> response) throws Exception {
+    public void syncPacket(@NonNull List<PacketUploadDTO> packets, String centerId, String machineId, HashMap<String, PacketUploadResponseDTO> response) throws Exception {
         try {
             this.centerId = centerId;
             this.machineId = machineId;
@@ -186,7 +186,7 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
         private void syncPacketsToServer(@NonNull String encodedString, @NonNull String triggerPoint, boolean packetIdExists)
             throws Exception {
         try {
-            LinkedHashMap<String, Object> response = (LinkedHashMap<String, Object>) restApiClient
+            HashMap<String, Object> response = (HashMap<String, Object>) restApiClient
                     .post(packetIdExists ? RegistrationConstants.PACKET_SYNC_V2 : RegistrationConstants.PACKET_SYNC, javaObjectToJsonString(encodedString), triggerPoint);
 
             if (response != null && response.get("errors") != null) {
@@ -200,7 +200,7 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
     }
 
     @Override
-    public void uploadSyncedPacket(@NonNull List<PacketUploadDTO> packets, LinkedHashMap<String, PacketUploadResponseDTO> response) throws Exception {
+    public void uploadSyncedPacket(@NonNull List<PacketUploadDTO> packets, HashMap<String, PacketUploadResponseDTO> response) throws Exception {
         for (PacketUploadDTO packet : packets) {
             try {
                 uploadPacket(packet);
@@ -237,17 +237,17 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
 
         LinkedMultiValueMap<String, Object> map = new LinkedMultiValueMap<>();
         map.add(RegistrationConstants.PACKET_TYPE, new FileSystemResource(packet));
-        LinkedHashMap<String, Object> response = (LinkedHashMap<String, Object>) restApiClient
+        HashMap<String, Object> response = (HashMap<String, Object>) restApiClient
                     .post(RegistrationConstants.PACKET_UPLOAD, map, RegistrationConstants.JOB_TRIGGER_POINT_USER);
 
 
             if (response.get(RegistrationConstants.ERRORS) != null) {
-            LinkedHashMap<String, String> error = ((List<LinkedHashMap<String, String>>) response.get(RegistrationConstants.ERRORS)).get(0);
+            HashMap<String, String> error = ((List<HashMap<String, String>>) response.get(RegistrationConstants.ERRORS)).get(0);
             throw new Exception(error.get("errorCode") + " : " + error.get("message"));
         }
 
         if (response.get(RegistrationConstants.REST_RESPONSE_BODY) != null) {
-            return (String) ((LinkedHashMap<String, Object>) response.get(RegistrationConstants.REST_RESPONSE_BODY)).get(RegistrationConstants.UPLOAD_STATUS);
+            return (String) ((HashMap<String, Object>) response.get(RegistrationConstants.REST_RESPONSE_BODY)).get(RegistrationConstants.UPLOAD_STATUS);
         }
 
         throw new Exception("Packet Upload Error : " + (new Gson()).toJson(response));

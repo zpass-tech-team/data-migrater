@@ -49,11 +49,11 @@ public class BioSdkImpl implements BioSdkApiFactory {
             HashMap<String, String> csvMap = (HashMap<String, String>) bioSDKRequestWrapper.getInputObject();
             csvMap.put(bioSDKRequestWrapper.getBiometricField(),  (new Gson()).toJson(response));
         }
-        LinkedHashMap<String, Object> bioSDKResponse = (LinkedHashMap<String, Object>) response.getResponse();
+        HashMap<String, Object> bioSDKResponse = (HashMap<String, Object>) response.getResponse();
         if(bioSDKResponse.get("statusCode").equals(200)) {
-            LinkedHashMap<String, Object> resp = (LinkedHashMap<String, Object>) bioSDKResponse.get("response");
-            LinkedHashMap<String, Object> scoreMap = (LinkedHashMap<String, Object>) resp.get("scores");
-            LinkedHashMap<String, Object> modalityMap = (LinkedHashMap<String, Object>) scoreMap.get(bioSDKRequestWrapper.getBiometricType());
+            HashMap<String, Object> resp = (HashMap<String, Object>) bioSDKResponse.get("response");
+            HashMap<String, Object> scoreMap = (HashMap<String, Object>) resp.get("scores");
+            HashMap<String, Object> modalityMap = (HashMap<String, Object>) scoreMap.get(bioSDKRequestWrapper.getBiometricType());
             return (Double) modalityMap.get("score");
         } else {
             LOGGER.error("Error While Calling BIOSDK for Quality Check for Modality " + (new Gson()).toJson(response));

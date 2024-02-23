@@ -3,12 +3,12 @@ package io.mosip.packet.core.util;
 import io.mosip.packet.core.constant.FieldCategory;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
 public class QueryFormatter {
-    public String replaceColumntoDataIfAny(String query, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap) throws Exception {
+    public String replaceColumntoDataIfAny(String query, Map<FieldCategory, HashMap<String, Object>> dataMap) throws Exception {
         if(dataMap != null) {
             do {
                 int startIndex = query.indexOf("${", 0);

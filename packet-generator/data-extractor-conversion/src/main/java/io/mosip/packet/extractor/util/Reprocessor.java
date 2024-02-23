@@ -30,10 +30,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
@@ -112,7 +109,7 @@ public class Reprocessor {
                 @Override
                 public void processData(PacketTracker packetTracker) throws Exception {
                     if(packetTracker.getStatus().equals(TrackerStatus.CREATED.toString()) || packetTracker.getStatus().equals(TrackerStatus.PROCESSED_WITHOUT_UPLOAD.toString())) {
-                        LinkedHashMap<String, Object> demoDetails = objectMapper.readValue(packetTracker.getRequest().toString(), new TypeReference<LinkedHashMap<String, Object>>() {});
+                        HashMap<String, Object> demoDetails = objectMapper.readValue(packetTracker.getRequest().toString(), new TypeReference<HashMap<String, Object>>() {});
 
                         Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
 
@@ -150,7 +147,7 @@ public class Reprocessor {
 
                             List<PacketUploadDTO> uploadList = new ArrayList<>();
                             uploadList.add(uploadDTO);
-                            LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
+                            HashMap<String, PacketUploadResponseDTO> response = new HashMap<>();
 
                             if(enablePaccketUploader) {
                                 packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
@@ -170,7 +167,7 @@ public class Reprocessor {
                         }
                     } else if(packetTracker.getStatus().equals(TrackerStatus.SYNCED.toString())) {
                         List<PacketUploadDTO> uploadList = objectMapper.readValue(packetTracker.getRequest().toString(), new TypeReference<List<PacketUploadDTO>>() {});
-                        LinkedHashMap<String, PacketUploadResponseDTO> response = new LinkedHashMap<>();
+                        HashMap<String, PacketUploadResponseDTO> response = new HashMap<>();
 
                         if(enablePaccketUploader) {
                             packetUploaderService.uploadSyncedPacket(uploadList, response);

@@ -4,20 +4,21 @@ import io.mosip.packet.core.constant.DBTypes;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 @Component
 @Getter
 public class TableWriterQuery {
 
-    private static LinkedHashMap<TableWriterConstant, LinkedHashMap<String, String>> analysisMap;
-    private static LinkedHashMap<String, LinkedHashMap<DBTypes, String>> insertMap;
+    private static HashMap<TableWriterConstant, LinkedHashMap<String, String>> analysisMap;
+    private static HashMap<String, HashMap<DBTypes, String>> insertMap;
     private static String WRITER_TABLE_NAME = "TB_T_QUALITY_SCORE";
 
 
     public TableWriterQuery() {
-        analysisMap = new LinkedHashMap<>();
-        insertMap=new LinkedHashMap<>();
+        analysisMap = new HashMap<>();
+        insertMap=new HashMap<>();
 
         LinkedHashMap<String, String> rowQueryMap = new LinkedHashMap<>();
         rowQueryMap.put("Excellent Quality Biometrics", "SELECT COUNT(*) FROM <$TABLE_NAME> WHERE <$COLUMN_NAME> >= 81");
@@ -32,7 +33,7 @@ public class TableWriterQuery {
 
         analysisMap.put(TableWriterConstant.ROW_ANALYSER_QUERIES, rowQueryMap);
 
-        LinkedHashMap<DBTypes, String> inserQuerytMap = new LinkedHashMap<>();
+        HashMap<DBTypes, String> inserQuerytMap = new HashMap<>();
         inserQuerytMap.put(DBTypes.MYSQL, "INSERT INTO <TABLE_NAME> (REF_ID, <COLUMN_NAME> ) VALUES ('<REF_ID>', <VALUES>) ON DUPLICATE KEY UPDATE REF_ID = '<REF_ID>', <UPDATE_COLUMN_NAME>");
         inserQuerytMap.put(DBTypes.POSTGRESQL, "INSERT INTO <TABLE_NAME> ( REF_ID, <COLUMN_NAME> ) VALUES ('<REF_ID>', <VALUES>) ON CONFLICT(REF_ID) DO UPDATE SET REF_ID = '<REF_ID>', <UPDATE_COLUMN_NAME>");
         inserQuerytMap.put(DBTypes.ORACLE, "MERGE INTO <TABLE_NAME> T USING (SELECT 1 FROM DUAL) C ON (T.REF_ID = '<REF_ID>') WHEN NOT MATCHED THEN INSERT (REF_ID, <COLUMN_NAME>) values('<REF_ID>', <VALUES>) WHEN MATCHED THEN UPDATE SET <UPDATE_COLUMN_NAME>");
@@ -44,7 +45,7 @@ public class TableWriterQuery {
         return analysisMap.get(constant);
     }
 
-    public static LinkedHashMap<DBTypes, String> getInsertQueries(String  tableName) {
+    public static HashMap<DBTypes, String> getInsertQueries(String  tableName) {
         return insertMap.get(tableName);
     }
 }

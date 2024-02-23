@@ -111,8 +111,6 @@ public class ConfigUtil {
 
     @SuppressWarnings("unchecked")
     private void syncClientSettings() throws Exception {
-        ResponseWrapper masterSyncResponse = null;
-
         try {
             ResponseWrapper response=null;
             try {
@@ -125,7 +123,7 @@ public class ConfigUtil {
             String message = getErrorMessage(getErrorList(response));
 
             if (null != response.getResponse()) {
-                saveClientSettings((LinkedHashMap<String, Object>)response.getResponse());
+                saveClientSettings((HashMap<String, Object>)response.getResponse());
             } else {
                 throw new Exception("Machine Not Configured in MOSIP " + message);
             }
@@ -157,7 +155,7 @@ public class ConfigUtil {
         }
     }
 
-    private void saveClientSettings(LinkedHashMap<String, Object> masterSyncResponse) throws Exception {
+    private void saveClientSettings(HashMap<String, Object> masterSyncResponse) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         String jsonString = mapper.writeValueAsString(masterSyncResponse);
         SyncDataResponseDto syncDataResponseDto = mapper.readValue(jsonString,
@@ -231,7 +229,7 @@ public class ConfigUtil {
                 .getApi(ApiName.GET_CERTIFICATE, null, queryParm, queryParmValue, ResponseWrapper.class);
 
         if(null != responseWrapper.getResponse()) {
-            LinkedHashMap<String, Object> responseMap = (LinkedHashMap<String, Object>) responseWrapper.getResponse();
+            HashMap<String, Object> responseMap = (HashMap<String, Object>) responseWrapper.getResponse();
             return responseMap.get(RegistrationConstants.CERTIFICATE).toString();
         }
 

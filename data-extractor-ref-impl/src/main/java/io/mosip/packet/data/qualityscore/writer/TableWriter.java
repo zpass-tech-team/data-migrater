@@ -19,7 +19,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -40,7 +39,7 @@ public class TableWriter implements QualityWriterFactory {
     private static String ANALYZER_TABLE_NAME = "TB_T_QUALITY_ANALYSIS";
     private static LinkedHashMap<String, String> map = new LinkedHashMap<>();
     private static LinkedHashMap<String, String> consolidateMap = new LinkedHashMap<>();
-    private static LinkedHashMap<String, Class> columnMap = new LinkedHashMap<>();
+    private static HashMap<String, Class> columnMap = new HashMap<>();
     private static boolean initialLoad = true;
 
     @Autowired

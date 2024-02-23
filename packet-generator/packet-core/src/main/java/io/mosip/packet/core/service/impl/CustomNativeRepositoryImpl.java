@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.sql.*;
 import java.util.Base64;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,7 +53,7 @@ public class CustomNativeRepositoryImpl implements CustomNativeRepository {
                     Clob clob = resultSet.getClob(1);
                     ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(clob.getSubString(1, (int)clob.length()).toString())) : Base64.getDecoder().decode(clob.getSubString(1, (int)clob.length()).toString()));
                     ObjectInputStream is = new ObjectInputStream(bis);
-                    processor.processData((Map<FieldCategory, LinkedHashMap<String, Object>>) is.readObject());
+                    processor.processData((Map<FieldCategory, HashMap<String, Object>>) is.readObject());
                 }
                 if(resultSet!= null)
                     resultSet.close();
@@ -65,6 +65,6 @@ public class CustomNativeRepositoryImpl implements CustomNativeRepository {
     }
 
     public interface PacketTrackerInterface {
-        public void processData(Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap) throws Exception;
+        public void processData(Map<FieldCategory, HashMap<String, Object>> dataHashMap) throws Exception;
     }
 }

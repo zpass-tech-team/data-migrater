@@ -80,7 +80,7 @@ public class DataBaseUtil {
 
     }
 
-    public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap, Map<String, HashMap<String, String>> fieldsCategoryMap, ResultSetter setter) throws Exception {
+    public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, HashMap<String, Object>> dataHashMap, Map<String, HashMap<String, String>> fieldsCategoryMap, ResultSetter setter) throws Exception {
         Statement statement1 = conn.createStatement();
         ResultSet resultSetCount = null;
         ResultSet resultSet = null;
@@ -108,7 +108,7 @@ public class DataBaseUtil {
                             baseDbThreadController.setProcessor(new ThreadDBProcessor() {
                                 @Override
                                 public void processData(ResultSetter setter, Map<String, Object> resultMap) throws Exception {
-                                    Map<FieldCategory, LinkedHashMap<String, Object>> dataHashMap = new HashMap<>();
+                                    Map<FieldCategory, HashMap<String, Object>> dataHashMap = new HashMap<>();
                                     populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultMap, dataHashMap, fieldsCategoryMap, false);
 
                                     if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName())) {
@@ -165,7 +165,7 @@ public class DataBaseUtil {
         }
     }
 
-    private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashMap<String, String>> fieldsCategoryMap, Statement statement, boolean fetchCount) throws Exception {
+    private ResultSet getResult(TableRequestDto tableRequestDto, Map<FieldCategory, HashMap<String, Object>> dataMap, Map<String, HashMap<String, String>> fieldsCategoryMap, Statement statement, boolean fetchCount) throws Exception {
         if (tableRequestDto.getQueryType().equals(QuerySelection.TABLE)) {
             String tableName = tableRequestDto.getTableNameWithOutSchema();
             List<String> ignoreFields = commonUtil.getNonIdSchemaNonTableFieldsMap();
@@ -269,11 +269,11 @@ public class DataBaseUtil {
         }
     }
 
-    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, Map<String, Object> resultData, Map<FieldCategory, LinkedHashMap<String, Object>> dataMap, Map<String, HashMap<String, String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
+    public void populateDataFromResultSet(TableRequestDto tableRequestDto, List<FieldFormatRequest> columnDetails, Map<String, Object> resultData, Map<FieldCategory, HashMap<String, Object>> dataMap, Map<String, HashMap<String, String>> fieldsCategoryMap, Boolean localStoreRequired) throws Exception {
         if (dataMap != null && dataMap.size() <= 0) {
-            dataMap.put(FieldCategory.DEMO, new LinkedHashMap<>());
-            dataMap.put(FieldCategory.BIO, new LinkedHashMap<>());
-            dataMap.put(FieldCategory.DOC, new LinkedHashMap<>());
+            dataMap.put(FieldCategory.DEMO, new HashMap<>());
+            dataMap.put(FieldCategory.BIO, new HashMap<>());
+            dataMap.put(FieldCategory.DOC, new HashMap<>());
         }
 
         for (FieldFormatRequest fieldFormatRequest : columnDetails) {
@@ -282,13 +282,13 @@ public class DataBaseUtil {
     }
 
     public Map<String, Object> extractResultSet(ResultSet resultSet) throws SQLException {
-        LinkedHashMap<String, Object> resultData = new LinkedHashMap<>();
+        HashMap<String, Object> resultData = new HashMap<>();
         ResultSetMetaData metadata = resultSet.getMetaData();
         int columnCount = metadata.getColumnCount();
         for (int i = 1; i <= columnCount; i++) {
             resultData.put(metadata.getColumnName(i).toUpperCase(), null);
         }
-        Map<String, Object> resultMap = (LinkedHashMap<String, Object>) resultData.clone();
+        Map<String, Object> resultMap = (HashMap<String, Object>) resultData.clone();
 
         for (Map.Entry<String, Object> entry : resultMap.entrySet()) {
             resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));

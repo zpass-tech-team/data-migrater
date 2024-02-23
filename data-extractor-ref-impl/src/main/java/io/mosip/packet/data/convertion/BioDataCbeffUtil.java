@@ -50,7 +50,7 @@ public class BioDataCbeffUtil implements BioDocApiFactory {
         if(responseWrapper.getErrors() != null && responseWrapper.getErrors().size() > 0) {
 
         } else {
-            LinkedHashMap<String, Object> responseDto = (LinkedHashMap<String, Object>) responseWrapper.getResponse();
+            HashMap<String, Object> responseDto = (HashMap<String, Object>) responseWrapper.getResponse();
       //      String subType = subTypeList.get(subTypeList.size()-1);
 
             List<BIR> data =  cbeffUtil.getBIRDataFromXML(Base64.getUrlDecoder().decode(responseDto.get("data").toString()));

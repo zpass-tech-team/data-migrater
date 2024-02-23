@@ -27,7 +27,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.net.URL;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 public class FilterAddPopupController implements Initializable {
     private FilterTableViewData data;
     private String tableName;
-    private LinkedHashMap<String, ColumnData> columnMap = new LinkedHashMap<>();
+    private HashMap<String, ColumnData> columnMap = new HashMap<>();
 
     @FXML
     private ComboBox columnName;

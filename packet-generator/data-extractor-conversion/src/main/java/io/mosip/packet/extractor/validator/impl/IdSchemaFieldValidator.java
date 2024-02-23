@@ -27,7 +27,7 @@ public class IdSchemaFieldValidator implements Validator {
     private List<String> getIdFields() throws ApisResourceAccessException, IOException, ParseException {
         if (idFields == null) {
             idFields = new ArrayList<>();
-            LinkedHashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
+            HashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
 
             for(Object obj : (List)idSchema.get("schema")) {
                 Map<String, Object> map = (Map<String, Object>) obj;

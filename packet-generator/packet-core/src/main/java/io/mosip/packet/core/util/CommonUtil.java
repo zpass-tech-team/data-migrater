@@ -37,7 +37,7 @@ public class CommonUtil {
     @Autowired
     private DataRestClientService restApiClient;
 
-    private LinkedHashMap<String, Object> latestIdSchemaMap;
+    private HashMap<String, Object> latestIdSchemaMap;
 
     @Value("${mosip.extractor.load.local.idschema:false}")
     private Boolean loadLocalIdSchema;
@@ -67,7 +67,7 @@ public class CommonUtil {
         updateNonIdSchemaNonTableFields(dbImportRequest);
     }
 
-    public LinkedHashMap<String, Object> getLatestIdSchema() throws ApisResourceAccessException, IOException, ParseException {
+    public HashMap<String, Object> getLatestIdSchema() throws ApisResourceAccessException, IOException, ParseException {
         if (latestIdSchemaMap == null) {
             ResponseWrapper response= null;
 
@@ -76,19 +76,19 @@ public class CommonUtil {
                 if (identityFile.toFile().exists()) {
                     JSONParser parser = new JSONParser();
                     JSONObject jsonObject = (JSONObject) parser.parse(IOUtils.toString(new FileInputStream(identityFile.toFile()), StandardCharsets.UTF_8));
-                    latestIdSchemaMap = objectMapper.readValue(jsonObject.get("response").toString(), new TypeReference<LinkedHashMap<String, Object>>() {});
+                    latestIdSchemaMap = objectMapper.readValue(jsonObject.get("response").toString(), new TypeReference<HashMap<String, Object>>() {});
                 }
             } else {
                 response= (ResponseWrapper) restApiClient.getApi(ApiName.LATEST_ID_SCHEMA, null, "", "", ResponseWrapper.class);
-                latestIdSchemaMap = (LinkedHashMap<String, Object> ) response.getResponse();
+                latestIdSchemaMap = (HashMap<String, Object> ) response.getResponse();
             }
         }
         return latestIdSchemaMap;
     }
 
     public void updateFieldCategory(DBImportRequest dbImportRequest) throws ApisResourceAccessException, IOException, ParseException {
-        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
-        LinkedHashMap<String, FieldCategory> fieldMap = new LinkedHashMap<>();
+        HashMap<String, Object> idSchema = getLatestIdSchema();
+        HashMap<String, FieldCategory> fieldMap = new HashMap<>();
 
         for(Object obj : (List)idSchema.get("schema")) {
             Map<String, Object> map = (Map<String, Object>) obj;
@@ -123,8 +123,8 @@ public class CommonUtil {
     }
 
     public void updateBioDestFormat(DBImportRequest dbImportRequest) throws ApisResourceAccessException, IOException, ParseException {
-        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
-        LinkedHashMap<String, List<DataFormat>> fieldMap = new LinkedHashMap<>();
+        HashMap<String, Object> idSchema = getLatestIdSchema();
+        HashMap<String, List<DataFormat>> fieldMap = new HashMap<>();
 
         for(Object obj : (List)idSchema.get("schema")) {
             Map<String, Object> map = (Map<String, Object>) obj;
@@ -150,7 +150,7 @@ public class CommonUtil {
     }
 
     public Object[] getBioAttributesforAll() throws ApisResourceAccessException, IOException, ParseException {
-        LinkedHashMap<String, Object> idSchema = getLatestIdSchema();
+        HashMap<String, Object> idSchema = getLatestIdSchema();
         List<String> attributes = new ArrayList<>();
 
         for(Object obj : (List)idSchema.get("schema")) {

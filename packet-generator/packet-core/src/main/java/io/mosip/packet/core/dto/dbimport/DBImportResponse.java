@@ -4,12 +4,12 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 
 @Data
 @Getter
 @Setter
 public class DBImportResponse {
     private String message;
-    private LinkedHashMap<String, Object> convertedBioValues;
+    private HashMap<String, Object> convertedBioValues;
 }
