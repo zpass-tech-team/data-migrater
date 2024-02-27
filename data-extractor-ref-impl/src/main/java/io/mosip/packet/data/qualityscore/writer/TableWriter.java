@@ -19,11 +19,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
@@ -317,6 +315,18 @@ public class TableWriter implements QualityWriterFactory {
         Statement statement = null;
         PreparedStatement preparedStatement = null;
         try {
+            if(consolidateMap == null || consolidateMap.isEmpty()) {
+                consolidateMap = new LinkedHashMap<>();
+
+                for(Object ob : commonUtil.getBioAttributesforAll()) {
+                    consolidateMap.put(ob.toString(), null);
+                }
+            }
+
+            if(columnMap == null || (!columnMap.isEmpty() && columnMap.size() <= 2)) {
+                getDataMap();
+            }
+
             for(Map.Entry<String, String> queryEntry : TableWriterQuery.getQueries(TableWriterConstant.ROW_ANALYSER_QUERIES).entrySet()) {
                 statement = conn.createStatement();
                 LinkedHashMap<String, String> objectMap = (LinkedHashMap<String, String>) consolidateMap.clone();

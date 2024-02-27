@@ -309,6 +309,12 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         return packetCreatorResponse;
     }
 
+    @Override
+    public String refreshQualityAnalysisData() throws Exception {
+        qualityWriterFactory.preDestroyProcess();
+        return "Quality Analysis Data Refresh Successfully";
+    }
+
     private boolean processPacket(DBImportRequest dbImportRequest, PacketCreatorResponse packetCreatorResponse, ThreadDataProcessController threadDataProcessController, Map<FieldCategory, HashMap<String, Object>> dataHashMap) throws Exception {
         if ( dataHashMap != null) {
             String registrationId = null;

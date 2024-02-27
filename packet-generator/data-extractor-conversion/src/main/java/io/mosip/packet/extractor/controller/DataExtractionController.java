@@ -15,10 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -178,4 +175,23 @@ public class DataExtractionController {
         RestApiClient.setIsAuthRequired(true);
         return new ResponseEntity<ResponseWrapper>(responseWrapper, HttpStatus.OK);
     }
+
+    @GetMapping(value = "/refreshQualityAnalysisData", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseWrapper> refreshQualityAnalysisData() {
+        ResponseWrapper<String> responseWrapper = new ResponseWrapper();
+        try {
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: exportBioQualityFromOtherDomain():: entry");
+            responseWrapper.setResponse(dataExtractionService.refreshQualityAnalysisData());
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: exportBioQualityFromOtherDomain():: exit");
+        }  catch (Exception e) {
+            e.printStackTrace();
+            ServiceError error = new ServiceError();
+            error.setErrorCode("IX-0001");
+            error.setMessage("Error : " + e.getMessage());
+            responseWrapper.getErrors().add(error);
+            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, error.getErrorCode(), error.getMessage());
+        }
+        return new ResponseEntity<ResponseWrapper>(responseWrapper, HttpStatus.OK);
+    }
+
 }

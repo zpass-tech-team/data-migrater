@@ -12,4 +12,5 @@ public interface DataExtractionService {
     public HashMap<String, Object> extractBioDataFromDB(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception;
     public HashMap<String, Object> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception;
     public PacketCreatorResponse createPacketFromDataBase(DBImportRequest dbImportRequest) throws SQLException, IOException, Exception;
+    public String refreshQualityAnalysisData() throws Exception;
 }
