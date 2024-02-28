@@ -215,8 +215,18 @@ public class CustomizedThreadPoolExecutor {
 
         do {
             if(!noSlotAvailable) {
+                for(ThreadPoolExecutor entry : poolMap) {
+                    if(entry.getTaskCount() <= maxThreadCount) {
+                        entry.execute(task);
+                        taskAdded=true;
+                        currentPendingCount++;
+                        break;
+                    }
+                }
+
                 boolean slotAvailable = false;
                 for(ThreadPoolExecutor entry : poolMap) {
+
                     if(entry.getTaskCount() < maxThreadCount)
                         slotAvailable = true;
                 }
@@ -224,18 +234,10 @@ public class CustomizedThreadPoolExecutor {
                 if(!slotAvailable) {
                     noSlotAvailable = true;
                 }
-
-                for(ThreadPoolExecutor entry : poolMap) {
-                    if(entry.getTaskCount() <= maxThreadCount) {
-                        entry.execute(task);
-                        taskAdded=true;
-                        break;
-                    }
-                }
             }  else {
                 TimeUnit.SECONDS.sleep(10);
             }
-        } while (noSlotAvailable || !taskAdded);
+        } while ((noSlotAvailable && !taskAdded) || !taskAdded);
 
     }
 
@@ -260,6 +262,14 @@ public class CustomizedThreadPoolExecutor {
 
     public boolean getInputProcessCompleted() {
         return this.isInputProcessCompleted;
+    }
+
+    public Timer getSlotAllocationTimer() {
+        return slotAllocationTimer;
+    }
+
+    public void setSlotAllocationTimer(Timer slotAllocationTimer) {
+        this.slotAllocationTimer = slotAllocationTimer;
     }
 
     public Timer getWatch() {

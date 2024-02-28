@@ -111,7 +111,8 @@ public class DataBaseUtil {
 
                 while(noOfLoopRequired > 0) {
                     Float processPercentage = Float.valueOf((getPendingCountForProcess().floatValue() / Float.valueOf(dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool)));
-                    if((processPercentage > 0.05 && processPercentage != 0) || (processPercentage == 0 && OFFSET_VALUE > 0 && oneTimeCheckForZeroOffset)) {
+
+                    if((processPercentage > 0.05 && processPercentage != 0) || (processPercentage == 0 && OFFSET_VALUE > 0 && oneTimeCheckForZeroOffset) || threadPool.getCurrentPendingCount() > 0) {
                         if(processPercentage != 0 && oneTimeCheckForZeroOffset)
                             oneTimeCheckForZeroOffset = false;
 

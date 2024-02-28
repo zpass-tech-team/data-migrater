@@ -78,6 +78,8 @@ public class GlobalConfig {
                                     executor.getWatch().cancel();
                                 if(executor.getEstimateTimer() != null)
                                     executor.getEstimateTimer().cancel();
+                                if(executor.getSlotAllocationTimer() != null)
+                                    executor.getSlotAllocationTimer().cancel();
                             } else {
                                 isCompleted = false;
                             }
@@ -86,6 +88,8 @@ public class GlobalConfig {
                                 executor.getWatch().cancel();
                             if(executor.getEstimateTimer() != null)
                                 executor.getEstimateTimer().cancel();
+                            if(executor.getSlotAllocationTimer() != null)
+                                executor.getSlotAllocationTimer().cancel();
                         }
                     } else {
                         isCompleted = false;
