@@ -19,6 +19,7 @@ public class CustomizedThreadPoolExecutor {
     private long totalCompletedTaskCount = 0;
     private long failedRecordCount = 0;
     private Long completedCount = 0L;
+    private Long currentPendingCount = 0L;
     private int countOfZeroActiveCount = 0;
 
     public int getCountOfZeroActiveCount() {
@@ -36,6 +37,7 @@ public class CustomizedThreadPoolExecutor {
 
     private Timer watch = null;
     private Timer estimateTimer = null;
+    private Timer slotAllocationTimer = null;
     private String NAME;
     private FixedListQueue<Long> timeConsumptionPerMin = new FixedListQueue<>(100);
     private FixedListQueue<Integer> countOfProcessPerMin = new FixedListQueue<>(100);
@@ -71,6 +73,53 @@ public class CustomizedThreadPoolExecutor {
         for(int i = 1; i <= threadPoolCount; i++)
             poolMap.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
 
+        slotAllocationTimer = new Timer("Slot Allocation Timer");
+        slotAllocationTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if(noSlotAvailable) {
+                    boolean isSuccess = false;
+                    List<ThreadPoolExecutor> poolMap1 = new ArrayList<>();
+                    List<Integer> removeIndex = new ArrayList<>();
+                    for(int i=0; i < poolMap.size(); i++) {
+                        ThreadPoolExecutor entry = poolMap.get(i);
+                        if(entry.getActiveCount() ==0 && entry.getTaskCount() > 0 && entry.getCompletedTaskCount() > 0 && entry.getTaskCount() == entry.getCompletedTaskCount()) {
+                            totalTaskCount += entry.getTaskCount();
+                            totalCompletedTaskCount += entry.getCompletedTaskCount();
+                            removeIndex.add(i);
+                            poolMap1.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
+                            isSuccess=true;
+                        }
+                    }
+
+                    Collections.sort(removeIndex, new Comparator<Integer>() {
+                        @Override
+                        public int compare(Integer o1, Integer o2) {
+                            return o2.compareTo(o1);
+                        }
+                    });
+
+                    for(int i : removeIndex) {
+                        ThreadPoolExecutor entry = poolMap.get(i);
+                        entry.shutdown();
+                        entry.purge();
+                        poolMap.remove(i);
+                    }
+
+                    if(poolMap1.size() > 0)
+                        poolMap.addAll(poolMap1);
+
+
+                    if(isSuccess)
+                        noSlotAvailable=false;
+                }
+
+                try {
+                    Collections.sort(poolMap, new SortbyCount());
+                } catch (ConcurrentModificationException e){}
+            }
+        }, 0, 5000L);
+
         if(monitorRequired) {
             estimateTimer = new Timer("Estimate Time Calculator");
             estimateTimer.schedule(new TimerTask() {
@@ -98,50 +147,10 @@ public class CustomizedThreadPoolExecutor {
             watch.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    if(noSlotAvailable) {
-                        boolean isSuccess = false;
-                        List<ThreadPoolExecutor> poolMap1 = new ArrayList<>();
-                        List<Integer> removeIndex = new ArrayList<>();
-                        for(int i=0; i < poolMap.size(); i++) {
-                            ThreadPoolExecutor entry = poolMap.get(i);
-                            if(entry.getActiveCount() ==0 && entry.getTaskCount() > 0 && entry.getCompletedTaskCount() > 0 && entry.getTaskCount() == entry.getCompletedTaskCount()) {
-                                totalTaskCount += entry.getTaskCount();
-                                totalCompletedTaskCount += entry.getCompletedTaskCount();
-                                removeIndex.add(i);
-                                poolMap1.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
-                                isSuccess=true;
-                            }
-                        }
-
-                        Collections.sort(removeIndex, new Comparator<Integer>() {
-                            @Override
-                            public int compare(Integer o1, Integer o2) {
-                                return o2.compareTo(o1);
-                            }
-                        });
-
-                        for(int i : removeIndex) {
-                            ThreadPoolExecutor entry = poolMap.get(i);
-                            entry.shutdown();
-                            entry.purge();
-                            poolMap.remove(i);
-                        }
-
-                        if(poolMap1.size() > 0)
-                            poolMap.addAll(poolMap1);
-
-
-                        if(isSuccess)
-                            noSlotAvailable=false;
-                    }
-
-                    try {
-                        Collections.sort(poolMap, new SortbyCount());
-                    } catch (ConcurrentModificationException e){}
-
                     Long totalCount = 0L;
                     Long activeCount = 0L;
                     completedCount = 0L;
+                    currentPendingCount = 0L;
                     int totalDays = 0;
                     int totalHours = 0;
                     int remainingMinutes =0;
@@ -153,6 +162,8 @@ public class CustomizedThreadPoolExecutor {
                         activeCount+= entry.getActiveCount();
                         completedCount+= entry.getCompletedTaskCount();
                     }
+
+                    currentPendingCount = totalCount - completedCount;
 
                     if(activeCount <= 0)
                         countOfZeroActiveCount++;
@@ -204,15 +215,6 @@ public class CustomizedThreadPoolExecutor {
 
         do {
             if(!noSlotAvailable) {
-
-                for(ThreadPoolExecutor entry : poolMap) {
-                    if(entry.getTaskCount() < maxThreadCount) {
-                        entry.execute(task);
-                        taskAdded=true;
-                        break;
-                    }
-                }
-
                 boolean slotAvailable = false;
                 for(ThreadPoolExecutor entry : poolMap) {
                     if(entry.getTaskCount() < maxThreadCount)
@@ -221,6 +223,14 @@ public class CustomizedThreadPoolExecutor {
 
                 if(!slotAvailable) {
                     noSlotAvailable = true;
+                }
+
+                for(ThreadPoolExecutor entry : poolMap) {
+                    if(entry.getTaskCount() <= maxThreadCount) {
+                        entry.execute(task);
+                        taskAdded=true;
+                        break;
+                    }
                 }
             }  else {
                 TimeUnit.SECONDS.sleep(10);
@@ -270,5 +280,9 @@ public class CustomizedThreadPoolExecutor {
 
     public Long getCurrentCompletedTask() {
         return completedCount;
+    }
+
+    public Long getCurrentPendingCount() {
+        return currentPendingCount;
     }
 }

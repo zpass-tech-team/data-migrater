@@ -52,6 +52,16 @@ public class GlobalConfig {
         return isCompleted;
     }
 
+    public static Long getPendingCountForProcess() {
+        Long pendingCount = 0L;
+        for(CustomizedThreadPoolExecutor executor : THREAD_POOL_EXECUTOR_LIST) {
+            if(executor.getNAME().equals("QUALITY ANALYSIS") || executor.getNAME().equals("PACKET CREATOR")) {
+                pendingCount += executor.getCurrentPendingCount();
+            }
+        }
+        return pendingCount;
+    }
+
     public static boolean isTaskCompleted() throws InterruptedException {
         boolean isCompleted = true;
 

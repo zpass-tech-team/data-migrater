@@ -8,6 +8,8 @@ import io.mosip.packet.core.constant.DBTypes;
 import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.constant.GlobalConfig;
 import io.mosip.packet.core.constant.QuerySelection;
+import io.mosip.packet.core.constant.database.QueryLimitSetter;
+import io.mosip.packet.core.constant.database.QueryOffsetSetter;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.dto.dbimport.QueryFilter;
@@ -34,7 +36,8 @@ public class DataBaseUtil {
     private Connection conn = null;
     private boolean isTrackerSameHost = false;
     private String trackColumn = null;
-    private ObjectMapper mapper = new ObjectMapper();
+    private DBTypes dbType = null;
+    private Long OFFSET_VALUE = 0L;
 
     @Autowired
     private QueryFormatter formatter;
@@ -48,20 +51,23 @@ public class DataBaseUtil {
     @Autowired
     private CommonUtil commonUtil;
 
-    @Value("${mosip.database.reader.max-threadpool-count:1}")
+    @Value("${mosip.packet.creater.max-threadpool-count:1}")
     private Integer dbReaderMaxThreadPoolCount;
 
-    @Value("${mosip.database.reader.max-records-process-per-threadpool:10000}")
+    @Value("${mosip.packet.creater.max-records-process-per-threadpool:10000}")
     private Integer dbReaderMaxRecordsCountPerThreadPool;
 
-    @Value("${mosip.database.reader.max-thread-execution-count:3}")
+    @Value("${mosip.packet.creater.max-thread-execution-count:3}")
     private Integer dbReaderMaxThreadExecCount;
+
+    @Value("${mosip.extractor.application.id.column}")
+    private String applicationIdColumn;
 
 
     public void connectDatabase(DBImportRequest dbImportRequest) throws SQLException {
         try {
             if(conn == null) {
-                DBTypes dbType = dbImportRequest.getDbType();
+                dbType = dbImportRequest.getDbType();
                 Class driverClass = Class.forName(dbType.getDriver());
                 DriverManager.registerDriver((Driver) driverClass.newInstance());
                 String connectionHost = String.format(dbType.getDriverUrl(), dbImportRequest.getUrl(), dbImportRequest.getPort(), dbImportRequest.getDatabaseName());
@@ -88,6 +94,7 @@ public class DataBaseUtil {
 
         try {
             if(conn != null) {
+                OFFSET_VALUE = 0L;
                 List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
                 Collections.sort(tableRequestDtoList);
                 TableRequestDto tableRequestDto  = tableRequestDtoList.get(0);
@@ -95,58 +102,76 @@ public class DataBaseUtil {
                 if(resultSetCount.next())
                     TOTAL_RECORDS_FOR_PROCESS = resultSetCount.getLong(1);
 
-                resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, false);
-                if (resultSet != null) {
-                    threadPool = new CustomizedThreadPoolExecutor(dbReaderMaxThreadPoolCount, dbReaderMaxRecordsCountPerThreadPool, dbReaderMaxThreadExecCount, "DATABASE READER", true);
+                int noOfLoopRequired = (int) ((TOTAL_RECORDS_FOR_PROCESS/(dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool)) +
+                                        (TOTAL_RECORDS_FOR_PROCESS % (dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool) > 0 ? 1 : 0));
 
-                    while(resultSet.next()) {
-                        try {
-                            Map<String, Object> resultData = extractResultSet(resultSet);
-                            ThreadDBController baseDbThreadController = new ThreadDBController();
-                            baseDbThreadController.setSetter(setter);
-                            baseDbThreadController.setResultMap(resultData);
-                            baseDbThreadController.setProcessor(new ThreadDBProcessor() {
-                                @Override
-                                public void processData(ResultSetter setter, Map<String, Object> resultMap) throws Exception {
-                                    Map<FieldCategory, HashMap<String, Object>> dataHashMap = new HashMap<>();
-                                    populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultMap, dataHashMap, fieldsCategoryMap, false);
+                threadPool = new CustomizedThreadPoolExecutor(dbReaderMaxThreadPoolCount, dbReaderMaxRecordsCountPerThreadPool, dbReaderMaxThreadExecCount, "DATABASE READER", true);
 
-                                    if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName())) {
-                                        for (int i = 1; i < tableRequestDtoList.size(); i++) {
-                                            Statement statement2 = conn.createStatement();
-                                            ResultSet resultSet1 = null;
-                                            try {
-                                                TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
-                                                resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2, false);
+                boolean oneTimeCheckForZeroOffset = true;
 
-                                                if (resultSet1 != null && resultSet1.next()) {
-                                                    Map<String, Object> resultData1 = extractResultSet(resultSet1);
-                                                    populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultData1, dataHashMap, fieldsCategoryMap, false);
+                while(noOfLoopRequired > 0) {
+                    Float processPercentage = Float.valueOf((getPendingCountForProcess().floatValue() / Float.valueOf(dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool)));
+                    if((processPercentage > 0.05 && processPercentage != 0) || (processPercentage == 0 && OFFSET_VALUE > 0 && oneTimeCheckForZeroOffset)) {
+                        if(processPercentage != 0 && oneTimeCheckForZeroOffset)
+                            oneTimeCheckForZeroOffset = false;
+
+                        Thread.sleep(70000);
+                        continue;
+                    }
+
+                    resultSet = getResult(tableRequestDto, dataHashMap, fieldsCategoryMap, statement1, false);
+                    OFFSET_VALUE += (dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool);
+
+                    if (resultSet != null) {
+                        while(resultSet.next()) {
+                            try {
+                                Map<String, Object> resultData = extractResultSet(resultSet);
+                                ThreadDBController baseDbThreadController = new ThreadDBController();
+                                baseDbThreadController.setSetter(setter);
+                                baseDbThreadController.setResultMap(resultData);
+                                baseDbThreadController.setProcessor(new ThreadDBProcessor() {
+                                    @Override
+                                    public void processData(ResultSetter setter, Map<String, Object> resultMap) throws Exception {
+                                        Map<FieldCategory, HashMap<String, Object>> dataHashMap = new HashMap<>();
+                                        populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultMap, dataHashMap, fieldsCategoryMap, false);
+
+                                        if(!trackerUtil.isRecordPresent(dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()), GlobalConfig.getActivityName())) {
+                                            for (int i = 1; i < tableRequestDtoList.size(); i++) {
+                                                Statement statement2 = conn.createStatement();
+                                                ResultSet resultSet1 = null;
+                                                try {
+                                                    TableRequestDto tableRequestDto1  = tableRequestDtoList.get(i);
+                                                    resultSet1 = getResult(tableRequestDto1, dataHashMap, fieldsCategoryMap, statement2, false);
+
+                                                    if (resultSet1 != null && resultSet1.next()) {
+                                                        Map<String, Object> resultData1 = extractResultSet(resultSet1);
+                                                        populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultData1, dataHashMap, fieldsCategoryMap, false);
+                                                    }
+                                                } finally {
+                                                    if(resultSet1 != null)
+                                                        resultSet1.close();
+
+                                                    if(statement2 != null)
+                                                        statement2.close();
                                                 }
-                                            } finally {
-                                                if(resultSet1 != null)
-                                                    resultSet1.close();
-
-                                                if(statement2 != null)
-                                                    statement2.close();
                                             }
+                                            setter.setResult(dataHashMap);
+                                        } else {
+                                            LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Record Already Processed for ref_id" +  dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()));
                                         }
-                                        setter.setResult(dataHashMap);
-                                    } else {
- //                                       ALREADY_PROCESSED_RECORDS++;
-                                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Record Already Processed for ref_id" +  dataHashMap.get(FieldCategory.DEMO).get(dbImportRequest.getTrackerInfo().getTrackerColumn()));
                                     }
-
-                                }
-                            });
-                            threadPool.ExecuteTask(baseDbThreadController);
-                        } catch (Exception e) {
-                            threadPool.increaseFailedRecordCount();
-                            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
+                                });
+                                threadPool.ExecuteTask(baseDbThreadController);
+                            } catch (Exception e) {
+                                threadPool.increaseFailedRecordCount();
+                                LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
+                            }
                         }
                     }
-                    threadPool.setInputProcessCompleted(true);
+                    noOfLoopRequired--;
                 }
+
+                threadPool.setInputProcessCompleted(true);
             } else
                 throw new SQLException("Unable to Connect With Database. Please check the Configuration");
         } catch(Exception e) {
@@ -240,6 +265,13 @@ public class DataBaseUtil {
             }
 
             String countSql = "SELECT COUNT(*) from (" + selectSql + ") a"; //alias has been added for MSSQL
+
+            selectSql += " ORDER BY  " + applicationIdColumn;
+
+            if(OFFSET_VALUE != null && OFFSET_VALUE > 0)
+                selectSql += " " + QueryOffsetSetter.valueOf(dbType.toString()).getValue(OFFSET_VALUE);
+
+            selectSql += " " + QueryLimitSetter.valueOf(dbType.toString()).getValue(dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool);
 
             if(fetchCount)
                 return statement.executeQuery(formatter.replaceColumntoDataIfAny(countSql, dataMap));

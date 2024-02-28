@@ -136,8 +136,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
         List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
         Collections.sort(tableRequestDtoList);
         TableRequestDto tableRequestDto  = tableRequestDtoList.get(0);
-        ResultSet resultSet = null;
- /*       resultSet = dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap);
+ /*       ResultSet resultSet = null;
+        resultSet = dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap);
 
         if (resultSet != null) {
             dataBaseUtil.populateDataFromResultSet(tableRequestDto, dbImportRequest.getColumnDetails(), resultSet, null, dataMap, fieldsCategoryMap, localStoreRequired, false);
