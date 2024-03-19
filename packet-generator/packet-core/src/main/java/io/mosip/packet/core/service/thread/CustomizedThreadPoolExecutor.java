@@ -12,7 +12,7 @@ import static io.mosip.packet.core.constant.GlobalConfig.*;
 public class CustomizedThreadPoolExecutor {
     List<ThreadPoolExecutor> poolMap = new ArrayList<>();
     private int MAX_THREAD_EXE_COUNT;
-    private Long DELAY_SECONDS = 30000L;
+    private Long DELAY_SECONDS = 60000L;
     private int maxThreadCount;
     private boolean noSlotAvailable=false;
     private long totalTaskCount = 0;
@@ -77,86 +77,95 @@ public class CustomizedThreadPoolExecutor {
         slotAllocationTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if(noSlotAvailable) {
-                    boolean isSuccess = false;
-                    List<ThreadPoolExecutor> poolMap1 = new ArrayList<>();
-                    List<Integer> removeIndex = new ArrayList<>();
-                    for(int i=0; i < poolMap.size(); i++) {
-                        ThreadPoolExecutor entry = poolMap.get(i);
-                        if(entry.getActiveCount() ==0 && entry.getTaskCount() > 0 && entry.getCompletedTaskCount() > 0 && entry.getTaskCount() == entry.getCompletedTaskCount()) {
-                            totalTaskCount += entry.getTaskCount();
-                            totalCompletedTaskCount += entry.getCompletedTaskCount();
-                            removeIndex.add(i);
-                            poolMap1.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
-                            isSuccess=true;
-                        }
-                    }
-
-                    Collections.sort(removeIndex, new Comparator<Integer>() {
-                        @Override
-                        public int compare(Integer o1, Integer o2) {
-                            return o2.compareTo(o1);
-                        }
-                    });
-
-                    for(int i : removeIndex) {
-                        ThreadPoolExecutor entry = poolMap.get(i);
-                        entry.shutdown();
-                        entry.purge();
-                        poolMap.remove(i);
-                    }
-
-                    if(poolMap1.size() > 0)
-                        poolMap.addAll(poolMap1);
-
-
-                    if(isSuccess)
-                        noSlotAvailable=false;
-                }
-
                 try {
-                    Collections.sort(poolMap, new SortbyCount());
-                } catch (ConcurrentModificationException e){}
+                    if(noSlotAvailable) {
+                        boolean isSuccess = false;
+                        List<ThreadPoolExecutor> poolMap1 = new ArrayList<>();
+                        List<Integer> removeIndex = new ArrayList<>();
+                        for(int i=0; i < poolMap.size(); i++) {
+                            ThreadPoolExecutor entry = poolMap.get(i);
+                            if(entry.getActiveCount() ==0 && entry.getTaskCount() > 0 && entry.getCompletedTaskCount() > 0 && entry.getTaskCount() == entry.getCompletedTaskCount()) {
+                                totalTaskCount += entry.getTaskCount();
+                                totalCompletedTaskCount += entry.getCompletedTaskCount();
+                                removeIndex.add(i);
+                                poolMap1.add((ThreadPoolExecutor) Executors.newFixedThreadPool(MAX_THREAD_EXE_COUNT));
+                                isSuccess=true;
+                            }
+                        }
+
+                        Collections.sort(removeIndex, new Comparator<Integer>() {
+                            @Override
+                            public int compare(Integer o1, Integer o2) {
+                                return o2.compareTo(o1);
+                            }
+                        });
+
+                        for(int i : removeIndex) {
+                            ThreadPoolExecutor entry = poolMap.get(i);
+                            entry.shutdown();
+                            entry.purge();
+                            poolMap.remove(i);
+                        }
+
+                        if(poolMap1.size() > 0)
+                            poolMap.addAll(poolMap1);
+
+
+                        if(isSuccess)
+                            noSlotAvailable=false;
+                    }
+
+                    try {
+                        Collections.sort(poolMap, new SortbyCount());
+                    } catch (ConcurrentModificationException e){}
+                } catch (Exception e) {}
             }
-        }, 0, 5000L);
+        }, 0, 7000L);
 
         if(monitorRequired) {
             estimateTimer = new Timer("Estimate Time Calculator");
             estimateTimer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    if(TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
-                        FixedListQueue<Long> listQueue = (FixedListQueue<Long>) TIMECONSUPTIONQUEUE.clone();
-                        TIMECONSUPTIONQUEUE.clear();
+                    try {
+                        if (TIMECONSUPTIONQUEUE != null && TIMECONSUPTIONQUEUE.size() > 0) {
+                            FixedListQueue<Long> listQueue = (FixedListQueue<Long>) TIMECONSUPTIONQUEUE.clone();
+                            TIMECONSUPTIONQUEUE.clear();
 
-                        Long avgTime = 0l;
-                        Long[] consumedTimeList = listQueue.toArray(new Long[listQueue.size()]);
+                            Long avgTime = 0l;
+                            Long[] consumedTimeList = listQueue.toArray(new Long[listQueue.size()]);
 
-                        Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
-                        int noOfRecords = consumedTimeList.length;
-                        avgTime = TotalSum / noOfRecords;
+                            Long TotalSum = Arrays.stream(consumedTimeList).mapToLong(Long::longValue).sum();
+                            int noOfRecords = consumedTimeList.length;
+                            if(noOfRecords > 0)
+                                avgTime = TotalSum / noOfRecords;
 
-                        timeConsumptionPerMin.add(avgTime);
-                        countOfProcessPerMin.add(noOfRecords);
+                            timeConsumptionPerMin.add(avgTime);
+                            countOfProcessPerMin.add(noOfRecords);
 
-                    }
+                        }
+                    } catch (Exception e){}
+
                 }
-            }, 0, 60000L);
+            }, 0, DELAY_SECONDS);
+        }
 
-            watch = new Timer("ThreadPool_Wathcer");
-            watch.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    Long totalCount = 0L;
-                    Long activeCount = 0L;
-                    completedCount = 0L;
-                    currentPendingCount = 0L;
-                    int totalDays = 0;
-                    int totalHours = 0;
-                    int remainingMinutes =0;
-                    Long avgTime = 0l;
-                    int avgCount = 0;
+        watch = new Timer("ThreadPool_Wathcer");
+        watch.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Long totalCount = 0L;
+                Long activeCount = 0L;
+                completedCount = 0L;
+                currentPendingCount = 0L;
+                int totalDays = 0;
+                int totalHours = 0;
+                int remainingMinutes =0;
+                Long avgTime = 0l;
+                int avgCount = 0;
 
+
+                try {
                     for(ThreadPoolExecutor entry : poolMap) {
                         totalCount += entry.getTaskCount();
                         activeCount+= entry.getActiveCount();
@@ -170,10 +179,10 @@ public class CustomizedThreadPoolExecutor {
                     else
                         countOfZeroActiveCount=0;
 
- //                   completedCount+= totalCompletedTaskCount + ALREADY_PROCESSED_RECORDS;
+    //                   completedCount+= totalCompletedTaskCount + ALREADY_PROCESSED_RECORDS;
                     completedCount+= totalCompletedTaskCount;
 
-                    if(totalTaskCount > 0 || totalCount > 0) {
+                    if((totalTaskCount > 0 || totalCount > 0) && monitorRequired) {
                         // Calculating Estimated Time of Process Completion
                         if(timeConsumptionPerMin != null && timeConsumptionPerMin.size() > 0) {
                             FixedListQueue<Long> listQueue = (FixedListQueue<Long>) timeConsumptionPerMin.clone();
@@ -199,11 +208,11 @@ public class CustomizedThreadPoolExecutor {
                             remainingMinutes = (int) (totalTimeRequired % 60);
                         }
 
-                        System.out.println("Pool Name : " + NAME + " Avg Count per Min : " + avgCount + " Avg Time per Record : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + " Failed in Previous Batch : " + TOTAL_FAILED_RECORDS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + completedCount + ", Failed Task : " + failedRecordCount);
+                        System.out.println("Pool Name : " + NAME + " Avg Count per Min.: " + avgCount + " Avg Time per Record : " + TimeUnit.SECONDS.convert(avgTime, TimeUnit.NANOSECONDS) + "S  Estimate Time of Completion : " + totalDays + "D " + totalHours + "H " + remainingMinutes + "M" +"  Total Records for Process : " + TOTAL_RECORDS_FOR_PROCESS + " Failed in Previous Batch : " + TOTAL_FAILED_RECORDS + "  Total Task : " + (totalTaskCount +totalCount)  + ", Active Task : " + activeCount + ", Completed Task : " + completedCount + ", Failed Task : " + failedRecordCount);
                     }
-                }
-            }, 0, DELAY_SECONDS);
-        }
+                } catch (Exception e) {}
+            }
+        }, 0, 90000L);
 
         THREAD_POOL_EXECUTOR_LIST.add(this);
     }

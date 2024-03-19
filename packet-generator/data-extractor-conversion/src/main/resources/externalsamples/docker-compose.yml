@@ -1,0 +1,141 @@
+version: "2.4"
+
+services:
+
+  bqat1:
+    image: trialblazerseee/bqat-stateless:8841
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8841:8841"
+
+  bqat2:
+    image: trialblazerseee/bqat-stateless:8842
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8842:8842"
+
+  bqat3:
+    image: trialblazerseee/bqat-stateless:8843
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8843:8843"
+
+  bqat4:
+    image: trialblazerseee/bqat-stateless:8844
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8844:8844"
+
+  bqat5:
+    image: trialblazerseee/bqat-stateless:8845
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8845:8845"
+
+  bqat6:
+    image: trialblazerseee/bqat-stateless:8846
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8846:8846"
+
+  bqat7:
+    image: trialblazerseee/bqat-stateless:8847
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8847:8847"
+
+  bqat8:
+    image: trialblazerseee/bqat-stateless:8848
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8848:8848"
+
+  bqat9:
+    image: trialblazerseee/bqat-stateless:8849
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8849:8849"
+
+  bqat10:
+    image: trialblazerseee/bqat-stateless:8850
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8850:8850"
+
+  bqat11:
+    image: trialblazerseee/bqat-stateless:8851
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8851:8851"
+
+  bqat12:
+    image: trialblazerseee/bqat-stateless:8852
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8852:8852"
+
+
+  bqat13:
+    image: trialblazerseee/bqat-stateless:8853
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8853:8853"
+
+
+  bqat14:
+    image: trialblazerseee/bqat-stateless:8854
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8854:8854"
+
+
+  bqat15:
+    image: trialblazerseee/bqat-stateless:8855
+    # mem_limit: "8g"
+    # mem_reservation: "1g"
+    # cpus: "2"
+    # cpuset: "4"
+    ports:
+      - "8855:8855"

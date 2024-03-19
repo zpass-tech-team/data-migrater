@@ -190,7 +190,7 @@ public class Reprocessor {
         threadPool.setInputProcessCompleted(true);
 
         do {
-            Thread.sleep(10000);
+            Thread.sleep(15000);
         } while(!GlobalConfig.isThreadPoolCompleted());
     }
 }

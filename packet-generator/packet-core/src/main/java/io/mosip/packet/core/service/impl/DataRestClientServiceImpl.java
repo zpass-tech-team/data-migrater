@@ -2,24 +2,22 @@ package io.mosip.packet.core.service.impl;
 
 import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
 import io.mosip.kernel.core.logger.spi.Logger;
-import io.mosip.kernel.core.packetuploader.exception.ConnectionException;
 import io.mosip.kernel.core.util.CryptoUtil;
-import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.kernel.core.util.JsonUtils;
 import io.mosip.kernel.core.util.exception.JsonProcessingException;
 import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.constant.RegistrationConstants;
-import io.mosip.packet.core.dto.upload.AuthTokenDTO;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.exception.PlatformErrorMessages;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.core.util.RestApiClient;
 import io.mosip.packet.core.util.regclient.RequestHTTPDTO;
-import org.aspectj.lang.ProceedingJoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -28,11 +26,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -212,6 +205,40 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 		return obj;
 	}
 
+	public Object postApi(String apiHostIpPort, String queryParamName, String queryParamValue, Object requestedData,
+						  Class<?> responseType, MediaType mediaType, boolean isAuthRequired) throws ApisResourceAccessException {
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
+
+		Object obj = null;
+		UriComponentsBuilder builder = null;
+		if (apiHostIpPort != null)
+			builder = UriComponentsBuilder.fromUriString(apiHostIpPort);
+		if (builder != null) {
+
+			if (!((queryParamName == null) || (("").equals(queryParamName)))) {
+				String[] queryParamNameArr = queryParamName.split(",");
+				String[] queryParamValueArr = queryParamValue.split(",");
+
+				for (int i = 0; i < queryParamNameArr.length; i++) {
+					builder.queryParam(queryParamNameArr[i], queryParamValueArr[i]);
+				}
+			}
+
+			try {
+				obj = restApiClient.postApi(builder.toUriString(), mediaType, requestedData, responseType, isAuthRequired);
+
+			} catch (Exception e) {
+				LOGGER.error(e.getMessage() , e);
+
+				throw new ApisResourceAccessException(PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(),
+						e.getMessage(), e);
+
+			}
+		}
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::exit");
+		return obj;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -231,6 +258,11 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 	public Object postApi(ApiName apiName, String queryParamName, String queryParamValue, Object requestedData,
 						  Class<?> responseType, boolean isAuthRequired) throws ApisResourceAccessException {
 		return postApi(apiName, queryParamName, queryParamValue, requestedData, responseType, null, isAuthRequired);
+	}
+
+	@Override
+	public Object postApi(String apiHostIpPort, String queryParam, String queryParamValue, Object requestedData, Class<?> responseType, boolean isAuthRequired) throws ApisResourceAccessException {
+		return postApi(apiHostIpPort, queryParam, queryParamValue, requestedData, responseType, null, isAuthRequired);
 	}
 
 	/*

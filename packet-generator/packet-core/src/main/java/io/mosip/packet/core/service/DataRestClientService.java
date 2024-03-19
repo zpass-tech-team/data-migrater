@@ -4,12 +4,7 @@ import io.mosip.packet.core.constant.ApiName;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.util.regclient.RequestHTTPDTO;
 import org.springframework.http.MediaType;
-import org.springframework.web.client.RestClientException;
 
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 
@@ -66,6 +61,9 @@ public interface DataRestClientService<T> {
 			throws ApisResourceAccessException;
 
 	public T postApi(ApiName apiName, String queryParam, String queryParamValue, T requestedData, Class<?> responseType, boolean isAuthRequired)
+			throws ApisResourceAccessException;
+
+	public T postApi(String apiHostIpPort, String queryParam, String queryParamValue, T requestedData, Class<?> responseType, boolean isAuthRequired)
 			throws ApisResourceAccessException;
 
 	/**

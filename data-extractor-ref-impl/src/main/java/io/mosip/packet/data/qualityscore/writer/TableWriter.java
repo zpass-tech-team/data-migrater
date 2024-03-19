@@ -19,9 +19,11 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.sql.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Scanner;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
@@ -143,7 +145,7 @@ public class TableWriter implements QualityWriterFactory {
     }
 
     @Override
-    public HashMap<String, String> getDataMap() throws Exception {
+    public synchronized HashMap<String, String> getDataMap() throws Exception {
         Statement statement = null;
 
         try {
@@ -174,7 +176,8 @@ public class TableWriter implements QualityWriterFactory {
             map.put("reg_no", null);
 
             for(Object ob : commonUtil.getBioAttributesforAll())
-                map.put(ob.toString(), null);
+                if(!map.containsKey(ob.toString()))
+                    map.put(ob.toString(), null);
 
             consolidateMap.putAll(map);
         }
@@ -183,7 +186,7 @@ public class TableWriter implements QualityWriterFactory {
     }
 
     @Override
-    public void writeQualityData(HashMap<String, String> csvMap) throws Exception {
+    public synchronized void writeQualityData(HashMap<String, String> csvMap) throws Exception {
         Statement statement = conn.createStatement();
         PreparedStatement preparedStatement = null;
         DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
@@ -224,9 +227,7 @@ public class TableWriter implements QualityWriterFactory {
                     else
                         updateField += ", " + key + " = ?";
                 }
-
             }
-
             String query = TableWriterQuery.getInsertQueries(WRITER_TABLE_NAME).get(dbType);
             Map<String, String> valueMap = new HashMap<>();
             valueMap.put("TABLE_NAME", WRITER_TABLE_NAME);

@@ -13,14 +13,15 @@ import io.mosip.packet.data.biosdk.bqat.constant.BQATModalityType;
 import io.mosip.packet.data.biosdk.bqat.dto.BQATRequest;
 import io.mosip.packet.data.biosdk.bqat.dto.BQATResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
@@ -36,6 +37,24 @@ public class BQATSdkImpl implements BioSdkApiFactory {
 
     private static final Logger LOGGER = DataProcessLogger.getLogger(BQATSdkImpl.class);
 
+    @Value("${mosip.biometric.sdk.providers.bqat.port.ranges:8848}")
+    private String allowedPortRange;
+
+    private LinkedList<String> portRange;
+
+    @Autowired
+    private Environment env;
+
+    @PostConstruct
+    public void initialize() {
+        portRange = new LinkedList<>();
+        String[] rangeString = allowedPortRange.split(":");
+        Integer rangeFrom = Integer.parseInt(rangeString[0]);
+        Integer rangeTo = rangeString.length > 1 ? Integer.parseInt(rangeString[1]) : Integer.parseInt(rangeString[0]);
+
+        for(int i = rangeFrom; i<=rangeTo; i++)
+            portRange.add(String.valueOf(i));
+    }
 
     @Override
     public Double calculateBioQuality(BioSDKRequestWrapper bioSDKRequestWrapper) throws Exception {
@@ -49,8 +68,11 @@ public class BQATSdkImpl implements BioSdkApiFactory {
         request.setId(UUID.randomUUID().toString());
         request.setTimestamp(LocalDateTime.now(ZoneId.of("UTC")).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
         LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Request Preparation Completed " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
-
-        BQATResponse response= (BQATResponse) restApiClient.postApi(ApiName.BQAT_BIOSDK_QUALITY_CHECK, null, "", request, BQATResponse.class, false);
+        String queryParameterValue = portRange.removeFirst();
+        portRange.addLast(queryParameterValue);
+        String url = env.getProperty(ApiName.BQAT_BIOSDK_QUALITY_CHECK.toString());
+        url = url.replace("{PORT_NO}", queryParameterValue);
+        BQATResponse response= (BQATResponse) restApiClient.postApi(url, null, null, request, BQATResponse.class, false);
         HashMap<String, Object> bioSDKResponse = (HashMap<String, Object>) response.getResults();
         LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Rest Call Executed Successfully " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));
         LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Time Taken to call BIOSDK is " + TimeUnit.SECONDS.convert(System.nanoTime()-startTime, TimeUnit.NANOSECONDS));

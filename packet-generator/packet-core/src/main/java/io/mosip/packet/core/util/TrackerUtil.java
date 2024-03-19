@@ -5,6 +5,8 @@ import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.packet.core.constant.DBTypes;
+import io.mosip.packet.core.constant.TableQueries;
+import io.mosip.packet.core.constant.tracker.NumberType;
 import io.mosip.packet.core.constant.tracker.StringType;
 import io.mosip.packet.core.constant.tracker.TimeStampType;
 import io.mosip.packet.core.constant.tracker.TrackerStatus;
@@ -23,14 +25,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.sql.*;
-import java.util.Base64;
-import java.util.Optional;
-import java.util.Scanner;
+import java.util.*;
 
 import static io.mosip.packet.core.constant.GlobalConfig.SESSION_KEY;
-import static io.mosip.packet.core.constant.GlobalConfig.IS_TRACKER_REQUIRED;
-import static io.mosip.packet.core.constant.GlobalConfig.IS_RUNNING_AS_BATCH;
-import static io.mosip.packet.core.constant.GlobalConfig.IS_TPM_AVAILABLE;
+import static io.mosip.packet.core.constant.GlobalConfig.*;
 import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Component
@@ -54,6 +52,9 @@ public class TrackerUtil {
 
     @Autowired
     private Environment env;
+
+    @Autowired
+    private QueryFormatter queryFormatter;
 
     @PostConstruct
     public void initialize(){
@@ -86,7 +87,7 @@ public class TrackerUtil {
 
                     if(option.equalsIgnoreCase("y")) {
                         try {
-                            DBCreator dbCreator = new DBCreator(dbType);
+                            DBCreator dbCreator = new DBCreator(dbType, true);
                             String[] scripts = dbCreator.getValue().split(";");
                             for(String script : scripts)
                                 statement.execute(script);
@@ -104,6 +105,38 @@ public class TrackerUtil {
                         statement.close();
                 }
 
+                try {
+                    statement = conn.createStatement();
+                    statement.execute("SELECT COUNT(*) FROM " + OFFSET_TRACKER_TABLE_NAME);
+                } catch (Exception e) {
+                    System.out.println("Table " + OFFSET_TRACKER_TABLE_NAME +  " not Present in DB " + env.getProperty("spring.datasource.tracker.jdbcurl") +  ". Do you want to create ? Y-Yes, N-No");
+                    String option ="";
+                    if(!IS_RUNNING_AS_BATCH) {
+                        Scanner scanner = new Scanner(System.in);
+                        option = scanner.next();
+                    } else {
+                        option = "Y";
+                    }
+
+                    if(option.equalsIgnoreCase("y")) {
+                        try {
+                            DBCreator dbCreator = new DBCreator(dbType, false);
+                            String[] scripts = dbCreator.getValue().split(";");
+                            for(String script : scripts)
+                                statement.execute(script);
+                        } catch (Exception e1) {
+                            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
+                                    "Exception encountered during Table Creation  "
+                                            + ExceptionUtils.getStackTrace(e1));
+                            System.exit(1);
+                        }
+                    } else {
+                        System.exit(1);
+                    }
+                } finally {
+                    if(statement != null)
+                        statement.close();
+                }
             }
         } catch (Exception e) {
             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID,
@@ -162,6 +195,45 @@ public class TrackerUtil {
                                     + ExceptionUtils.getStackTrace(throwables));
                 }
             }
+        }
+    }
+
+    public synchronized void updateDatabaseOffset(Long offset) throws SQLException {
+        PreparedStatement preparedStatement = null;
+        DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
+
+        try {
+            String query = TableQueries.getInsertQueries(OFFSET_TRACKER_TABLE_NAME, dbType);
+            Map<String, String> valueMap = new HashMap<>();
+            valueMap.put("TABLE_NAME", OFFSET_TRACKER_TABLE_NAME);
+            valueMap.put("SESSION_ID", SESSION_KEY);
+            valueMap.put("VALUE", offset.toString());
+            preparedStatement = conn.prepareStatement(queryFormatter.queryFormatter(query, valueMap));
+            preparedStatement.execute();
+        } finally {
+            if(preparedStatement != null)
+                preparedStatement.close();
+        }
+    }
+
+    public synchronized Long getDatabaseOffset() throws SQLException {
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
+
+        try {
+            preparedStatement = conn.prepareStatement("SELECT OFFSET_VALUE FROM " + OFFSET_TRACKER_TABLE_NAME + " WHERE SESSION_KEY = '" + SESSION_KEY + "'");
+            resultSet = preparedStatement.executeQuery();
+            if(resultSet.next())
+                return resultSet.getLong(1);
+            else
+                return 0L;
+        } finally {
+            if(resultSet != null)
+                resultSet.close();
+
+            if(preparedStatement != null)
+                preparedStatement.close();
         }
     }
 
@@ -229,9 +301,6 @@ public class TrackerUtil {
     }
 
     public boolean isTrackerHostSame(String sourceHost, String databaseName) {
-        System.out.println("Connection Host" + connectionHost);
-        System.out.println("Source Host" + sourceHost);
-        System.out.println("Database Name" + databaseName);
         return connectionHost != null && connectionHost.equalsIgnoreCase(sourceHost) && databaseName.equalsIgnoreCase(env.getProperty("spring.datasource.tracker.database"));
     }
 
@@ -240,29 +309,42 @@ public class TrackerUtil {
 
         private StringBuilder sb;
 
-        public DBCreator(DBTypes dbTypes) throws Exception {
+        public DBCreator(DBTypes dbTypes, Boolean isTrackerTable) throws Exception {
             sb = new StringBuilder();
-            sb.append(String.format("CREATE TABLE %s (", TRACKER_TABLE_NAME));
-            sb.append(addColumn("SESSION_KEY", String.class, 100, true, dbTypes) + ",");
-            sb.append(addColumn("REF_ID", String.class, 100, true, dbTypes) + ",");
-            sb.append(addColumn("REG_NO", String.class, 100, false, dbTypes) + ",");
-            sb.append(addColumn("ACTIVITY", String.class, 50, false, dbTypes) + ",");
-            sb.append(addColumn("STATUS", String.class, 50, false, dbTypes) + ",");
-            sb.append(addColumn("PROCESS", String.class, 50, true, dbTypes) + ",");
-            sb.append(addColumn("COMMENTS", String.class, 3000, false, dbTypes) + ",");
-            sb.append(addColumn("CR_BY", String.class, 50, true, dbTypes) + ",");
-            sb.append(addColumn("CR_DTIMES", Timestamp.class, 100, true, dbTypes) + ",");
-            sb.append(addColumn("UPD_BY", String.class, 100, false, dbTypes) + ",");
-            sb.append(addColumn("UPD_DTIMES", Timestamp.class, 100, false, dbTypes));
-            sb.append(");");
 
-            sb.append(String.format("ALTER TABLE %s ADD PRIMARY KEY (SESSION_KEY, REF_ID);", TRACKER_TABLE_NAME));
+            if(isTrackerTable) {
+                sb.append(String.format("CREATE TABLE %s (", TRACKER_TABLE_NAME));
+                sb.append(addColumn("SESSION_KEY", String.class, 100, true, dbTypes) + ",");
+                sb.append(addColumn("REF_ID", String.class, 100, true, dbTypes) + ",");
+                sb.append(addColumn("REG_NO", String.class, 100, false, dbTypes) + ",");
+                sb.append(addColumn("ACTIVITY", String.class, 50, false, dbTypes) + ",");
+                sb.append(addColumn("STATUS", String.class, 50, false, dbTypes) + ",");
+                sb.append(addColumn("PROCESS", String.class, 50, true, dbTypes) + ",");
+                sb.append(addColumn("COMMENTS", String.class, 3000, false, dbTypes) + ",");
+                sb.append(addColumn("CR_BY", String.class, 50, true, dbTypes) + ",");
+                sb.append(addColumn("CR_DTIMES", Timestamp.class, 100, true, dbTypes) + ",");
+                sb.append(addColumn("UPD_BY", String.class, 100, false, dbTypes) + ",");
+                sb.append(addColumn("UPD_DTIMES", Timestamp.class, 100, false, dbTypes));
+                sb.append(");");
+
+                sb.append(String.format("ALTER TABLE %s ADD PRIMARY KEY (SESSION_KEY, REF_ID);", TRACKER_TABLE_NAME));
+                sb.append(String.format("CREATE INDEX IX_SEARCH ON  %s (REF_ID, ACTIVITY, SESSION_KEY);", TRACKER_TABLE_NAME));
+            } else {
+                sb.append(String.format("CREATE TABLE %s (", OFFSET_TRACKER_TABLE_NAME));
+                sb.append(addColumn("SESSION_KEY", String.class, 100, true, dbTypes) + ",");
+                sb.append(addColumn("OFFSET_VALUE", Number.class, 12, false, dbTypes));
+                sb.append(");");
+
+                sb.append(String.format("ALTER TABLE %s ADD PRIMARY KEY (SESSION_KEY);", OFFSET_TRACKER_TABLE_NAME));
+            }
         }
 
         private String addColumn(String columnName, Class columnType, Integer length, boolean isNotNull, DBTypes dbTypes) throws Exception {
             switch (columnType.getSimpleName()) {
                 case "String" :
                     return columnName + " " + StringType.valueOf(dbTypes.toString()).getValue(length.toString()) + (isNotNull ? " NOT NULL" : "");
+                case "Number" :
+                    return columnName + " " + NumberType.valueOf(dbTypes.toString()).getValue(length.toString(), "0") + (isNotNull ? " NOT NULL" : "");
                 case "Timestamp" :
                     return columnName + " " + TimeStampType.valueOf(dbTypes.toString()).getType() + (isNotNull ? " NOT NULL" : "");
                 default:

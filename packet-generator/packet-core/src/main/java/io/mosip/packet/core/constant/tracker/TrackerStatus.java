@@ -7,5 +7,6 @@ public enum TrackerStatus {
     CREATED,
     SYNCED,
     FAILED,
-    QUEUED
+    QUEUED,
+    READY_TO_SYNC
 }
