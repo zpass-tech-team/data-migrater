@@ -123,11 +123,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     private boolean uploadProcessStarted = false;
 
-
-    @Autowired
-    private CustomNativeRepository customNativeRepository;
-    private HashMap<String, DocumentCategoryDto> documentCategory = new HashMap<>();
-    private HashMap<String, DocumentTypeExtnDto> documentType = new HashMap<>();
     private Map<String, HashMap<String, String>> fieldsCategoryMap = new HashMap<>();
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -580,6 +575,10 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentFormatField()),null);
                 fieldsCategoryMap.get(tableName).put(documentAttributes.getDocumentCodeField().contains("STATIC") ? "'" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField()) + "' AS STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
                         :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField()), null);
+
+                if(fieldFormatRequest.getDocumentAttributes().getDocumentValueMap() == null) {
+                    throw new Exception("Implementation missing for Document Value Map to ID Schema for Column :" +  fieldFormatRequest.getFieldName());
+                }
             }
         }
     }

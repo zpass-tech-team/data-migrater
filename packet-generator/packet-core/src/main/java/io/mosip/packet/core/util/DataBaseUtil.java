@@ -9,10 +9,7 @@ import io.mosip.packet.core.constant.GlobalConfig;
 import io.mosip.packet.core.constant.QuerySelection;
 import io.mosip.packet.core.constant.database.QueryLimitSetter;
 import io.mosip.packet.core.constant.database.QueryOffsetSetter;
-import io.mosip.packet.core.dto.dbimport.DBImportRequest;
-import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
-import io.mosip.packet.core.dto.dbimport.QueryFilter;
-import io.mosip.packet.core.dto.dbimport.TableRequestDto;
+import io.mosip.packet.core.dto.dbimport.*;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.thread.CustomizedThreadPoolExecutor;
 import io.mosip.packet.core.service.thread.ResultSetter;
@@ -67,6 +64,8 @@ public class DataBaseUtil {
 
     CustomizedThreadPoolExecutor threadPool = null;
 
+    private Map<String, DocumentValueMap> documentValue = new HashMap<>();
+
 
     public void connectDatabase(DBImportRequest dbImportRequest) throws SQLException {
         try {
@@ -90,11 +89,21 @@ public class DataBaseUtil {
 
     }
 
+    private void initializeDocumentMap(DBImportRequest dbImportRequest) {
+        if(documentValue.isEmpty())
+            for (FieldFormatRequest fieldFormatRequest : dbImportRequest.getColumnDetails()) {
+                if(fieldFormatRequest.getDocumentAttributes() != null && fieldFormatRequest.getDocumentAttributes().getDocumentValueMap() != null) {
+                    documentValue.put(fieldFormatRequest.getFieldToMap(), fieldFormatRequest.getDocumentAttributes().getDocumentValueMap());
+                }
+            }
+    }
+
     public void readDataFromDatabase(DBImportRequest dbImportRequest, Map<FieldCategory, HashMap<String, Object>> dataHashMap, Map<String, HashMap<String, String>> fieldsCategoryMap, ResultSetter setter) throws Exception {
         TOTAL_RECORDS_FOR_PROCESS = 0l;
 
         try {
             if(conn != null) {
+                initializeDocumentMap(dbImportRequest);
                 oneTimeCheckForZeroOffset = true;
                 threadPool = new CustomizedThreadPoolExecutor(dbReaderMaxThreadPoolCount, dbReaderMaxRecordsCountPerThreadPool, dbReaderMaxThreadExecCount, "DATABASE READER", true);
                 IS_DATABASE_READ_OPERATION = true;
@@ -157,10 +166,13 @@ public class DataBaseUtil {
                                                                 statement2 = conn.prepareStatement(generateQuery(tableRequestDto1, dataHashMap, fieldsCategoryMap), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
                                                                 resultSet1 = statement2.executeQuery();
 
-                                                                if (resultSet1 != null && resultSet1.next()) {
-                                                                    Map<String, Object> resultData1 = extractResultSet(resultSet1);
-                                                                    populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultData1, dataHashMap, fieldsCategoryMap, false);
+                                                                Map<String, Object> resultData1 = new HashMap<>();
+                                                                while (resultSet1 != null && resultSet1.next()) {
+                                                                    resultData1.putAll(extractResultSet(resultSet1));
                                                                 }
+
+                                                                if(resultData1 != null)
+                                                                    populateDataFromResultSet(tableRequestDto1, dbImportRequest.getColumnDetails(), resultData1, dataHashMap, fieldsCategoryMap, false);
                                                             } finally {
                                                                 if (resultSet1 != null)
                                                                     resultSet1.close();
@@ -268,26 +280,26 @@ public class DataBaseUtil {
             }
 
             filterCondition = "";
-            if(isTrackerSameHost && tableRequestDto.getExecutionOrderSequence().equals(1)) {
-                if (!whereCondition) {
-                    filterCondition = " WHERE ";
-                    whereCondition=true;
-                } else {
-                    filterCondition += " AND ";
+
+            if(tableRequestDto.getExecutionOrderSequence().equals(1)) {
+                if(isTrackerSameHost) {
+                    if (!whereCondition) {
+                        filterCondition = " WHERE ";
+                        whereCondition=true;
+                    } else {
+                        filterCondition += " AND ";
+                    }
+
+                    filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD', 'FAILED') AND SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
+                    selectSql += filterCondition;
                 }
+                selectSql += " ORDER BY  " + applicationIdColumn;
 
-                filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD', 'FAILED') AND SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
-                selectSql += filterCondition;
-            } else {
+                if(!isTrackerSameHost && OFFSET_VALUE != null && OFFSET_VALUE > 0)
+                    selectSql += " " + QueryOffsetSetter.valueOf(dbType.toString()).getValue(OFFSET_VALUE);
 
+                selectSql += " " + QueryLimitSetter.valueOf(dbType.toString()).getValue(dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool);
             }
-
-            selectSql += " ORDER BY  " + applicationIdColumn;
-
-            if(!isTrackerSameHost && OFFSET_VALUE != null && OFFSET_VALUE > 0)
-                selectSql += " " + QueryOffsetSetter.valueOf(dbType.toString()).getValue(OFFSET_VALUE);
-
-            selectSql += " " + QueryLimitSetter.valueOf(dbType.toString()).getValue(dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool);
 
             return formatter.replaceColumntoDataIfAny(selectSql, dataMap);
         } else if (tableRequestDto.getQueryType().equals(QuerySelection.SQL_QUERY)) {
@@ -329,8 +341,29 @@ public class DataBaseUtil {
         }
         Map<String, Object> resultMap = (HashMap<String, Object>) resultData.clone();
 
-        for (Map.Entry<String, Object> entry : resultMap.entrySet()) {
-            resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
+        for (Map.Entry<String, Object> entry : resultData.entrySet()) {
+            if(documentValue != null && !documentValue.isEmpty()) {
+                for(Map.Entry<String, DocumentValueMap> documentEntry : documentValue.entrySet()) {
+                    DocumentValueMap map = documentEntry.getValue();
+                    try {
+                        if(resultSet.getString(map.getColumnNameWithoutSchema()) != null) {
+                            String value = resultSet.getString(map.getColumnNameWithoutSchema());
+                            if(map.getMapColumnValue().equals(value)) {
+                                resultMap.put(documentEntry.getKey() + "_" + entry.getKey(), resultSet.getObject(entry.getKey()));
+                                resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
+                                continue;
+                            } else
+                                resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
+                        } else {
+                            resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
+                        }
+                    } catch (Exception e) {
+                        resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
+                    }
+                }
+            } else {
+                resultMap.put(entry.getKey(), resultSet.getObject(entry.getKey()));
+            }
         }
         return resultMap;
     }

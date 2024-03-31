@@ -11,4 +11,5 @@ public class DocumentAttributes {
     private String documentRefNoField;
     private String documentFormatField;
     private String documentCodeField;
+    private DocumentValueMap documentValueMap;
 }
