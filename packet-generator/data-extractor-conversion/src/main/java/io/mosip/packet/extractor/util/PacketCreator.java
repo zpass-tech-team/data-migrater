@@ -120,6 +120,9 @@ public class PacketCreator {
 
     private Map<String, int[]> qualityRangeMap;
 
+    @Value("${mosip.packet.creater.source}")
+    private String source;
+
     @PostConstruct
     private void initializeEVariables() {
         String[] rangeArraay = poorBioQualityRange.split("-");
@@ -533,6 +536,7 @@ public class PacketCreator {
         metaData.put("langCodes", String.join(RegistrationConstants.COMMA, ConfigUtil.getConfigUtil().getSelectedLanguages()));
         metaData.put(PacketManagerConstants.META_APPLICANT_CONSENT, null);
 
+        metaInfoMap.put("packetSource", source);
         metaInfoMap.put("metaData", mapper.writeValueAsString(getLabelValueDTOListString(metaData)));
         metaInfoMap.put("blockListedWords", mapper.writeValueAsString(  blocklistedWordsRepository.findAllActiveBlockListedWords()));
         metaInfoMap.put("capturedNonRegisteredDevices", mapper.writeValueAsString(new ArrayList<>()));
