@@ -120,10 +120,9 @@ public class DataBaseUtil {
                             OFFSET_VALUE = trackerUtil.getDatabaseOffset() == null ? 0 : trackerUtil.getDatabaseOffset();
                             Float processPercentage = Float.valueOf((getPendingCountForProcess().floatValue() / Float.valueOf(dbReaderMaxThreadPoolCount * dbReaderMaxRecordsCountPerThreadPool)));
 
-                            if ((processPercentage > 0.05 && processPercentage != 0) || (processPercentage == 0 && OFFSET_VALUE > 0 && oneTimeCheckForZeroOffset) || threadPool.getCurrentPendingCount() > 0) {
-                                if (processPercentage != 0 && oneTimeCheckForZeroOffset)
-                                    oneTimeCheckForZeroOffset = false;
+                            if ((processPercentage > 0.05 && processPercentage != 0) || (processPercentage == 0 && OFFSET_VALUE > 0 && !oneTimeCheckForZeroOffset) || threadPool.getCurrentPendingCount() > 0) {
                             } else {
+                                    oneTimeCheckForZeroOffset = false;
                                 List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
                                 Collections.sort(tableRequestDtoList);
                                 TableRequestDto tableRequestDto = tableRequestDtoList.get(0);

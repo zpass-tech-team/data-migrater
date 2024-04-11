@@ -223,7 +223,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     trackerRequestDto.setStatus(resultDto.getStatus().toString());
                     trackerRequestDto.setComments(resultDto.getComments());
                     trackerUtil.addTrackerEntry(trackerRequestDto);
-                    trackerUtil.addTrackerLocalEntry(resultDto.getRefId(), null, (enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD), dbImportRequest.getProcess(), resultDto.getComments(), SESSION_KEY, GlobalConfig.getActivityName());
+                    trackerUtil.addTrackerLocalEntry(resultDto.getRefId(), null, resultDto.getStatus(), dbImportRequest.getProcess(), resultDto.getComments(), SESSION_KEY, GlobalConfig.getActivityName());
                 }
             };
 
@@ -322,6 +322,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 uploadProcessStarted = false;
                             }
                         } catch (Exception e) {
+                            uploadProcessStarted = false;
                             e.printStackTrace();
                             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response : " + e.getMessage() + ExceptionUtils.getStackTrace(e));
                         }
@@ -487,14 +488,13 @@ public class DataExtractionServiceImpl implements DataExtractionService {
   //                                  packetUploaderService.uploadSyncedPacket(uploadList, response);
                                 } else {
                                     LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploader Disabled : " + demoDetails.get(trackerColumn).toString());
-                                }
-
                                 ResultDto resultDto = new ResultDto();
                                 resultDto.setRegNo(info.getId());
                                 resultDto.setRefId(demoDetails.get(trackerColumn).toString());
-                                resultDto.setComments("Record Added");
-                                resultDto.setStatus(enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.CREATED);
+                                    resultDto.setComments("Packet Created");
+                                    resultDto.setStatus(TrackerStatus.PROCESSED_WITHOUT_UPLOAD);
                                 setter.setResult(resultDto);
+                                }
                             } else {
                                 throw new Exception("Identity Mapping JSON File missing");
                             }
