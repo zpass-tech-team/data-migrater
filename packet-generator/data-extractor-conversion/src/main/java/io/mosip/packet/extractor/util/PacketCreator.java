@@ -142,6 +142,8 @@ public class PacketCreator {
             String id = map.get("id").toString();
             String type = map.get("type").toString();
             Boolean required = (Boolean) map.get("required");
+            if(required == null)
+                required = false;
 
             if (id.equals("IDSchemaVersion")) {
                 demoMap.put(id, version);
@@ -247,7 +249,7 @@ public class PacketCreator {
             String id = map.get("id").toString();
             String type = map.get("type").toString();
             Boolean required = (Boolean) map.get("required");
-            String subtype = map.get("subType").toString();
+            String subtype = map.get("subType") == null ? null : map.get("subType").toString();
 
             if (type.equals("biometricsType")) {
                 List<String> bioAttributes = new ArrayList<String>();
