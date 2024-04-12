@@ -42,6 +42,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -73,6 +75,9 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
         @Autowired
         @Qualifier("OfflinePacketCryptoServiceImpl")
         private IPacketCryptoService offlinePacketCryptoServiceImpl;
+
+        @Value("${packet.manager.account.name}")
+        private String packetUploadPath;
 
         private RetryTemplate retryTemplate;
 
@@ -247,7 +252,19 @@ public class PacketUploaderServiceImpl  implements PacketUploaderService {
         }
 
         if (response.get(RegistrationConstants.REST_RESPONSE_BODY) != null) {
-            return (String) ((HashMap<String, Object>) response.get(RegistrationConstants.REST_RESPONSE_BODY)).get(RegistrationConstants.UPLOAD_STATUS);
+            HashMap<String, Object> responseBody = (HashMap<String, Object>) response.get(RegistrationConstants.REST_RESPONSE_BODY);
+            String status = (String) responseBody.get(RegistrationConstants.UPLOAD_STATUS);
+
+            if(status.equals("Packet has reached Packet Receiver")) {
+                Path path = Paths.get(System.getProperty("user.dir"), "home/Archieve");
+                File archieveFile = path.toFile();
+                if(!archieveFile.exists())
+                    archieveFile.mkdirs();
+
+                packet.renameTo(new File(path.toAbsolutePath().toString() + "//" + packet.getName()));
+            }
+
+            return status;
         }
 
         throw new Exception("Packet Upload Error : " + (new Gson()).toJson(response));

@@ -360,45 +360,52 @@ public class TrackerUtil {
 
     public synchronized void addTrackerLocalEntry(String refId, String regNo, TrackerStatus status, String process, Object request, String sessionKey, String activity) throws SQLException, IOException {
         Optional<PacketTracker> optional= packetTrackerRepository.findById(refId);
-        byte[] requestValue = null;
-
-        if(request != null) {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(request);
-            if(IS_TPM_AVAILABLE)
-                requestValue = clientCryptoFacade.encrypt(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), bos.toByteArray());
-            else
-                requestValue = bos.toByteArray();
-
-            oos.close();
-            bos.close();
-        }
-
         PacketTracker packetTracker;
 
-        if(optional.isPresent()) {
-            packetTracker = optional.get();
-            if(regNo != null ) packetTracker.setRegNo(regNo);
-            if(status != null ) packetTracker.setStatus(status.toString());
-            if(process != null ) packetTracker.setProcess(process);
-            if(request != null ) packetTracker.setRequest(Base64.getEncoder().encodeToString(requestValue));
-            if(activity != null ) packetTracker.setActivity(activity);
-            packetTracker.setSessionKey(sessionKey);
-            packetTracker.setUpdBy("BATCH");
-            packetTracker.setUpdDtimes(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
+        if(status.equals(TrackerStatus.PROCESSED)) {
+            if(optional.isPresent()) {
+                packetTracker = optional.get();
+                packetTrackerRepository.delete(packetTracker);
+            }
         } else {
-            packetTracker = new PacketTracker();
-            if(refId != null ) packetTracker.setRefId(refId);
-            if(regNo != null ) packetTracker.setRegNo(regNo);
-            if(status != null ) packetTracker.setStatus(status.toString());
-            if(process != null ) packetTracker.setProcess(process);
-            if(request != null ) packetTracker.setRequest(requestValue == null ? null : Base64.getEncoder().encodeToString(requestValue));
-            if(activity != null ) packetTracker.setActivity(activity);
-            packetTracker.setSessionKey(sessionKey);
-            packetTracker.setCrBy("BATCH");
-            packetTracker.setCrDtime(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
+            byte[] requestValue = null;
+
+            if(request != null) {
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(bos);
+                oos.writeObject(request);
+                if(IS_TPM_AVAILABLE)
+                    requestValue = clientCryptoFacade.encrypt(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), bos.toByteArray());
+                else
+                    requestValue = bos.toByteArray();
+
+                oos.close();
+                bos.close();
+            }
+
+            if(optional.isPresent()) {
+                packetTracker = optional.get();
+                if(regNo != null ) packetTracker.setRegNo(regNo);
+                if(status != null ) packetTracker.setStatus(status.toString());
+                if(process != null ) packetTracker.setProcess(process);
+                if(request != null ) packetTracker.setRequest(Base64.getEncoder().encodeToString(requestValue));
+                if(activity != null ) packetTracker.setActivity(activity);
+                packetTracker.setSessionKey(sessionKey);
+                packetTracker.setUpdBy("BATCH");
+                packetTracker.setUpdDtimes(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
+            } else {
+                packetTracker = new PacketTracker();
+                if(refId != null ) packetTracker.setRefId(refId);
+                if(regNo != null ) packetTracker.setRegNo(regNo);
+                if(status != null ) packetTracker.setStatus(status.toString());
+                if(process != null ) packetTracker.setProcess(process);
+                if(request != null ) packetTracker.setRequest(requestValue == null ? null : Base64.getEncoder().encodeToString(requestValue));
+                if(activity != null ) packetTracker.setActivity(activity);
+                packetTracker.setSessionKey(sessionKey);
+                packetTracker.setCrBy("BATCH");
+                packetTracker.setCrDtime(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
+            }
+            packetTrackerRepository.saveAndFlush(packetTracker);
         }
-        packetTrackerRepository.saveAndFlush(packetTracker);
     }
 }

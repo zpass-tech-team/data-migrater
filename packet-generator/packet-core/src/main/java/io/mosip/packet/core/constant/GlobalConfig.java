@@ -37,6 +37,8 @@ public class GlobalConfig {
 
     public static Boolean IS_PACKET_UPLOAD_OPERATION = false;
 
+    public static Long NO_OF_PACKETS_UPLOADED = 0L;
+
     public static List<CustomizedThreadPoolExecutor> THREAD_POOL_EXECUTOR_LIST = new ArrayList<>();
 
     public static String getActivityName() {
