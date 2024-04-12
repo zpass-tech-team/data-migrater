@@ -48,13 +48,13 @@ public class DataBaseUtil {
     @Autowired
     private CommonUtil commonUtil;
 
-    @Value("${mosip.packet.creater.max-threadpool-count:1}")
+    @Value("${mosip.packet.creater.db.max-threadpool-count:1}")
     private Integer dbReaderMaxThreadPoolCount;
 
-    @Value("${mosip.packet.creater.max-records-process-per-threadpool:10000}")
+    @Value("${mosip.packet.creater.db.max-records-process-per-threadpool:20000}")
     private Integer dbReaderMaxRecordsCountPerThreadPool;
 
-    @Value("${mosip.packet.creater.max-thread-execution-count:3}")
+    @Value("${mosip.packet.creater.db.max-thread-execution-count:10}")
     private Integer dbReaderMaxThreadExecCount;
 
     @Value("${mosip.extractor.application.id.column}")

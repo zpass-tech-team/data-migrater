@@ -360,6 +360,14 @@ public class TrackerUtil {
 
     public synchronized void addTrackerLocalEntry(String refId, String regNo, TrackerStatus status, String process, Object request, String sessionKey, String activity) throws SQLException, IOException {
         Optional<PacketTracker> optional= packetTrackerRepository.findById(refId);
+        PacketTracker packetTracker;
+
+        if(status.equals(TrackerStatus.PROCESSED)) {
+            if(optional.isPresent()) {
+                packetTracker = optional.get();
+                packetTrackerRepository.delete(packetTracker);
+            }
+        } else {
         byte[] requestValue = null;
 
         if(request != null) {
@@ -374,8 +382,6 @@ public class TrackerUtil {
             oos.close();
             bos.close();
         }
-
-        PacketTracker packetTracker;
 
         if(optional.isPresent()) {
             packetTracker = optional.get();
@@ -401,4 +407,5 @@ public class TrackerUtil {
         }
         packetTrackerRepository.saveAndFlush(packetTracker);
     }
+  }
 }

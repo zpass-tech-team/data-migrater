@@ -85,6 +85,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Value("${mosip.extractor.application.id.column:}")
     private String applicationIdColumn;
 
+    @Value("${mosip.packet.uploader.enable.only.packet.upload:false}")
+    private boolean enableOnlyPacketUploader;
+
     @Autowired
     ValidationUtil validationUtil;
 
@@ -282,6 +285,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             Date startTime = new Date();
             if(enablePaccketUploader) {
                 IS_PACKET_UPLOAD_OPERATION = true;
+                NO_OF_PACKETS_UPLOADED = 0L;
                 Timer uploaderTimer = new Timer("Uploading Packet");
                 uploaderTimer.schedule(new TimerTask() {
                     @SneakyThrows
@@ -307,6 +311,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                     packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
                                     trackerUtil.addTrackerLocalEntry(packetTracker.getRefId(), uploadDTO.getPacketId(), TrackerStatus.SYNCED, null, uploadList, SESSION_KEY, GlobalConfig.getActivityName());
                                     packetUploaderService.uploadSyncedPacket(uploadList, response);
+                                    NO_OF_PACKETS_UPLOADED++;
                                     ResultDto resultDto = new ResultDto();
                                     resultDto.setRegNo(uploadDTO.getPacketId());
                                     resultDto.setRefId(packetTracker.getRefId());
@@ -329,6 +334,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     }
                 }, 0, 5000L);
             }
+
+            if(!enableOnlyPacketUploader)
             dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap, DataProcessor);
             threadPool.setInputProcessCompleted(true);
 
