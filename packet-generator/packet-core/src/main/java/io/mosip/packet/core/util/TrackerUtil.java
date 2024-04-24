@@ -199,41 +199,47 @@ public class TrackerUtil {
     }
 
     public synchronized void updateDatabaseOffset(Long offset) throws SQLException {
-        PreparedStatement preparedStatement = null;
-        DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
+        if(IS_TRACKER_REQUIRED) {
+            PreparedStatement preparedStatement = null;
+            DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
-        try {
-            String query = TableQueries.getInsertQueries(OFFSET_TRACKER_TABLE_NAME, dbType);
-            Map<String, String> valueMap = new HashMap<>();
-            valueMap.put("TABLE_NAME", OFFSET_TRACKER_TABLE_NAME);
-            valueMap.put("SESSION_ID", SESSION_KEY);
-            valueMap.put("VALUE", offset.toString());
-            preparedStatement = conn.prepareStatement(queryFormatter.queryFormatter(query, valueMap));
-            preparedStatement.execute();
-        } finally {
-            if(preparedStatement != null)
-                preparedStatement.close();
+            try {
+                String query = TableQueries.getInsertQueries(OFFSET_TRACKER_TABLE_NAME, dbType);
+                Map<String, String> valueMap = new HashMap<>();
+                valueMap.put("TABLE_NAME", OFFSET_TRACKER_TABLE_NAME);
+                valueMap.put("SESSION_ID", SESSION_KEY);
+                valueMap.put("VALUE", offset.toString());
+                preparedStatement = conn.prepareStatement(queryFormatter.queryFormatter(query, valueMap));
+                preparedStatement.execute();
+            } finally {
+                if(preparedStatement != null)
+                    preparedStatement.close();
+            }
         }
     }
 
     public synchronized Long getDatabaseOffset() throws SQLException {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
+        if(IS_TRACKER_REQUIRED) {
+            PreparedStatement preparedStatement = null;
+            ResultSet resultSet = null;
+            DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
-        try {
-            preparedStatement = conn.prepareStatement("SELECT OFFSET_VALUE FROM " + OFFSET_TRACKER_TABLE_NAME + " WHERE SESSION_KEY = '" + SESSION_KEY + "'");
-            resultSet = preparedStatement.executeQuery();
-            if(resultSet.next())
-                return resultSet.getLong(1);
-            else
-                return 0L;
-        } finally {
-            if(resultSet != null)
-                resultSet.close();
+            try {
+                preparedStatement = conn.prepareStatement("SELECT OFFSET_VALUE FROM " + OFFSET_TRACKER_TABLE_NAME + " WHERE SESSION_KEY = '" + SESSION_KEY + "'");
+                resultSet = preparedStatement.executeQuery();
+                if(resultSet.next())
+                    return resultSet.getLong(1);
+                else
+                    return 0L;
+            } finally {
+                if(resultSet != null)
+                    resultSet.close();
 
-            if(preparedStatement != null)
-                preparedStatement.close();
+                if(preparedStatement != null)
+                    preparedStatement.close();
+            }
+        } else {
+            return 0L;
         }
     }
 

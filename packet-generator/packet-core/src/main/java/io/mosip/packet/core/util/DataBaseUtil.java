@@ -327,7 +327,7 @@ public class DataBaseUtil {
         }
 
         for (FieldFormatRequest fieldFormatRequest : columnDetails) {
-            dataMapperUtil.dataMapper(fieldFormatRequest, resultData, dataMap, tableRequestDto.getTableNameWithOutSchema(), fieldsCategoryMap, localStoreRequired);
+            dataMapperUtil.dataMapper(fieldFormatRequest, resultData, dataMap, tableRequestDto.getTableNameWithOutSchema().toUpperCase(), fieldsCategoryMap, localStoreRequired);
         }
     }
 
