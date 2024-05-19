@@ -34,6 +34,7 @@ import java.util.*;
 
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
+import static io.mosip.packet.core.constant.GlobalConfig.*;
 
 @Component
 public class Reprocessor {
@@ -73,6 +74,7 @@ public class Reprocessor {
     private static final Logger LOGGER = DataProcessLogger.getLogger(Reprocessor.class);
 
     public void reprocess() throws IOException, ParseException, InterruptedException {
+        IS_PACKET_REPROCESS_OPERATION = true;
         PacketCreatorResponse packetCreatorResponse = new PacketCreatorResponse();
         packetCreatorResponse.setRID(new ArrayList<>());
 
@@ -188,9 +190,10 @@ public class Reprocessor {
             threadPool.ExecuteTask(controller);
         }
         threadPool.setInputProcessCompleted(true);
+        IS_PACKET_REPROCESS_OPERATION=false;
 
         do {
             Thread.sleep(15000);
-        } while(!GlobalConfig.isThreadPoolCompleted());
+        } while(!GlobalConfig.isThreadPoolCompleted("RE-PROCESSOR"));
     }
 }

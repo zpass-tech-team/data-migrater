@@ -7,6 +7,9 @@ import lombok.Setter;
 @Data
 @Setter
 @Getter
-public class SecretKeyRequest extends LoginRequest {
-	public String secretKey;
+public class LoginRequest {
+	public String clientId;
+	public String appId;
+	public String userName;
+	public String password;
 }

@@ -50,10 +50,15 @@ public class DataProcessApplication {
             else
                 SESSION_KEY = RandomStringUtils.randomAlphanumeric(20);
 
+            Boolean isReprocessEnable = true;
+            if(context.getEnvironment().getProperty("mosip.packet.creator.reprocessor.enable") != null)
+                isReprocessEnable = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.reprocessor.enable"));
+
             context.getBean(MockDeviceUtil.class).resetDevices();
             context.getBean(MockDeviceUtil.class).initDeviceHelpers();
             context.getBean(ConfigUtil.class).loadConfigDetails();
-            context.getBean(Reprocessor.class).reprocess();
+            if(isReprocessEnable)
+                context.getBean(Reprocessor.class).reprocess();
 
             if(internal) {
                 System.out.println("Current Session Key is " + SESSION_KEY + ". Please Enter New Session Key in-case Change.");

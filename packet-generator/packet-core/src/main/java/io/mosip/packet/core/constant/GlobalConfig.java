@@ -37,6 +37,10 @@ public class GlobalConfig {
 
     public static Boolean IS_PACKET_UPLOAD_OPERATION = false;
 
+    public static Boolean IS_PACKET_REPROCESS_OPERATION = false;
+
+    public static Boolean IS_PACKET_CREATOR_OPERATION = false;
+
     public static Long NO_OF_PACKETS_UPLOADED = 0L;
 
     public static List<CustomizedThreadPoolExecutor> THREAD_POOL_EXECUTOR_LIST = new ArrayList<>();
@@ -46,13 +50,18 @@ public class GlobalConfig {
     }
 
     public static boolean isThreadPoolCompleted() throws InterruptedException {
+        return isThreadPoolCompleted(null);
+    }
+
+    public static boolean isThreadPoolCompleted(String eventName) throws InterruptedException {
         boolean isCompleted = true;
 
         for(CustomizedThreadPoolExecutor executor : THREAD_POOL_EXECUTOR_LIST)
             if(!executor.isBatchAcceptRequest())
                 isCompleted = false;
 
-        if(!isTaskCompleted())
+
+        if(!isTaskCompleted(eventName))
             isCompleted = false;
 
         return isCompleted;
@@ -68,44 +77,46 @@ public class GlobalConfig {
         return pendingCount;
     }
 
-    public static boolean isTaskCompleted() throws InterruptedException {
+    public static boolean isTaskCompleted(String eventName) throws InterruptedException {
         boolean isCompleted = true;
 
-        if(!IS_DATABASE_READ_OPERATION && !IS_PACKET_UPLOAD_OPERATION)
+        if(!IS_DATABASE_READ_OPERATION && !IS_PACKET_UPLOAD_OPERATION && !IS_PACKET_REPROCESS_OPERATION && !IS_PACKET_CREATOR_OPERATION)
             for(CustomizedThreadPoolExecutor executor : THREAD_POOL_EXECUTOR_LIST) {
-                for(ThreadPoolExecutor entry : executor.getPoolMap()) {
-                    if(entry.getActiveCount() > 0) {
-                        isCompleted = false;
-                        break;
-                    } else {
-                        if(executor.getInputProcessCompleted() && (entry.getTaskCount() - entry.getCompletedTaskCount() <= 0) && executor.isBatchAcceptRequest() && executor.getCurrentPendingCount() <= 0) {
-                            if(executor.getNAME().equals("QUALITY ANALYSIS")) {
-                                if(TOTAL_RECORDS_FOR_PROCESS - TOTAL_FAILED_RECORDS - executor.getCurrentCompletedTask() <= 0 || executor.getCountOfZeroActiveCount() > 10) {
+                if(eventName == null || eventName.equals(executor.getNAME())) {
+                    for(ThreadPoolExecutor entry : executor.getPoolMap()) {
+                        if(entry.getActiveCount() > 0) {
+                            isCompleted = false;
+                            break;
+                        } else {
+                            if(executor.getInputProcessCompleted() && (entry.getTaskCount() - entry.getCompletedTaskCount() <= 0) && executor.isBatchAcceptRequest() && executor.getCurrentPendingCount() <= 0) {
+                                if(executor.getNAME().equals("QUALITY ANALYSIS")) {
+                                    if(TOTAL_RECORDS_FOR_PROCESS - TOTAL_FAILED_RECORDS - executor.getCurrentCompletedTask() <= 0 || executor.getCountOfZeroActiveCount() > 10) {
+                                        if(executor.getWatch() != null)
+                                            executor.getWatch().cancel();
+                                        if(executor.getEstimateTimer() != null)
+                                            executor.getEstimateTimer().cancel();
+                                        if(executor.getSlotAllocationTimer() != null)
+                                            executor.getSlotAllocationTimer().cancel();
+                                    } else {
+                                        isCompleted = false;
+                                    }
+                                } else {
                                     if(executor.getWatch() != null)
                                         executor.getWatch().cancel();
                                     if(executor.getEstimateTimer() != null)
                                         executor.getEstimateTimer().cancel();
                                     if(executor.getSlotAllocationTimer() != null)
                                         executor.getSlotAllocationTimer().cancel();
-                                } else {
-                                    isCompleted = false;
                                 }
                             } else {
-                                if(executor.getWatch() != null)
-                                    executor.getWatch().cancel();
-                                if(executor.getEstimateTimer() != null)
-                                    executor.getEstimateTimer().cancel();
-                                if(executor.getSlotAllocationTimer() != null)
-                                    executor.getSlotAllocationTimer().cancel();
+                                isCompleted = false;
                             }
-                        } else {
-                            isCompleted = false;
                         }
                     }
                 }
             }
 
-        if(IS_DATABASE_READ_OPERATION || IS_PACKET_UPLOAD_OPERATION)
+        if(IS_DATABASE_READ_OPERATION || IS_PACKET_UPLOAD_OPERATION || IS_PACKET_REPROCESS_OPERATION || IS_PACKET_CREATOR_OPERATION)
             isCompleted = false;
 
         return isCompleted;

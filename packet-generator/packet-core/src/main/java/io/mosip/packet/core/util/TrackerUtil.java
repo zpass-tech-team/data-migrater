@@ -37,7 +37,7 @@ public class TrackerUtil {
     private static Connection conn = null;
     private PreparedStatement preparedStatement = null;
 
-    @Value("${mosip.packet.creator.tracking.batch.size:10}")
+    @Value("${mosip.packet.creator.tracking.batch.size:1}")
     private int batchLimit;
 
     private int batchSize = 0;
