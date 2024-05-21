@@ -79,6 +79,15 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Value("${mosip.packet.creater.max-thread-execution-count:100}")
     private Integer maxThreadExecCount;
 
+    @Value("${mosip.packet.upload.max-threadpool-count:1}")
+    private Integer uploadMaxThreadPoolCount;
+
+    @Value("${mosip.packet.upload.max-records-process-per-threadpool:10000}")
+    private Integer uploadMaxRecordsCountPerThreadPool;
+
+    @Value("${mosip.packet.upload.max-thread-execution-count:5}")
+    private Integer uploadMaxThreadExecCount;
+
     @Value("${mosip.packet.uploader.enable:true}")
     private boolean enablePaccketUploader;
 
@@ -201,22 +210,16 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             validationUtil.validateRequest(dbImportRequest, enumList);
             populateTableFields(dbImportRequest);
             dataBaseUtil.connectDatabase(dbImportRequest);
+            IS_PACKET_CREATOR_OPERATION = true;
             CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount, GlobalConfig.getActivityName());
-/*            Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
-
-                @Override
-                public void uncaughtException(Thread t, Throwable e) {
-                    FAILED_RECORDS++;
-                    LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Thread - " + t.getName(), e);
-                }
-            };*/
 
             ResultSetter setter = new ResultSetter() {
                 @SneakyThrows
                 @Override
                 public void setResult(Object obj) {
                     ResultDto resultDto = (ResultDto) obj;
-                    packetCreatorResponse.getRID().add(resultDto.getRegNo());
+                    if(!packetCreatorResponse.getRID().contains(resultDto.getRegNo()))
+                        packetCreatorResponse.getRID().add(resultDto.getRegNo());
                     TrackerRequestDto trackerRequestDto = new TrackerRequestDto();
                     trackerRequestDto.setRegNo(resultDto.getRegNo());
                     trackerRequestDto.setRefId(resultDto.getRefId());
@@ -286,6 +289,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             if(enablePaccketUploader) {
                 IS_PACKET_UPLOAD_OPERATION = true;
                 NO_OF_PACKETS_UPLOADED = 0L;
+                CustomizedThreadPoolExecutor uploadExector = new CustomizedThreadPoolExecutor(uploadMaxThreadPoolCount, uploadMaxRecordsCountPerThreadPool,uploadMaxThreadExecCount, "PACKET UPLOADER", true);
                 Timer uploaderTimer = new Timer("Uploading Packet");
                 uploaderTimer.schedule(new TimerTask() {
                     @SneakyThrows
@@ -298,31 +302,43 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 statusList.add("READY_TO_SYNC");
                                 List<PacketTracker> trackerList =  packetTrackerRepository.findByStatusIn(statusList);
 
+                                if(trackerList.size() <= 0) {
+                                    IS_PACKET_UPLOAD_OPERATION = false;
+                                    uploadExector.setInputProcessCompleted(true);
+                                } else {
+                                    IS_PACKET_UPLOAD_OPERATION = true;
+                                    uploadExector.setInputProcessCompleted(false);
+                                }
+
                                 for(PacketTracker packetTracker : trackerList) {
                                     ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(packetTracker.getRequest())) : Base64.getDecoder().decode(packetTracker.getRequest()));
                                     ObjectInputStream is = new ObjectInputStream(bis);
                                     PacketUploadDTO uploadDTO = (PacketUploadDTO) is.readObject();
 
-                                    //       String requestJson = new String(packetTracker.getRequest().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
-                                    //      PacketUploadDTO uploadDTO = objectMapper.readValue(requestJson, new TypeReference<PacketUploadDTO>() {});
-                                    List<PacketUploadDTO> uploadList = new ArrayList<>();
-                                    uploadList.add(uploadDTO);
-                                    HashMap<String, PacketUploadResponseDTO> response = new HashMap<>();
-                                    packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
-                                    trackerUtil.addTrackerLocalEntry(packetTracker.getRefId(), uploadDTO.getPacketId(), TrackerStatus.SYNCED, null, uploadList, SESSION_KEY, GlobalConfig.getActivityName());
-                                    packetUploaderService.uploadSyncedPacket(uploadList, response);
-                                    NO_OF_PACKETS_UPLOADED++;
-                                    ResultDto resultDto = new ResultDto();
-                                    resultDto.setRegNo(uploadDTO.getPacketId());
-                                    resultDto.setRefId(packetTracker.getRefId());
-                                    resultDto.setComments((new Gson()).toJson(response));
-                                    resultDto.setStatus(enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD);
-                                    setter.setResult(resultDto);
-                                    LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response : " + (new Gson()).toJson(response));
+                                    ThreadUploadController controller = new ThreadUploadController();
+                                    controller.setResult(uploadDTO);
+                                    controller.setSetter(setter);
+                                    controller.setProcessor(new ThreadUploadProcessor() {
+                                        @Override
+                                        public void processData(ResultSetter setter, PacketUploadDTO result) throws Exception {
+                                            List<PacketUploadDTO> uploadList = new ArrayList<>();
+                                            uploadList.add(uploadDTO);
+                                            HashMap<String, PacketUploadResponseDTO> response = new HashMap<>();
+                                            packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
+                                            trackerUtil.addTrackerLocalEntry(packetTracker.getRefId(), uploadDTO.getPacketId(), TrackerStatus.SYNCED, null, uploadList, SESSION_KEY, GlobalConfig.getActivityName());
+                                            packetUploaderService.uploadSyncedPacket(uploadList, response);
+                                            NO_OF_PACKETS_UPLOADED++;
+                                            ResultDto resultDto = new ResultDto();
+                                            resultDto.setRegNo(uploadDTO.getPacketId());
+                                            resultDto.setRefId(packetTracker.getRefId());
+                                            resultDto.setComments((new Gson()).toJson(response));
+                                            resultDto.setStatus(enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD);
+                                            setter.setResult(resultDto);
+                                            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response : " + (new Gson()).toJson(response));
+                                        }
+                                    });
+                                    uploadExector.ExecuteTask(controller);
                                 }
-
-                                if(trackerList.size() <= 0)
-                                    IS_PACKET_UPLOAD_OPERATION = false;
 
                                 uploadProcessStarted = false;
                             }
@@ -336,9 +352,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             }
 
             if(!enableOnlyPacketUploader)
-            dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap, DataProcessor);
+                dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap, DataProcessor);
             threadPool.setInputProcessCompleted(true);
-
+            IS_PACKET_CREATOR_OPERATION = false;
 
             do {
                 Thread.sleep(15000);
@@ -495,12 +511,12 @@ public class DataExtractionServiceImpl implements DataExtractionService {
   //                                  packetUploaderService.uploadSyncedPacket(uploadList, response);
                                 } else {
                                     LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploader Disabled : " + demoDetails.get(trackerColumn).toString());
-                                ResultDto resultDto = new ResultDto();
-                                resultDto.setRegNo(info.getId());
-                                resultDto.setRefId(demoDetails.get(trackerColumn).toString());
+                                    ResultDto resultDto = new ResultDto();
+                                    resultDto.setRegNo(info.getId());
+                                    resultDto.setRefId(demoDetails.get(trackerColumn).toString());
                                     resultDto.setComments("Packet Created");
                                     resultDto.setStatus(TrackerStatus.PROCESSED_WITHOUT_UPLOAD);
-                                setter.setResult(resultDto);
+                                    setter.setResult(resultDto);
                                 }
                             } else {
                                 throw new Exception("Identity Mapping JSON File missing");

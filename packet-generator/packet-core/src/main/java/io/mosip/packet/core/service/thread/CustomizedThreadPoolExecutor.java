@@ -157,7 +157,6 @@ public class CustomizedThreadPoolExecutor {
                 Long totalCount = 0L;
                 Long activeCount = 0L;
                 completedCount = 0L;
-                currentPendingCount = 0L;
                 int totalDays = 0;
                 int totalHours = 0;
                 int remainingMinutes =0;
@@ -172,14 +171,11 @@ public class CustomizedThreadPoolExecutor {
                         completedCount+= entry.getCompletedTaskCount();
                     }
 
-                    currentPendingCount = totalCount - completedCount;
-
                     if(activeCount <= 0)
                         countOfZeroActiveCount++;
                     else
                         countOfZeroActiveCount=0;
 
-    //                   completedCount+= totalCompletedTaskCount + ALREADY_PROCESSED_RECORDS;
                     completedCount+= totalCompletedTaskCount;
 
                     if((totalTaskCount > 0 || totalCount > 0) && monitorRequired) {
@@ -226,6 +222,17 @@ public class CustomizedThreadPoolExecutor {
             if(!noSlotAvailable) {
                 for(ThreadPoolExecutor entry : poolMap) {
                     if(entry.getTaskCount() <= maxThreadCount) {
+                        task.setResponse(new BaseThreadController.SuuccessResponse() {
+                            @Override
+                            public void onSuccess() {
+                                currentPendingCount--;
+                            }
+
+                            @Override
+                            public void onFailure() {
+                                currentPendingCount--;
+                            }
+                        });
                         entry.execute(task);
                         taskAdded=true;
                         currentPendingCount++;
@@ -236,8 +243,9 @@ public class CustomizedThreadPoolExecutor {
                 boolean slotAvailable = false;
                 for(ThreadPoolExecutor entry : poolMap) {
 
-                    if(entry.getTaskCount() < maxThreadCount)
+                    if(entry.getTaskCount() < maxThreadCount) {
                         slotAvailable = true;
+                    }
                 }
 
                 if(!slotAvailable) {

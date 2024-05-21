@@ -48,10 +48,10 @@ public class DataBaseUtil {
     @Autowired
     private CommonUtil commonUtil;
 
-    @Value("${mosip.packet.creater.db.max-threadpool-count:1}")
+    @Value("${mosip.packet.creater.max-threadpool-count:1}")
     private Integer dbReaderMaxThreadPoolCount;
 
-    @Value("${mosip.packet.creater.db.max-records-process-per-threadpool:20000}")
+    @Value("${mosip.packet.creater.max-records-process-per-threadpool:20000}")
     private Integer dbReaderMaxRecordsCountPerThreadPool;
 
     @Value("${mosip.packet.creater.db.max-thread-execution-count:10}")
@@ -113,31 +113,31 @@ public class DataBaseUtil {
                     @SneakyThrows
                     @Override
                     public void run() {
-
                         PreparedStatement statement1 = null;
                         ResultSet scrollableResultSet = null;
                         try {
-                            OFFSET_VALUE = trackerUtil.getDatabaseOffset() == null ? 0 : trackerUtil.getDatabaseOffset();
                             Float processPercentage = Float.valueOf((getPendingCountForProcess().floatValue() / Float.valueOf(dbReaderMaxThreadPoolCount * dbReaderMaxRecordsCountPerThreadPool)));
+                            LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Database Reader Initial Condition for DB Read  ProcessPercentage, OFFSET_VALUE, OneTimeCheckForZeroOffset, CurrentPendingCount, PendingCountForProcess" +
+                                    processPercentage, OFFSET_VALUE, oneTimeCheckForZeroOffset, threadPool.getCurrentPendingCount(), getPendingCountForProcess());
 
-                            if ((processPercentage > 0.05 && processPercentage != 0) || (processPercentage == 0 && OFFSET_VALUE > 0 && !oneTimeCheckForZeroOffset) || threadPool.getCurrentPendingCount() > 0) {
+                            if ((processPercentage > 0.05 && processPercentage != 0) || (processPercentage == 0 && OFFSET_VALUE > 0 && oneTimeCheckForZeroOffset) || threadPool.getCurrentPendingCount() > 0) {
                             } else {
-                                    oneTimeCheckForZeroOffset = false;
+                                OFFSET_VALUE = trackerUtil.getDatabaseOffset() == null ? 0 : trackerUtil.getDatabaseOffset();
                                 List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
                                 Collections.sort(tableRequestDtoList);
                                 TableRequestDto tableRequestDto = tableRequestDtoList.get(0);
                                 statement1 = conn.prepareStatement(generateQuery(tableRequestDto, dataHashMap, fieldsCategoryMap), ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
                                 scrollableResultSet = statement1.executeQuery();
 
-                                if (scrollableResultSet.getFetchSize() <= 0) {
+                                if (scrollableResultSet.getRow() <= 0) {
+                                    LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Cancelling Database Reader since No Data" + scrollableResultSet.getFetchSize());
                                     dataReader.cancel();
                                     IS_DATABASE_READ_OPERATION = false;
                                 }
 
-                                TOTAL_RECORDS_FOR_PROCESS += Long.valueOf(scrollableResultSet.getFetchSize());
-
-                                if (scrollableResultSet.last()) {
-                                    OFFSET_VALUE = Long.valueOf(scrollableResultSet.getRow());
+                                if(scrollableResultSet.last()) {
+                                    TOTAL_RECORDS_FOR_PROCESS += Long.valueOf(scrollableResultSet.getRow());
+                                    OFFSET_VALUE += Long.valueOf(scrollableResultSet.getRow());
                                     trackerUtil.updateDatabaseOffset(OFFSET_VALUE);
                                 }
 
@@ -193,6 +193,7 @@ public class DataBaseUtil {
                                         }
                                     }
                                 }
+                                oneTimeCheckForZeroOffset = false;
                             }
                         } catch (Exception e) {
                             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Extracting Data " + (new Gson()).toJson(dataHashMap) + " Stack Trace : " + ExceptionUtils.getStackTrace(e));
@@ -327,7 +328,7 @@ public class DataBaseUtil {
         }
 
         for (FieldFormatRequest fieldFormatRequest : columnDetails) {
-            dataMapperUtil.dataMapper(fieldFormatRequest, resultData, dataMap, tableRequestDto.getTableNameWithOutSchema(), fieldsCategoryMap, localStoreRequired);
+            dataMapperUtil.dataMapper(fieldFormatRequest, resultData, dataMap, tableRequestDto.getTableNameWithOutSchema().toUpperCase(), fieldsCategoryMap, localStoreRequired);
         }
     }
 

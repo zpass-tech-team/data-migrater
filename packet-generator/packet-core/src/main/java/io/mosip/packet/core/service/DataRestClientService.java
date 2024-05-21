@@ -129,4 +129,9 @@ public interface DataRestClientService<T> {
 
 	public Map<String, Object> invokeURL(RequestHTTPDTO requestHTTPDTO) throws Exception;
 
+	public T putApi(ApiName apiName, String queryParamName, String queryParamValue, T requestedData,
+					 Class<?> responseType, MediaType mediaType) throws ApisResourceAccessException ;
+
+	public T patchApi(ApiName apiName, List<String> pathsegments, String queryParam, String queryParamValue,
+					  T requestedData, Class<?> responseType) throws ApisResourceAccessException;
 }

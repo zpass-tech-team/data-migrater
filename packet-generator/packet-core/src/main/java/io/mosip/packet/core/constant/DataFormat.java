@@ -6,7 +6,9 @@ public enum DataFormat {
     WSQ("wsq","wsq"),
     ISO("ISO", "iso"),
     YMD("yyyy/MM/dd", "yyyy/MM/dd"),
-    DMY("dd/MM/yyyy", "dd/MM/yyyy");
+    DMY("dd/MM/yyyy", "dd/MM/yyyy"),
+    DMY_WITH_HYPEN("dd-MM-yyyy", "dd-MM-yyyy"),
+    YMD_WITH_HYPEN("yyyy-MM-dd", "yyyy-MM-dd");
 
 
     public final String format;

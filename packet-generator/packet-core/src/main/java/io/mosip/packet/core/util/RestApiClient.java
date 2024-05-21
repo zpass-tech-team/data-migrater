@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.LoggerFileConstant;
 import io.mosip.packet.core.dto.PasswordRequest;
+import io.mosip.packet.core.dto.request.ClientSecretKeyRequest;
 import io.mosip.packet.core.dto.request.Metadata;
 import io.mosip.packet.core.dto.request.SecretKeyRequest;
 import io.mosip.packet.core.dto.request.TokenRequestDTO;
@@ -19,6 +20,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -78,6 +82,13 @@ public class RestApiClient {
 		RestApiClient.isAuthRequired = isAuthRequired;
 	}
 
+	private static Boolean isUserLoginRequired = true;
+
+	public static void setIsUserLoginRequired(Boolean isUserLoginRequired) {
+		RestApiClient.isUserLoginRequired = isUserLoginRequired;
+		System.setProperty("token", "");
+	}
+
 	@PostConstruct
 	private void loadRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
 		localRestTemplate = getRestTemplate();
@@ -94,10 +105,10 @@ public class RestApiClient {
 	 * @throws Exception
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T getApi(URI uri, Class<?> responseType, boolean isAuthRequired) throws Exception {
+	public <T> T getApi(URI uri, Class<?> responseType) throws Exception {
 		T result = null;
 		try {
-			result = (T) localRestTemplate.exchange(uri, HttpMethod.GET, setRequestHeader(null, null, isAuthRequired), responseType)
+			result = (T) localRestTemplate.exchange(uri, HttpMethod.GET, setRequestHeader(null, null), responseType)
 					.getBody();
 		} catch (Exception e) {
 			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
@@ -121,13 +132,13 @@ public class RestApiClient {
 	 * @return the t
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T postApi(String uri, MediaType mediaType, Object requestType, Class<?> responseClass, boolean isAuthRequired) throws Exception {
+	public <T> T postApi(String uri, MediaType mediaType, Object requestType, Class<?> responseClass) throws Exception {
 
 		T result = null;
 		try {
 			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
 					APPLICATION_ID, uri);
-			result = (T) localRestTemplate.postForObject(uri, setRequestHeader(requestType, mediaType, isAuthRequired), responseClass);
+			result = (T) localRestTemplate.postForObject(uri, setRequestHeader(requestType, mediaType), responseClass);
 
 		} catch (Exception e) {
 			logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
@@ -152,7 +163,7 @@ public class RestApiClient {
 	 * @return the t
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T patchApi(String uri, MediaType mediaType, Object requestType, Class<?> responseClass, boolean isAuthRequired)
+	public <T> T patchApi(String uri, MediaType mediaType, Object requestType, Class<?> responseClass)
 			throws Exception {
 
 		RestTemplate restTemplate;
@@ -160,7 +171,7 @@ public class RestApiClient {
 		try {
 			logger.info(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
 					APPLICATION_ID, uri);
-			result = (T) localRestTemplate.patchForObject(uri, setRequestHeader(requestType, mediaType, isAuthRequired), responseClass);
+			result = (T) localRestTemplate.patchForObject(uri, setRequestHeader(requestType, mediaType), responseClass);
 
 		} catch (Exception e) {
 
@@ -172,8 +183,8 @@ public class RestApiClient {
 		return result;
 	}
 
-	public <T> T patchApi(String uri, Object requestType, Class<?> responseClass, boolean isAuthRequired) throws Exception {
-		return patchApi(uri, null, requestType, responseClass, isAuthRequired);
+	public <T> T patchApi(String uri, Object requestType, Class<?> responseClass) throws Exception {
+		return patchApi(uri, null, requestType, responseClass);
 	}
 
 	/**
@@ -193,7 +204,7 @@ public class RestApiClient {
 	 *             the exception
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T putApi(String uri, Object requestType, Class<?> responseClass, MediaType mediaType, boolean isAuthRequired) throws Exception {
+	public <T> T putApi(String uri, Object requestType, Class<?> responseClass, MediaType mediaType) throws Exception {
 
 		T result = null;
 		ResponseEntity<T> response = null;
@@ -202,7 +213,7 @@ public class RestApiClient {
 					APPLICATION_ID, uri);
 
 			response = (ResponseEntity<T>) localRestTemplate.exchange(uri, HttpMethod.PUT,
-					setRequestHeader(requestType.toString(), mediaType, isAuthRequired), responseClass);
+					setRequestHeader(requestType, mediaType), responseClass);
 			result = response.getBody();
 		} catch (Exception e) {
 
@@ -246,9 +257,9 @@ public class RestApiClient {
 	 * @throws IOException
 	 */
 	@SuppressWarnings("unchecked")
-	private HttpEntity<Object> setRequestHeader(Object requestType, MediaType mediaType, boolean authRequired) throws IOException {
+	private HttpEntity<Object> setRequestHeader(Object requestType, MediaType mediaType) throws IOException, ParseException {
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
-		if(IS_NETWORK_AVAILABLE && authRequired)
+		if(IS_NETWORK_AVAILABLE && isAuthRequired)
 			headers.add("Cookie", getToken());
 		if (mediaType != null) {
 			headers.add("Content-Type", mediaType.toString());
@@ -277,7 +288,7 @@ public class RestApiClient {
 	 * @return
 	 * @throws IOException
 	 */
-	public String getToken() throws IOException {
+	public String getToken() throws IOException, ParseException {
 		String token = System.getProperty("token");
 		boolean isValid = false;
 
@@ -290,7 +301,7 @@ public class RestApiClient {
 
 			}
 			if (!isValid) {
-				TokenRequestDTO<SecretKeyRequest> tokenRequestDTO = new TokenRequestDTO<SecretKeyRequest>();
+				TokenRequestDTO<Object> tokenRequestDTO = new TokenRequestDTO<Object>();
 				tokenRequestDTO.setId(environment.getProperty("token.request.id"));
 				tokenRequestDTO.setMetadata(new Metadata());
 
@@ -303,7 +314,12 @@ public class RestApiClient {
 				HttpClient httpClient = HttpClientBuilder.create().build();
 				// HttpPost post = new
 				// HttpPost(environment.getProperty("PASSWORDBASEDTOKENAPI"));
-				HttpPost post = new HttpPost(environment.getProperty("KEYBASEDTOKENAPI"));
+				HttpPost post = null;
+				if(isUserLoginRequired)
+					post = new HttpPost(environment.getProperty("USERBASEDTOKENAPI"));
+				else
+					post = new HttpPost(environment.getProperty("KEYBASEDTOKENAPI"));
+
 				try {
 					StringEntity postingString = new StringEntity(gson.toJson(tokenRequestDTO));
 					post.setEntity(postingString);
@@ -311,13 +327,22 @@ public class RestApiClient {
 					HttpResponse response = httpClient.execute(post);
 					org.apache.http.HttpEntity entity = response.getEntity();
 					String responseBody = EntityUtils.toString(entity, "UTF-8");
-					Header[] cookie = response.getHeaders("Set-Cookie");
-					if (cookie.length == 0)
-						throw new TokenGenerationFailedException();
-					token = response.getHeaders("Set-Cookie")[0].getValue();
-					System.setProperty("token", token.substring(14, token.indexOf(';')));
-					return token.substring(0, token.indexOf(';'));
-				} catch (IOException e) {
+					if(!isUserLoginRequired) {
+						Header[] cookie = response.getHeaders("Set-Cookie");
+						if (cookie.length == 0)
+							throw new TokenGenerationFailedException();
+						token = response.getHeaders("Set-Cookie")[0].getValue();
+						System.setProperty("token", token.substring(14, token.indexOf(';')));
+						return token.substring(0, token.indexOf(';'));
+					} else {
+						JSONParser jsonParser = new JSONParser();
+						JSONObject responseJsonObject = (JSONObject) jsonParser.parse(responseBody);
+						JSONObject tokenJsonObject = (JSONObject) responseJsonObject.get("response");
+						token = "Authorization=" + tokenJsonObject.get("token").toString();
+						System.setProperty("token", token);
+						return token;
+					}
+				} catch (IOException | ParseException e) {
 					logger.error(LoggerFileConstant.SESSIONID.toString(), APPLICATION_NAME,
 							APPLICATION_ID, e.getMessage() + ExceptionUtils.getStackTrace(e));
 					throw e;
@@ -329,12 +354,22 @@ public class RestApiClient {
 		}
 	}
 
-	private SecretKeyRequest setSecretKeyRequestDTO() {
-		SecretKeyRequest request = new SecretKeyRequest();
-		request.setAppId(environment.getProperty("token.request.appid"));
-		request.setClientId(environment.getProperty("token.request.clientId"));
-		request.setSecretKey(environment.getProperty("token.request.secretKey"));
-		return request;
+	private Object setSecretKeyRequestDTO() {
+		if(!isUserLoginRequired) {
+			SecretKeyRequest request = new SecretKeyRequest();
+			request.setAppId(environment.getProperty("token.request.appid"));
+			request.setClientId(environment.getProperty("token.request.clientId"));
+			request.setSecretKey(environment.getProperty("token.request.secretKey"));
+			return request;
+		} else {
+			ClientSecretKeyRequest request = new ClientSecretKeyRequest();
+			request.setAppId(environment.getProperty("token.request.appid"));
+			request.setClientId(environment.getProperty("token.request.clientId"));
+			request.setClientSecret(environment.getProperty("token.request.secretKey"));
+			request.setUserName(environment.getProperty("token.request.username"));
+			request.setPassword(environment.getProperty("token.request.password"));
+			return request;
+		}
 	}
 
 	private PasswordRequest setPasswordRequestDTO() {

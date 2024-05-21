@@ -14,13 +14,21 @@ public abstract class BaseThreadController implements Runnable {
     protected String poolName;
     protected ResultSetter setter;
     protected CountIncrementer failedRecordCount;
+    protected SuuccessResponse response;
+
+    protected interface SuuccessResponse {
+        public void onSuccess();
+        public void onFailure();
+    }
 
     @Override
     public void run() {
         try {
             execute();
+            response.onSuccess();
         } catch (Exception e) {
             failedRecordCount.increment();
+            response.onFailure();
             LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, " Error While Processing Data  : " + ExceptionUtils.getStackTrace(e));
         }
     }

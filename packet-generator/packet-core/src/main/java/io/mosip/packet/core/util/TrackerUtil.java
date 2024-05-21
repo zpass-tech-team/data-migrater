@@ -37,7 +37,7 @@ public class TrackerUtil {
     private static Connection conn = null;
     private PreparedStatement preparedStatement = null;
 
-    @Value("${mosip.packet.creator.tracking.batch.size:10}")
+    @Value("${mosip.packet.creator.tracking.batch.size:1}")
     private int batchLimit;
 
     private int batchSize = 0;
@@ -199,41 +199,47 @@ public class TrackerUtil {
     }
 
     public synchronized void updateDatabaseOffset(Long offset) throws SQLException {
-        PreparedStatement preparedStatement = null;
-        DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
+        if(IS_TRACKER_REQUIRED) {
+            PreparedStatement preparedStatement = null;
+            DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
-        try {
-            String query = TableQueries.getInsertQueries(OFFSET_TRACKER_TABLE_NAME, dbType);
-            Map<String, String> valueMap = new HashMap<>();
-            valueMap.put("TABLE_NAME", OFFSET_TRACKER_TABLE_NAME);
-            valueMap.put("SESSION_ID", SESSION_KEY);
-            valueMap.put("VALUE", offset.toString());
-            preparedStatement = conn.prepareStatement(queryFormatter.queryFormatter(query, valueMap));
-            preparedStatement.execute();
-        } finally {
-            if(preparedStatement != null)
-                preparedStatement.close();
+            try {
+                String query = TableQueries.getInsertQueries(OFFSET_TRACKER_TABLE_NAME, dbType);
+                Map<String, String> valueMap = new HashMap<>();
+                valueMap.put("TABLE_NAME", OFFSET_TRACKER_TABLE_NAME);
+                valueMap.put("SESSION_ID", SESSION_KEY);
+                valueMap.put("VALUE", offset.toString());
+                preparedStatement = conn.prepareStatement(queryFormatter.queryFormatter(query, valueMap));
+                preparedStatement.execute();
+            } finally {
+                if(preparedStatement != null)
+                    preparedStatement.close();
+            }
         }
     }
 
     public synchronized Long getDatabaseOffset() throws SQLException {
-        PreparedStatement preparedStatement = null;
-        ResultSet resultSet = null;
-        DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
+        if(IS_TRACKER_REQUIRED) {
+            PreparedStatement preparedStatement = null;
+            ResultSet resultSet = null;
+            DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
-        try {
-            preparedStatement = conn.prepareStatement("SELECT OFFSET_VALUE FROM " + OFFSET_TRACKER_TABLE_NAME + " WHERE SESSION_KEY = '" + SESSION_KEY + "'");
-            resultSet = preparedStatement.executeQuery();
-            if(resultSet.next())
-                return resultSet.getLong(1);
-            else
-                return 0L;
-        } finally {
-            if(resultSet != null)
-                resultSet.close();
+            try {
+                preparedStatement = conn.prepareStatement("SELECT OFFSET_VALUE FROM " + OFFSET_TRACKER_TABLE_NAME + " WHERE SESSION_KEY = '" + SESSION_KEY + "'");
+                resultSet = preparedStatement.executeQuery();
+                if(resultSet.next())
+                    return resultSet.getLong(1);
+                else
+                    return 0L;
+            } finally {
+                if(resultSet != null)
+                    resultSet.close();
 
-            if(preparedStatement != null)
-                preparedStatement.close();
+                if(preparedStatement != null)
+                    preparedStatement.close();
+            }
+        } else {
+            return 0L;
         }
     }
 
@@ -368,44 +374,44 @@ public class TrackerUtil {
                 packetTrackerRepository.delete(packetTracker);
             }
         } else {
-        byte[] requestValue = null;
+            byte[] requestValue = null;
 
-        if(request != null) {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(request);
-            if(IS_TPM_AVAILABLE)
-                requestValue = clientCryptoFacade.encrypt(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), bos.toByteArray());
-            else
-                requestValue = bos.toByteArray();
+            if(request != null) {
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(bos);
+                oos.writeObject(request);
+                if(IS_TPM_AVAILABLE)
+                    requestValue = clientCryptoFacade.encrypt(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), bos.toByteArray());
+                else
+                    requestValue = bos.toByteArray();
 
-            oos.close();
-            bos.close();
+                oos.close();
+                bos.close();
+            }
+
+            if(optional.isPresent()) {
+                packetTracker = optional.get();
+                if(regNo != null ) packetTracker.setRegNo(regNo);
+                if(status != null ) packetTracker.setStatus(status.toString());
+                if(process != null ) packetTracker.setProcess(process);
+                if(request != null ) packetTracker.setRequest(Base64.getEncoder().encodeToString(requestValue));
+                if(activity != null ) packetTracker.setActivity(activity);
+                packetTracker.setSessionKey(sessionKey);
+                packetTracker.setUpdBy("BATCH");
+                packetTracker.setUpdDtimes(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
+            } else {
+                packetTracker = new PacketTracker();
+                if(refId != null ) packetTracker.setRefId(refId);
+                if(regNo != null ) packetTracker.setRegNo(regNo);
+                if(status != null ) packetTracker.setStatus(status.toString());
+                if(process != null ) packetTracker.setProcess(process);
+                if(request != null ) packetTracker.setRequest(requestValue == null ? null : Base64.getEncoder().encodeToString(requestValue));
+                if(activity != null ) packetTracker.setActivity(activity);
+                packetTracker.setSessionKey(sessionKey);
+                packetTracker.setCrBy("BATCH");
+                packetTracker.setCrDtime(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
+            }
+            packetTrackerRepository.saveAndFlush(packetTracker);
         }
-
-        if(optional.isPresent()) {
-            packetTracker = optional.get();
-            if(regNo != null ) packetTracker.setRegNo(regNo);
-            if(status != null ) packetTracker.setStatus(status.toString());
-            if(process != null ) packetTracker.setProcess(process);
-            if(request != null ) packetTracker.setRequest(Base64.getEncoder().encodeToString(requestValue));
-            if(activity != null ) packetTracker.setActivity(activity);
-            packetTracker.setSessionKey(sessionKey);
-            packetTracker.setUpdBy("BATCH");
-            packetTracker.setUpdDtimes(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
-        } else {
-            packetTracker = new PacketTracker();
-            if(refId != null ) packetTracker.setRefId(refId);
-            if(regNo != null ) packetTracker.setRegNo(regNo);
-            if(status != null ) packetTracker.setStatus(status.toString());
-            if(process != null ) packetTracker.setProcess(process);
-            if(request != null ) packetTracker.setRequest(requestValue == null ? null : Base64.getEncoder().encodeToString(requestValue));
-            if(activity != null ) packetTracker.setActivity(activity);
-            packetTracker.setSessionKey(sessionKey);
-            packetTracker.setCrBy("BATCH");
-            packetTracker.setCrDtime(Timestamp.valueOf(DateUtils.getUTCCurrentDateTime()));
-        }
-        packetTrackerRepository.saveAndFlush(packetTracker);
     }
-  }
 }

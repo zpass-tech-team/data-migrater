@@ -72,6 +72,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 	public Object getApi(ApiName apiName, List<String> pathsegments, String queryParamName, String queryParamValue,
 						 Class<?> responseType, boolean isAuthRequired) throws ApisResourceAccessException {
 		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::getApi()::entry");
+		RestApiClient.setIsAuthRequired(isAuthRequired);
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
 
@@ -103,7 +104,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 
 				uriComponents = builder.build(false).encode();
 				LOGGER.debug(uriComponents.toUri().toString(), "URI");
-				obj = restApiClient.getApi(uriComponents.toUri(), responseType,isAuthRequired);
+				obj = restApiClient.getApi(uriComponents.toUri(), responseType);
 
 			} catch (Exception e) {
 				LOGGER.error(e.getMessage() , e);
@@ -124,6 +125,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 	public Object getApi(ApiName apiName, List<String> pathsegments, List<String> queryParamName, List<Object> queryParamValue,
 						 Class<?> responseType, boolean isAuthRequired) throws ApisResourceAccessException {
 		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::getApi()::entry");
+		RestApiClient.setIsAuthRequired(isAuthRequired);
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
 
@@ -152,7 +154,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 
 				uriComponents = builder.build(false).encode();
 				LOGGER.debug(uriComponents.toUri().toString(),"URI");
-				obj = restApiClient.getApi(uriComponents.toUri(), responseType, isAuthRequired);
+				obj = restApiClient.getApi(uriComponents.toUri(), responseType);
 
 			} catch (Exception e) {
 				LOGGER.error(e.getMessage() , e);
@@ -174,6 +176,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			Class<?> responseType, MediaType mediaType, boolean isAuthRequired) throws ApisResourceAccessException {
 		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
 
+		RestApiClient.setIsAuthRequired(isAuthRequired);
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
 		UriComponentsBuilder builder = null;
@@ -191,7 +194,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			}
 
 			try {
-				obj = restApiClient.postApi(builder.toUriString(), mediaType, requestedData, responseType, isAuthRequired);
+				obj = restApiClient.postApi(builder.toUriString(), mediaType, requestedData, responseType);
 
 			} catch (Exception e) {
 				LOGGER.error(e.getMessage() , e);
@@ -208,7 +211,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 	public Object postApi(String apiHostIpPort, String queryParamName, String queryParamValue, Object requestedData,
 						  Class<?> responseType, MediaType mediaType, boolean isAuthRequired) throws ApisResourceAccessException {
 		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
-
+		RestApiClient.setIsAuthRequired(isAuthRequired);
 		Object obj = null;
 		UriComponentsBuilder builder = null;
 		if (apiHostIpPort != null)
@@ -225,7 +228,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			}
 
 			try {
-				obj = restApiClient.postApi(builder.toUriString(), mediaType, requestedData, responseType, isAuthRequired);
+				obj = restApiClient.postApi(builder.toUriString(), mediaType, requestedData, responseType);
 
 			} catch (Exception e) {
 				LOGGER.error(e.getMessage() , e);
@@ -283,6 +286,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			Object requestedData, Class<?> responseType, boolean isAuthRequired) throws ApisResourceAccessException {
 
 		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
+		RestApiClient.setIsAuthRequired(isAuthRequired);
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
 		UriComponentsBuilder builder = null;
@@ -308,7 +312,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			}
 
 			try {
-				obj = restApiClient.postApi(builder.toUriString(), null, requestedData, responseType, isAuthRequired);
+				obj = restApiClient.postApi(builder.toUriString(), null, requestedData, responseType);
 
 			} catch (Exception e) {
 				LOGGER.error(e.getMessage() , e);
@@ -332,6 +336,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 						  Object requestedData, Class<?> responseType, boolean isAuthRequired) throws ApisResourceAccessException {
 
 		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::postApi()::entry");
+		RestApiClient.setIsAuthRequired(isAuthRequired);
 		Object obj = null;
 		String apiHostIpPort = env.getProperty(apiName.name());
 		UriComponentsBuilder builder = null;
@@ -355,7 +360,7 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 			}
 
 			try {
-				obj = restApiClient.postApi(builder.toUriString(), mediaType, requestedData, responseType, isAuthRequired);
+				obj = restApiClient.postApi(builder.toUriString(), mediaType, requestedData, responseType);
 
 			} catch (Exception e) {
 				LOGGER.error(e.getMessage() , e);
@@ -465,5 +470,88 @@ public class DataRestClientServiceImpl implements DataRestClientService<Object> 
 		}
 
 		LOGGER.info("Adding of authZ token to request header completed");
+	}
+
+	public Object putApi(ApiName apiName, String queryParamName, String queryParamValue, Object requestedData,
+						  Class<?> responseType, MediaType mediaType) throws ApisResourceAccessException {
+		return putApi(apiName, queryParamName, queryParamValue,  requestedData, responseType, mediaType, true);
+	}
+	public Object putApi(ApiName apiName, String queryParamName, String queryParamValue, Object requestedData,
+						  Class<?> responseType, MediaType mediaType, boolean isAuthRequired) throws ApisResourceAccessException {
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::putApi()::entry");
+
+		RestApiClient.setIsAuthRequired(isAuthRequired);
+		Object obj = null;
+		String apiHostIpPort = env.getProperty(apiName.name());
+		UriComponentsBuilder builder = null;
+		if (apiHostIpPort != null)
+			builder = UriComponentsBuilder.fromUriString(apiHostIpPort);
+		if (builder != null) {
+
+			if (!((queryParamName == null) || (("").equals(queryParamName)))) {
+				String[] queryParamNameArr = queryParamName.split(",");
+				String[] queryParamValueArr = queryParamValue.split(",");
+
+				for (int i = 0; i < queryParamNameArr.length; i++) {
+					builder.queryParam(queryParamNameArr[i], queryParamValueArr[i]);
+				}
+			}
+
+			try {
+				obj = restApiClient.putApi(builder.toUriString(), requestedData, responseType, mediaType);
+
+			} catch (Exception e) {
+				LOGGER.error(e.getMessage() , e);
+
+				throw new ApisResourceAccessException(PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getCode(),
+						e.getMessage(), e);
+
+			}
+		}
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::putApi()::exit");
+		return obj;
+	}
+
+	public Object patchApi(ApiName apiName, List<String> pathsegments, String queryParamName, String queryParamValue,
+						   Object requestedData, Class<?> responseType) throws ApisResourceAccessException {
+
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::putApi()::entry");
+		Object obj = null;
+		String apiHostIpPort = env.getProperty(apiName.name());
+		UriComponentsBuilder builder = null;
+		if (apiHostIpPort != null)
+			builder = UriComponentsBuilder.fromUriString(apiHostIpPort);
+		if (builder != null) {
+
+			if (!((pathsegments == null) || (pathsegments.isEmpty()))) {
+				for (String segment : pathsegments) {
+					if (!((segment == null) || (("").equals(segment)))) {
+						builder.pathSegment(segment);
+					}
+				}
+
+			}
+			if (!checkNull(queryParamName)) {
+				String[] queryParamNameArr = queryParamName.split(",");
+				String[] queryParamValueArr = queryParamValue.split(",");
+
+				for (int i = 0; i < queryParamNameArr.length; i++) {
+					builder.queryParam(queryParamNameArr[i], queryParamValueArr[i]);
+				}
+			}
+
+			try {
+				obj = restApiClient.patchApi(builder.toUriString(), requestedData, responseType);
+
+			} catch (Exception e) {
+				LOGGER.error(e.getMessage() , e);
+
+				throw new ApisResourceAccessException(
+						PlatformErrorMessages.PRT_RCT_UNKNOWN_RESOURCE_EXCEPTION.getMessage(), e);
+
+			}
+		}
+		LOGGER.debug("RegistrationProcessorRestClientServiceImpl::putApi()::exit");
+		return obj;
 	}
 }
