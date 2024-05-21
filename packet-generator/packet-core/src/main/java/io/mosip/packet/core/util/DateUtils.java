@@ -890,11 +890,9 @@ public final class DateUtils {
 			SimpleDateFormat dateFormat = new SimpleDateFormat(format.getFormat());
 			try {
 				Date date = dateFormat.parse(value);
-				Long formatedDate =  date.getTime();
-				Long currValue = Timestamp.valueOf(value).getTime();
+				String formattedValue = dateFormat.format(date);
 
-
-				if(formatedDate.equals(currValue))
+				if(formattedValue.equals(value))
 					return date;
 			} catch (Exception e) {
 				//do nothing
