@@ -2,6 +2,7 @@ package io.mosip.packet.data.convertion;
 
 import io.mosip.commons.packet.constants.Biometric;
 import io.mosip.kernel.biometrics.constant.BiometricType;
+import io.mosip.packet.core.constant.BioSubType;
 import io.mosip.packet.core.constant.DataFormat;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
 import io.mosip.packet.core.spi.BioConvertorApiFactory;
@@ -76,8 +77,9 @@ public class BioConversion implements BioConvertorApiFactory {
 
                 String bioAttribute = fieldName.split("_")[1];
                 BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
+                String bioSubType = BioSubType.getBioSubType(bioAttribute).getBioSubType();
 
-                byteData = bioUtilApplication.imageConversion(inputImageType, convertTo, "UNKNOWN", biometricType, byteData);
+                byteData = bioUtilApplication.imageConversion(inputImageType, convertTo, bioSubType, biometricType, byteData);
                 currentFormat = toFormat;
             }
         }
