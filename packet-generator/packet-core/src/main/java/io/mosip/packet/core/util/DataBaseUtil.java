@@ -293,7 +293,9 @@ public class DataBaseUtil {
                     filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD', 'FAILED') AND SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
                     selectSql += filterCondition;
                 }
-                selectSql += " ORDER BY  " + applicationIdColumn;
+
+                if(applicationIdColumn != null && !applicationIdColumn.isEmpty())
+                    selectSql += " ORDER BY  " + applicationIdColumn;
 
                 if(!isTrackerSameHost && OFFSET_VALUE != null && OFFSET_VALUE > 0)
                     selectSql += " " + QueryOffsetSetter.valueOf(dbType.toString()).getValue(OFFSET_VALUE);

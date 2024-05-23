@@ -62,8 +62,9 @@ public class TableDataMapperUtil implements DataMapperUtil {
         List<FieldName> fieldNames = fieldFormatRequest.getFieldList();
         String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldNames.get(0).getFieldName().toLowerCase();
         String originalField = fieldFormatRequest.getFieldName();
+        String[] fieldMapArray = fieldMap.split(",");
 
-        if(!dataMap2.get(fieldFormatRequest.getFieldCategory()).containsKey(originalField) && fieldsCategoryMap.get(tableName).containsKey(fieldNames.get(0).getFieldName())) {
+        if((!dataMap2.get(fieldFormatRequest.getFieldCategory()).containsKey(originalField) || !dataMap2.get(fieldFormatRequest.getFieldCategory()).keySet().containsAll(Arrays.asList(fieldMapArray))) && fieldsCategoryMap.get(tableName).containsKey(fieldNames.get(0).getFieldName())) {
             String mvelValue = null;
             if (fieldFormatRequest.getMvelExpressions() != null) {
                 Map map = new HashMap();
@@ -133,7 +134,6 @@ public class TableDataMapperUtil implements DataMapperUtil {
                         }
                     }
 
-                    String[] fieldMapArray = fieldMap.split(",");
                     if(fieldMapArray.length > 0) {
                         int arrayLength = fieldMapArray.length;
                         String[] mapArray = demoValue.toString().split(VALUE_SPLITTER);
