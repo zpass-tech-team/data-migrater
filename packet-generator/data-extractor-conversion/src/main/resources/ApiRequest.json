@@ -1,0 +1,449 @@
+{
+	"id": "string",
+	"metadata": {},
+	"request": {
+		"dbType": "POSTGRESQL",
+		"url": "postgres.zam-dev.mosip.net",
+		"port": "5432",
+		"databaseName": "performance_testing",
+		"userId": "postgres",
+		"password": "DeePzRoH7g",
+		"process": "NEW",
+		"tableDetails": [
+			{
+				"queryType": "SQL_QUERY",
+				"executionOrderSequence": 1,
+				"tableName": "TEST_DATA_FILE",
+				"sqlQuery": "SELECT * FROM public.test_data_file WHERE nrcid = '561557/76/3'",
+				"nonIdSchemaTableFields": [
+					"FOLDER", "SUBFOLDER"
+				]
+			}
+		],
+		"ignoreIdSchemaFields": [
+			"consentText","consent","province","district","addressLine","constituency"
+		],
+		"columnDetails": [
+			{
+				"fieldName": "TEST_DATA_FILE.NRCID",
+				"fieldToMap": "nrcId",
+				"useAsHandle" : true
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.LASTNAME",
+				"fieldToMap": "lastName"
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FIRSTNAME",
+				"fieldToMap": "firstName"
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.DOB",
+				"fieldToMap": "dateOfBirth"
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.GENDER",
+				"fieldToMap": "gender"
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.PHONENUMBER",
+				"fieldToMap": "phoneNumber"
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.ADDRESSLINE",
+				"fieldToMap": "addressLine"
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FOLDER",
+				"fieldToMap": "FOLDER"
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.SUBFOLDER",
+				"fieldToMap": "SUBFOLDER"
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.IDCARD1",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldToMap": "proofOfIdentity",
+				"documentAttributes": {
+					"documentRefNoField": "STATIC:123456",
+					"documentFormatField": "STATIC:JPEG",
+					"documentCodeField": "STATIC:POI",
+					"documentValueMap" : {
+					}
+				},
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${IDCARD1}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE1",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_rightThumb",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE1}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE2",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_rightIndex",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE2}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE3",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_rightMiddle",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE3}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE4",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_rightRing",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE4}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE5",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_rightLittle",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE5}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE6",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_leftThumb",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE6}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE7",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_leftIndex",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE7}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE8",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_leftMiddle",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE8}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE9",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_leftRing",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE9}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE10",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "WSQ",
+				"fieldToMap": "individualBiometrics_leftLittle",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${FINGERPRINTIMAGE10}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			},
+			{
+				"fieldName": "TEST_DATA_FILE.PHOTO",
+				"primaryField": "TEST_DATA_FILE.NRCID",
+				"srcFormat": "JPEG",
+				"fieldToMap": "individualBiometrics_face",
+				"mvelExpressions" : {
+					"mvelFile" : "BiometricPath.mvel",
+					"parameters" : [
+						{
+							"parameterName":"fileName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${PHOTO}"
+						},
+						{
+							"parameterName":"folder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:FOLDER}"
+						},
+						{
+							"parameterName":"subfolder",
+							"parameterType" : "STRING",
+							"parameterValue" : "${DEMO:SUBFOLDER}"
+						},
+						{
+							"parameterName":"drivePath",
+							"parameterType" : "STRING",
+							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+						}
+					]
+				}
+			}
+		],
+		"trackerInfo" : {
+			"trackerColumn" : "TEST_DATA_FILE.NRCID"
+		}
+	},
+	"requesttime": "2018-12-10T06:12:52.994Z",
+	"version": "string"
+}

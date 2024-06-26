@@ -60,8 +60,10 @@ public class MockDeviceUtil {
 
     private LocalDateTime lastInitializedTime;
 
-    @Value("${mosip.mock.sbi.device.re-initialization.minutes:10}")
+    @Value("${mosip.mock.sbi.device.re-initialization.minutes:5}")
     private Integer reInitMiniutes;
+
+    private boolean resetInProgress = false;
 
     public BioMetricsDto getBiometricData (String deviceTypeName, CaptureRequestDto requestObject, String bioValue,
                                             String lang, String errorCode) throws JsonGenerationException, JsonMappingException, IOException, NoSuchAlgorithmException, DecoderException
@@ -148,9 +150,17 @@ public class MockDeviceUtil {
 
     public SBIDeviceHelper getDeviceHelper (String deviceTypeName)
     {
-        if(lastInitializedTime ==null || (ChronoUnit.MINUTES.between(lastInitializedTime, LocalDateTime.now()) > reInitMiniutes)) {
-            resetDevices();
-            initDeviceHelpers();
+        if((lastInitializedTime ==null || (ChronoUnit.MINUTES.between(lastInitializedTime, LocalDateTime.now()) > reInitMiniutes)) && !resetInProgress) {
+            resetInProgress = true;
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "System Entered for Reset DeviceInfo");
+
+            try {
+                resetDevices();
+                initDeviceHelpers();
+                resetInProgress = false;
+            } catch (Exception e) {
+                resetInProgress = false;
+            }
         }
 
         if (this.deviceHelpers != null && this.deviceHelpers.size() >= 0)
@@ -161,7 +171,13 @@ public class MockDeviceUtil {
             }
         }
 
-        return null;
+        try {
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Reset Inprogress Waiting 2 seconds for re-check");
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+        }
+
+        return getDeviceHelper (deviceTypeName);
     }
 /*
     private String processRCaptureInfo(CaptureRequestDto requestObject) {

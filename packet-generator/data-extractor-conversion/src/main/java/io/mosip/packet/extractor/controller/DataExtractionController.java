@@ -1,12 +1,16 @@
 package io.mosip.packet.extractor.controller;
 
 import io.mosip.kernel.core.logger.spi.Logger;
-import static io.mosip.packet.core.constant.GlobalConfig.IS_ONLY_FOR_QUALITY_CHECK;
+
+import io.mosip.packet.core.config.activity.Activity;
+import io.mosip.packet.core.constant.activity.ActivityName;
+import io.mosip.packet.core.constant.GlobalConfig;
 import io.mosip.packet.core.dto.RequestWrapper;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.DBImportResponse;
 import io.mosip.packet.core.dto.dbimport.PacketCreatorResponse;
+import io.mosip.packet.core.dto.packet.RegistrationIdRequest;
 import io.mosip.packet.core.exception.ServiceError;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.util.RestApiClient;
@@ -32,6 +36,29 @@ public class DataExtractionController {
 
     @Autowired
     DataExtractionService dataExtractionService;
+
+    @Autowired
+    Activity activity;
+
+    @PostMapping(value = "/extractImageFromPacket", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ResponseWrapper> extractImageFromRID(@RequestBody RequestWrapper<RegistrationIdRequest> request) {
+        ResponseWrapper<String> responseWrapper = new ResponseWrapper();
+        try {
+            RegistrationIdRequest ridRequest = request.getRequest();
+            dataExtractionService.extractBioDataFromPacket(ridRequest);
+            responseWrapper.setResponse("Successfully Completed");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            responseWrapper.setResponse("Error : " + e.getMessage());
+        } catch (IOException e) {
+            e.printStackTrace();
+            responseWrapper.setResponse("Error : " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            responseWrapper.setResponse("Error : " + e.getMessage());
+        }
+        return new ResponseEntity<ResponseWrapper>(responseWrapper, HttpStatus.OK);
+    }
 
     @PostMapping(value = "/importDBBioDataToImg", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ResponseWrapper> importBioImgFromDB(@RequestBody RequestWrapper<DBImportRequest> request) {
@@ -105,9 +132,9 @@ public class DataExtractionController {
     public ResponseEntity<ResponseWrapper> createPacketFromOtherDomain(@RequestBody RequestWrapper<DBImportRequest> request) {
         ResponseWrapper<PacketCreatorResponse> responseWrapper = new ResponseWrapper();
         PacketCreatorResponse response = new PacketCreatorResponse();
-        IS_ONLY_FOR_QUALITY_CHECK = false;
 
         try {
+            GlobalConfig.setActivity(activity.setActivity(ActivityName.DATA_CREATOR.name()));
             DBImportRequest importRequest = request.getRequest();
             LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: entry");
             response = dataExtractionService.createPacketFromDataBase(importRequest);
@@ -140,11 +167,11 @@ public class DataExtractionController {
 
     @PostMapping(value = "/exportBioQualityFromOtherDomain", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ResponseWrapper> exportBioQualityFromOtherDomain(@RequestBody RequestWrapper<DBImportRequest> request) {
-        IS_ONLY_FOR_QUALITY_CHECK = true;
         RestApiClient.setIsAuthRequired(false);
         ResponseWrapper<PacketCreatorResponse> responseWrapper = new ResponseWrapper();
         PacketCreatorResponse response = new PacketCreatorResponse();
         try {
+            GlobalConfig.setActivity(activity.setActivity(ActivityName.DATA_QUALITY_ANALYZER.name()));
             DBImportRequest importRequest = request.getRequest();
             LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionController :: importPacketsFromOtherDomain():: entry");
             response = dataExtractionService.createPacketFromDataBase(importRequest);

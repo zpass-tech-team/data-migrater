@@ -34,7 +34,7 @@ public class BioConversion implements BioConvertorApiFactory {
         for(DataFormat toFormat : destFormats) {
             if(currentFormat.equals(toFormat)) {
                currentFormat = toFormat;
-            } else if(currentFormat.equals(DataFormat.JPEG) && !toFormat.equals(DataFormat.JPEG)) {
+            } else if((currentFormat.equals(DataFormat.JPEG) || currentFormat.equals(DataFormat.PNG)) && (!toFormat.equals(DataFormat.JPEG) || !toFormat.equals(DataFormat.PNG))) {
                 ImageIO.write(ImageIO.read(new ByteArrayInputStream(byteData)), toFormat.getFormat(), baos);
                 byteData = baos.toByteArray();
                 currentFormat = toFormat;
@@ -75,7 +75,8 @@ public class BioConversion implements BioConvertorApiFactory {
                         break;
                 }
 
-                String bioAttribute = fieldName.split("_")[1];
+                String[] values = fieldName.split("_");
+                String bioAttribute = values.length > 1 ? values[1] : values[0];
                 BiometricType biometricType = Biometric.getSingleTypeByAttribute(bioAttribute);
                 String bioSubType = BioSubType.getBioSubType(bioAttribute).getBioSubType();
 

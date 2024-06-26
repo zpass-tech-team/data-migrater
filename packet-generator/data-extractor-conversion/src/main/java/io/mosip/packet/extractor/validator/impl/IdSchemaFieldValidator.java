@@ -1,12 +1,9 @@
 package io.mosip.packet.extractor.validator.impl;
 
-import io.mosip.packet.core.constant.FieldCategory;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.FieldFormatRequest;
-import io.mosip.packet.core.dto.dbimport.TableRequestDto;
 import io.mosip.packet.core.exception.ApisResourceAccessException;
 import io.mosip.packet.core.util.CommonUtil;
-import io.mosip.packet.extractor.util.PacketCreator;
 import io.mosip.packet.extractor.validator.Validator;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +53,9 @@ public class IdSchemaFieldValidator implements Validator {
                 for(String fieldName : fieldFormatRequest.getFieldToMap().split(","))
                     if(!idFieldsList.contains(fieldName))
                         throw new Exception(fieldFormatRequest.getFieldToMap() + " is not found in Id Schema.");
+
+            if(fieldFormatRequest.getUseAsHandle() != null && fieldFormatRequest.getUseAsHandle() && dbImportRequest.getIgnoreIdSchemaFields() != null && dbImportRequest.getIgnoreIdSchemaFields().size() > 0 && dbImportRequest.getIgnoreIdSchemaFields().contains(fieldFormatRequest.getFieldToMap()))
+                throw new Exception(fieldFormatRequest.getFieldToMap() + " is Configured as handle and its mandatory to capture. Please remove same from Ignore ID Schema List.");
         }
         return true;
     }

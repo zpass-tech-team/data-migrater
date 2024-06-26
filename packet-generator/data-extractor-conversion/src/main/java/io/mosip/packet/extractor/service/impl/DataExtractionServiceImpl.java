@@ -1,18 +1,22 @@
 package io.mosip.packet.extractor.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import io.mosip.commons.packet.dto.PacketInfo;
 import io.mosip.commons.packet.dto.packet.PacketDto;
+import io.mosip.kernel.biometrics.entities.BIR;
 import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
 import io.mosip.kernel.core.logger.spi.Logger;
-import io.mosip.packet.core.constant.FieldCategory;
-import io.mosip.packet.core.constant.GlobalConfig;
-import io.mosip.packet.core.constant.ValidatorEnum;
+import io.mosip.packet.core.config.activity.Activity;
+import io.mosip.packet.core.constant.*;
+import io.mosip.packet.core.constant.activity.ActivityName;
 import io.mosip.packet.core.constant.tracker.TrackerStatus;
+import io.mosip.packet.core.dto.RequestWrapper;
+import io.mosip.packet.core.dto.ResponseWrapper;
+import io.mosip.packet.core.dto.biosdk.BioSDKRequestWrapper;
 import io.mosip.packet.core.dto.dbimport.*;
-import io.mosip.packet.core.dto.masterdata.DocumentCategoryDto;
-import io.mosip.packet.core.dto.masterdata.DocumentTypeExtnDto;
+import io.mosip.packet.core.dto.packet.PacketRequest;
+import io.mosip.packet.core.dto.packet.RegistrationIdRequest;
 import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
 import io.mosip.packet.core.dto.upload.PacketUploadDTO;
 import io.mosip.packet.core.dto.upload.PacketUploadResponseDTO;
@@ -20,37 +24,32 @@ import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.exception.ExceptionUtils;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.PacketTrackerRepository;
-import io.mosip.packet.core.service.CustomNativeRepository;
+import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.core.service.thread.*;
+import io.mosip.packet.core.spi.BioConvertorApiFactory;
+import io.mosip.packet.core.spi.dataexporter.DataExporterApiFactory;
+import io.mosip.packet.core.spi.datareader.DataReaderApiFactory;
 import io.mosip.packet.core.spi.QualityWriterFactory;
-import io.mosip.packet.core.util.CommonUtil;
-import io.mosip.packet.core.util.DataBaseUtil;
-import io.mosip.packet.core.util.FixedListQueue;
-import io.mosip.packet.core.util.TrackerUtil;
+import io.mosip.packet.core.util.*;
 import io.mosip.packet.extractor.service.DataExtractionService;
-import io.mosip.packet.extractor.util.ConfigUtil;
-import io.mosip.packet.extractor.util.PacketCreator;
+import io.mosip.packet.core.util.regclient.ConfigUtil;
+import io.mosip.packet.manager.util.PacketCreator;
 import io.mosip.packet.extractor.util.TableDataMapperUtil;
 import io.mosip.packet.extractor.util.ValidationUtil;
 import io.mosip.packet.manager.service.PacketCreatorService;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.MockDeviceUtil;
 import io.mosip.packet.uploader.service.PacketUploaderService;
 import lombok.SneakyThrows;
-import org.apache.commons.io.IOUtils;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.ObjectInputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static io.mosip.packet.core.constant.GlobalConfig.SESSION_KEY;
 import static io.mosip.packet.core.constant.GlobalConfig.*;
@@ -88,9 +87,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Value("${mosip.packet.upload.max-thread-execution-count:5}")
     private Integer uploadMaxThreadExecCount;
 
-    @Value("${mosip.packet.uploader.enable:true}")
-    private boolean enablePaccketUploader;
-
     @Value("${mosip.extractor.application.id.column:}")
     private String applicationIdColumn;
 
@@ -102,9 +98,6 @@ public class DataExtractionServiceImpl implements DataExtractionService {
 
     @Autowired
     private MockDeviceUtil mockDeviceUtil;
-
-    @Autowired
-    private DataBaseUtil dataBaseUtil;
 
     @Autowired
     private CommonUtil commonUtil;
@@ -133,15 +126,33 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     @Autowired
     private ClientCryptoFacade clientCryptoFacade;
 
+    @Autowired
+    private DataRestClientService dataRestClientService;
+
     private boolean uploadProcessStarted = false;
 
     private Map<String, HashMap<String, String>> fieldsCategoryMap = new HashMap<>();
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    @Autowired
+    private BioConvertorApiFactory bioConvertorApiFactory;
+
+    @Autowired
+    private BioSDKUtil bioSDKUtil;
+
+    @Autowired
+    private DataReaderApiFactory dataReaderApiFactory;
+
+    @Autowired
+    private DataExporterApiFactory dataExporterApiFactory;
+
+    @Autowired
+    private Activity activity;
+
     @Override
     public HashMap<String, Object> extractBioDataFromDBAsBytes(DBImportRequest dbImportRequest, Boolean localStoreRequired) throws Exception {
         HashMap<String, Object> biodata = new HashMap<>();
-        dataBaseUtil.connectDatabase(dbImportRequest);
+        dataReaderApiFactory.connectDataReader(dbImportRequest);
         populateTableFields(dbImportRequest);
         commonUtil.updateFieldCategory(dbImportRequest);
 
@@ -207,11 +218,13 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             List<ValidatorEnum> enumList = new ArrayList<>();
             enumList.add(ValidatorEnum.ID_SCHEMA_VALIDATOR);
             enumList.add(ValidatorEnum.FILTER_VALIDATOR);
+            enumList.add(ValidatorEnum.BIOMETRIC_FORMAT_VALIDATOR);
             validationUtil.validateRequest(dbImportRequest, enumList);
             populateTableFields(dbImportRequest);
-            dataBaseUtil.connectDatabase(dbImportRequest);
+            dataReaderApiFactory.connectDataReader(dbImportRequest);
             IS_PACKET_CREATOR_OPERATION = true;
-            CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount, GlobalConfig.getActivityName());
+            Activity processorActivity = activity.getActivity(ActivityName.DATA_PROCESSOR.name());
+            CustomizedThreadPoolExecutor threadPool = new CustomizedThreadPoolExecutor(maxThreadPoolCount, maxRecordsCountPerThreadPool, maxThreadExecCount, processorActivity.getActivityName().getActivityName(), processorActivity.isMonitorRequired(), ActivityName.DATA_EXPORTER);
 
             ResultSetter setter = new ResultSetter() {
                 @SneakyThrows
@@ -286,15 +299,15 @@ public class DataExtractionServiceImpl implements DataExtractionService {
             }, 0, DELAY_SECONDS); */
 
             Date startTime = new Date();
-            if(enablePaccketUploader) {
-                IS_PACKET_UPLOAD_OPERATION = true;
-                NO_OF_PACKETS_UPLOADED = 0L;
-                CustomizedThreadPoolExecutor uploadExector = new CustomizedThreadPoolExecutor(uploadMaxThreadPoolCount, uploadMaxRecordsCountPerThreadPool,uploadMaxThreadExecCount, "PACKET UPLOADER", true);
+            if(GlobalConfig.getApplicableActivityList().contains(ActivityName.DATA_EXPORTER)) {
+                Activity exportActivity = activity.getActivity(ActivityName.DATA_EXPORTER.name());
+                CustomizedThreadPoolExecutor uploadExector = new CustomizedThreadPoolExecutor(uploadMaxThreadPoolCount, uploadMaxRecordsCountPerThreadPool,uploadMaxThreadExecCount, exportActivity.getActivityName().getActivityName(), exportActivity.isMonitorRequired());
                 Timer uploaderTimer = new Timer("Uploading Packet");
                 uploaderTimer.schedule(new TimerTask() {
                     @SneakyThrows
                     @Override
                     public void run() {
+                        String packetId=null;
                         try {
                             if(!uploadProcessStarted) {
                                 uploadProcessStarted = true;
@@ -303,10 +316,8 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                 List<PacketTracker> trackerList =  packetTrackerRepository.findByStatusIn(statusList);
 
                                 if(trackerList.size() <= 0) {
-                                    IS_PACKET_UPLOAD_OPERATION = false;
                                     uploadExector.setInputProcessCompleted(true);
                                 } else {
-                                    IS_PACKET_UPLOAD_OPERATION = true;
                                     uploadExector.setInputProcessCompleted(false);
                                 }
 
@@ -314,6 +325,10 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                     ByteArrayInputStream bis = new ByteArrayInputStream(clientCryptoFacade.getClientSecurity().isTPMInstance() ? clientCryptoFacade.decrypt(Base64.getDecoder().decode(packetTracker.getRequest())) : Base64.getDecoder().decode(packetTracker.getRequest()));
                                     ObjectInputStream is = new ObjectInputStream(bis);
                                     PacketUploadDTO uploadDTO = (PacketUploadDTO) is.readObject();
+                                    is.close();
+                                    bis.close();
+                                    packetId = uploadDTO.getPacketId();
+                                    LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Uploading Packet for " + (new Gson()).toJson(uploadDTO));
 
                                     ThreadUploadController controller = new ThreadUploadController();
                                     controller.setResult(uploadDTO);
@@ -327,54 +342,53 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                                             packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
                                             trackerUtil.addTrackerLocalEntry(packetTracker.getRefId(), uploadDTO.getPacketId(), TrackerStatus.SYNCED, null, uploadList, SESSION_KEY, GlobalConfig.getActivityName());
                                             packetUploaderService.uploadSyncedPacket(uploadList, response);
-                                            NO_OF_PACKETS_UPLOADED++;
+                                            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response for " + packetTracker.getRefId() + " : " + (new Gson()).toJson(response));
                                             ResultDto resultDto = new ResultDto();
                                             resultDto.setRegNo(uploadDTO.getPacketId());
                                             resultDto.setRefId(packetTracker.getRefId());
                                             resultDto.setComments((new Gson()).toJson(response));
-                                            resultDto.setStatus(enablePaccketUploader ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD);
+                                            resultDto.setStatus(GlobalConfig.getApplicableActivityList().contains(ActivityName.DATA_EXPORTER) ? TrackerStatus.PROCESSED : TrackerStatus.PROCESSED_WITHOUT_UPLOAD);
                                             setter.setResult(resultDto);
-                                            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response : " + (new Gson()).toJson(response));
                                         }
                                     });
                                     uploadExector.ExecuteTask(controller);
                                 }
-
-                                uploadProcessStarted = false;
                             }
+
+                            if(uploadExector.getCurrentPendingCount() <= 0)
+                                uploadProcessStarted = false;
                         } catch (Exception e) {
-                            uploadProcessStarted = false;
-                            e.printStackTrace();
-                            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Response : " + e.getMessage() + ExceptionUtils.getStackTrace(e));
+                            if(uploadExector.getCurrentPendingCount() <= 0)
+                                uploadProcessStarted = false;
+                            LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Upload Error for Packet Id : " + packetId + " - " + e.getMessage() + ExceptionUtils.getStackTrace(e));
                         }
                     }
                 }, 0, 5000L);
             }
 
             if(!enableOnlyPacketUploader)
-                dataBaseUtil.readDataFromDatabase(dbImportRequest, null, fieldsCategoryMap, DataProcessor);
-            threadPool.setInputProcessCompleted(true);
-            IS_PACKET_CREATOR_OPERATION = false;
+                dataReaderApiFactory.readData(dbImportRequest, null, fieldsCategoryMap, DataProcessor);
 
             do {
                 Thread.sleep(15000);
+
+                if(!IS_DATABASE_READ_OPERATION) {
+                    threadPool.setInputProcessCompleted(true);
+                    IS_PACKET_CREATOR_OPERATION = false;
+                }
             } while(!GlobalConfig.isThreadPoolCompleted());
 
             System.out.println("Start Time " + startTime);
             System.out.println("End Time Time " + new Date());
-
- //           if(threadPool.isTaskCompleted())
- //               processor.cancel();
         } catch (Exception e) {
           e.printStackTrace();
         } finally {
-            dataBaseUtil.closeConnection();
+            dataReaderApiFactory.disconnectDataReader();
             if(!IS_ONLY_FOR_QUALITY_CHECK)
                 trackerUtil.closeStatement();
 
             qualityWriterFactory.preDestroyProcess();
         }
-        System.out.println("Packet Uploaded List : " + (new Gson()).toJson(packetCreatorResponse));
         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploaded List : " + (new Gson()).toJson(packetCreatorResponse));
         LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "DataExtractionServiceImpl :: createPacketFromDataBase():: exit");
 
@@ -385,6 +399,98 @@ public class DataExtractionServiceImpl implements DataExtractionService {
     public String refreshQualityAnalysisData() throws Exception {
         qualityWriterFactory.preDestroyProcess();
         return "Quality Analysis Data Refresh Successfully";
+    }
+
+    @Override
+    public String extractBioDataFromPacket(RegistrationIdRequest registrationIdRequest) throws Exception {
+        List<String> ridList = registrationIdRequest.getRids();
+        HashMap<String, String> csvMap = qualityWriterFactory.getDataMap();
+
+        if(ridList == null || ridList.isEmpty())
+            throw new Exception("No RID Provided in the Request.");
+
+        for(String rid : ridList) {
+            HashMap<String, List<HashMap<String, Object>>> capturedBiometrics = new HashMap<>();
+
+            PacketRequest packetRequest = new PacketRequest();
+            packetRequest.setBypassCache(true);
+            packetRequest.setId(rid);
+            packetRequest.setProcess("NEW");
+            packetRequest.setSource("REGISTRATION_CLIENT");
+            packetRequest.setPerson("individualBiometrics");
+
+            List<String> modalityList = new ArrayList<>();
+            modalityList.add("Iris");
+            modalityList.add("Finger");
+            modalityList.add("Face");
+            packetRequest.setModalities(modalityList);
+
+            RequestWrapper<PacketRequest> requestWrapper = new RequestWrapper<>();
+            requestWrapper.setRequest(packetRequest);
+            requestWrapper.setVersion("1.0");
+            requestWrapper.setRequesttime(DateUtils.getUTCCurrentDateTimeString());
+            LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Fetching Biometrics from Packet Manager for RID " + rid);
+            ResponseWrapper<HashMap<String, List<HashMap<String, Object>>>> responseWrapper = (ResponseWrapper) dataRestClientService.postApi(ApiName.PACKET_BIOMETRIC_READER, null, null, requestWrapper, ResponseWrapper.class, MediaType.APPLICATION_JSON);
+            capturedBiometrics = responseWrapper.getResponse();
+            List<HashMap<String, Object>> birList = capturedBiometrics.get("segments");
+
+            for(HashMap<String, Object> birObject : birList) {
+                birObject.remove("birs");
+                ((HashMap)birObject.get("bdbInfo")).remove("creationDate");
+                ObjectMapper mapper = new ObjectMapper();
+                String jsonString = mapper.writeValueAsString(birObject);
+                BIR bir = mapper.readValue(jsonString,
+                        new TypeReference<BIR>() {
+                        });
+
+                String subType = bir.getBdbInfo().getSubtype().stream().map(String::valueOf).collect(Collectors.joining(" "));
+                String type = bir.getBdbInfo().getType().stream().map(String::valueOf).collect(Collectors.joining(" "));
+                String key = type + (subType != null && !subType.isEmpty() ? "-" + subType : "");
+                LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Processing BIR Type " + type + " And Sub Type " + subType + " for RID " + rid);
+
+                if(bir.getBdb() != null && bir.getBdb().length > 0) {
+                    FieldFormatRequest fieldFormatRequest = new FieldFormatRequest();
+                    fieldFormatRequest.setFieldName(key.replace(" ", ""));
+                    fieldFormatRequest.setSrcFormat(DataFormat.ISO);
+                    fieldFormatRequest.getDestFormat().add(DataFormat.JPEG);
+                    byte[] convertedImage = convertBiometric(rid, fieldFormatRequest, bir.getBdb(), true, BioSubType.getBioAttribute(subType).getBioAttribute());
+                    bir.setBdb(convertedImage);
+                    LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Image Convertion Completed for BIR Type " + type + " And Sub Type " + subType + " for RID " + rid);
+
+                    BioSDKRequestWrapper bioSDKrequestWrapper = new BioSDKRequestWrapper();
+                    bioSDKrequestWrapper.setSegments(new ArrayList<>());
+                    bioSDKrequestWrapper.getSegments().add(bir);
+                    bioSDKrequestWrapper.setBiometricType(bir.getBdbInfo().getType().get(0).value());
+                    bioSDKrequestWrapper.setFormat(DataFormat.JPEG.getFileFormat());
+                    bioSDKrequestWrapper.setInputObject(csvMap);
+                    bioSDKrequestWrapper.setIsOnlyForQualityCheck(IS_ONLY_FOR_QUALITY_CHECK);
+                    Long startTime = System.nanoTime();
+
+                    try {
+                        Double score = Double.parseDouble(bioSDKUtil.calculateQualityScore(bioSDKrequestWrapper, key, rid, startTime));
+                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Quality Score is " + score + " for BIR Type " + type + " And Sub Type " + subType + " for RID " + rid);
+                    } catch (Exception e) {
+                        LOGGER.error("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Exception for RID : " + rid +  " for BIR Type " + type + " And Sub Type " + subType + " Exception : " +  e.getMessage() + ExceptionUtils.getStackTrace(e));
+                    }
+                } else {
+                    csvMap.put(key, "");
+                }
+            }
+
+            csvMap.put("reg_no", rid);
+            csvMap.put("ref_id", rid);
+            qualityWriterFactory.writeQualityData(csvMap);
+        }
+        return null;
+    }
+
+    public byte[] convertBiometric(String fileNamePrefix, FieldFormatRequest fieldFormatRequest, byte[] bioValue, Boolean localStoreRequired, String fieldName) throws Exception {
+        if (localStoreRequired) {
+            bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
+            return bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName(), bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue, fieldName), fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
+        } else {
+            return bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue, fieldName);
+        }
     }
 
     private boolean processPacket(DBImportRequest dbImportRequest, PacketCreatorResponse packetCreatorResponse, ThreadDataProcessController threadDataProcessController, Map<FieldCategory, HashMap<String, Object>> dataHashMap) throws Exception {
@@ -430,97 +536,34 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                         packetDto.setAdditionalInfoReqId(null);
                         packetDto.setMetaInfo(null);
                         packetDto.setOfflineMode(false);
+                        packetDto.setId(registrationId);
 
                         if (!IS_ONLY_FOR_QUALITY_CHECK && docDetails.size() > 0) {
                             packetDto.setDocuments(packetCreator.setDocuments(docDetails, dbImportRequest.getIgnoreIdSchemaFields(), metaInfo, demoDetails));
                         }
                         Long timeDifference = System.nanoTime()-startTime;
-                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Completion of Document Process " + refId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Time Taken for Completion of Document Process " + refId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
                         if (!IS_ONLY_FOR_QUALITY_CHECK && demoDetails.size() > 0) {
                             packetDto.setFields(packetCreator.setDemographic(demoDetails, (bioDetails.size() > 0), dbImportRequest.getIgnoreIdSchemaFields()));
                         }
 
                         timeDifference = System.nanoTime()-startTime;
-                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Completion of Demographic Process " + refId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Time Taken for Completion of Demographic Process " + refId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
                         if (bioDetails.size() > 0) {
-                            packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo, csvMap, demoDetails.get(trackerColumn).toString()));
+                            packetDto.setBiometrics(packetCreator.setBiometrics(bioDetails, metaInfo, csvMap, demoDetails.get(trackerColumn).toString(), startTime));
                         }
 
                         timeDifference = System.nanoTime()-startTime;
-                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "After Completion of Biometric Process " + refId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
+                        LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Time Taken for Completion of Biometric Process " + refId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
                         csvMap.put("reg_no", registrationId);
                         csvMap.put("ref_id", demoDetails.get(trackerColumn).toString());
                         qualityWriterFactory.writeQualityData(csvMap);
 
-                        if (!IS_ONLY_FOR_QUALITY_CHECK) {
-                            packetDto.setId(registrationId);
-                            packetDto.setRefId(ConfigUtil.getConfigUtil().getCenterId() + "_" + ConfigUtil.getConfigUtil().getMachineId());
-                            packetCreator.setMetaData(metaInfo, packetDto, dbImportRequest);
-                            packetDto.setMetaInfo(metaInfo);
-                            packetDto.setAudits(packetCreator.setAudits(packetDto.getId()));
-
-                            HashMap<String, Object> idSchema = commonUtil.getLatestIdSchema();
-                            packetDto.setSchemaJson(idSchema.get("schemaJson").toString());
-                            packetDto.setOfflineMode(true);
-
-                            List<PacketInfo> infoList = packetCreatorService.persistPacket(packetDto);
-                            PacketInfo info = infoList.get(0);
-
-                            trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.CREATED, dbImportRequest.getProcess(), demoDetails, SESSION_KEY, GlobalConfig.getActivityName());
-
-                            Path identityFile = Paths.get(System.getProperty("user.dir"), "identity.json");
-
-                            if (identityFile.toFile().exists()) {
-                                PacketUploadDTO uploadDTO = new PacketUploadDTO();
-
-                                JSONParser parser = new JSONParser();
-                                JSONObject jsonObject = (JSONObject) parser.parse(IOUtils.toString(new FileInputStream(identityFile.toFile()), StandardCharsets.UTF_8));
-                                JSONObject identityJsonObject = (JSONObject) jsonObject.get("identity");
-                                for (Object entry : identityJsonObject.keySet()) {
-                                    String val = (String) ((JSONObject) identityJsonObject.get(entry)).get("value");
-                                    if (val.contains(",")) {
-                                        String[] valList = val.split(",");
-                                        String fullVal = null;
-
-                                        for (String val2 : valList) {
-                                            if (fullVal == null) {
-                                                fullVal = (String) demoDetails.get(val2);
-                                            } else {
-                                                fullVal += " " + demoDetails.get(val2);
-                                            }
-                                        }
-                                        uploadDTO.setValue(entry.toString(), fullVal);
-                                    } else {
-                                        uploadDTO.setValue(entry.toString(), demoDetails.get(entry));
-                                    }
-                                }
-
-                                Path path = Paths.get(System.getProperty("user.dir"), "home/" + packetUploadPath);
-                                uploadDTO.setPacketPath(path.toAbsolutePath().toString());
-                                uploadDTO.setRegistrationType(dbImportRequest.getProcess());
-                                uploadDTO.setPacketId(info.getId());
-                                uploadDTO.setRegistrationId(info.getId().split("-")[0]);
-                                uploadDTO.setLangCode(primaryLanguage);
-
-                                if (enablePaccketUploader) {
-  //                                  packetUploaderService.syncPacket(uploadList, ConfigUtil.getConfigUtil().getCenterId(), ConfigUtil.getConfigUtil().getMachineId(), response);
-                                    trackerUtil.addTrackerLocalEntry(demoDetails.get(trackerColumn).toString(), info.getId(), TrackerStatus.READY_TO_SYNC, null, uploadDTO, SESSION_KEY, GlobalConfig.getActivityName());
-  //                                  packetUploaderService.uploadSyncedPacket(uploadList, response);
-                                } else {
-                                    LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Packet Uploader Disabled : " + demoDetails.get(trackerColumn).toString());
-                                    ResultDto resultDto = new ResultDto();
-                                    resultDto.setRegNo(info.getId());
-                                    resultDto.setRefId(demoDetails.get(trackerColumn).toString());
-                                    resultDto.setComments("Packet Created");
-                                    resultDto.setStatus(TrackerStatus.PROCESSED_WITHOUT_UPLOAD);
-                                    setter.setResult(resultDto);
-                                }
-                            } else {
-                                throw new Exception("Identity Mapping JSON File missing");
-                            }
+                        if(GlobalConfig.getApplicableActivityList().contains(ActivityName.DATA_EXPORTER) && !IS_ONLY_FOR_QUALITY_CHECK) {
+                            dataExporterApiFactory.export(packetDto, dbImportRequest, metaInfo, demoDetails, trackerColumn, setter, refId, startTime);
                         } else {
                             ResultDto resultDto = new ResultDto();
                             resultDto.setRegNo(null);

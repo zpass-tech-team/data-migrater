@@ -40,9 +40,14 @@ public class TrackerUtil {
     @Value("${mosip.packet.creator.tracking.batch.size:1}")
     private int batchLimit;
 
+    @Value("${mosip.packet.creator.tracking.batch.connection.reset.count:100}")
+    private int batchConResetCount;
+
     private int batchSize = 0;
+    private int connSize = 0;
     private static String connectionHost = null;
     private boolean isConnCreation = false;
+    private List<String> refList = new ArrayList<>();
 
     @Autowired
     private PacketTrackerRepository packetTrackerRepository;
@@ -149,6 +154,8 @@ public class TrackerUtil {
         if(IS_TRACKER_REQUIRED) {
             try {
                 batchSize++;
+                connSize++;
+                refList.add(trackerRequestDto.getRefId());
 
                 if(batchSize > batchLimit) {
                     preparedStatement.executeBatch();
@@ -156,11 +163,17 @@ public class TrackerUtil {
                     preparedStatement.closeOnCompletion();
                     preparedStatement = null;
                     batchSize = 1;
-                    isConnCreation=true;
-                    conn.close();
-                    conn=null;
-                    this.initialize();
-                    isConnCreation=false;
+                    refList.clear();
+                    if(connSize > batchConResetCount) {
+                        isConnCreation=true;
+                        LOGGER.info("TrackerUtil Closing Connection");
+                        conn.close();
+                        conn=null;
+                        this.initialize();
+                        LOGGER.info("TrackerUtil Starting Connection");
+                        isConnCreation=false;
+                        connSize=1;
+                    }
                 }
 
                 if(preparedStatement == null)
@@ -182,6 +195,7 @@ public class TrackerUtil {
                 if(throwables.getMessage().contains("ORA-01000")) {
                     try {
                         batchSize = 0;
+                        connSize = 0;
                         conn.close();
                         conn=null;
                     } catch (SQLException e) {
@@ -269,6 +283,8 @@ public class TrackerUtil {
                 Thread.sleep(10000);
 
             try {
+                if(refList.contains(value.toString()))
+                    return true;
                 statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ? AND ACTIVITY = ? AND SESSION_KEY = ?", TRACKER_TABLE_NAME));
                 statement.setString(1, value.toString());
                 statement.setString(2, activity);
@@ -282,6 +298,7 @@ public class TrackerUtil {
             } catch (SQLException throwables) {
                 if(throwables.getMessage().contains("ORA-01000")) {
                     batchSize = 0;
+                    connSize=0;
                     conn.close();
                     conn=null;
                     this.initialize();
@@ -364,7 +381,10 @@ public class TrackerUtil {
 
     }
 
-    public synchronized void addTrackerLocalEntry(String refId, String regNo, TrackerStatus status, String process, Object request, String sessionKey, String activity) throws SQLException, IOException {
+    public synchronized void addTrackerLocalEntry(String refId, String regNo, TrackerStatus status, String process, Object request, String sessionKey, String activity) throws SQLException, IOException, InterruptedException {
+        while(isConnCreation)
+            Thread.sleep(10000);
+
         Optional<PacketTracker> optional= packetTrackerRepository.findById(refId);
         PacketTracker packetTracker;
 

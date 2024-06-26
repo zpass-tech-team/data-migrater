@@ -2,15 +2,17 @@ package io.mosip.packet.extractor;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import io.mosip.kernel.dataaccess.hibernate.config.HibernateDaoConfig;
 import io.mosip.kernel.dataaccess.hibernate.repository.impl.HibernateRepositoryImpl;
+import io.mosip.packet.core.config.activity.Activity;
+import io.mosip.packet.core.constant.GlobalConfig;
+import io.mosip.packet.core.constant.activity.ActivityName;
 import io.mosip.packet.core.dto.RequestWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.dto.dbimport.PacketCreatorResponse;
+import io.mosip.packet.core.spi.datareprocessor.DataReProcessorApiFactory;
+import io.mosip.packet.core.util.regclient.ConfigUtil;
 import io.mosip.packet.extractor.service.DataExtractionService;
-import io.mosip.packet.extractor.util.ConfigUtil;
-import io.mosip.packet.extractor.util.Reprocessor;
 import io.mosip.packet.manager.util.mock.sbi.devicehelper.MockDeviceUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.boot.SpringApplication;
@@ -19,6 +21,8 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.io.FileInputStream;
@@ -37,8 +41,6 @@ public class DataProcessApplication {
         ConfigurableApplicationContext context = SpringApplication.run(DataProcessApplication.class, args);
         try {
             boolean internal = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.refer.internal.json.file"));
-            if(context.getEnvironment().getProperty("mosip.extractor.enable.quality.check.only") != null)
-                IS_ONLY_FOR_QUALITY_CHECK = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.extractor.enable.quality.check.only"));
             if(context.getEnvironment().getProperty("mosip.biometric.sdk.provider.write.sdk.response") != null)
                 WRITE_BIOSDK_RESPONSE = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.biometric.sdk.provider.write.sdk.response"));
             if(context.getEnvironment().getProperty("mosip.packet.creator.tracking.required") != null)
@@ -50,15 +52,13 @@ public class DataProcessApplication {
             else
                 SESSION_KEY = RandomStringUtils.randomAlphanumeric(20);
 
-            Boolean isReprocessEnable = true;
-            if(context.getEnvironment().getProperty("mosip.packet.creator.reprocessor.enable") != null)
-                isReprocessEnable = Boolean.parseBoolean(context.getEnvironment().getProperty("mosip.packet.creator.reprocessor.enable"));
-
             context.getBean(MockDeviceUtil.class).resetDevices();
             context.getBean(MockDeviceUtil.class).initDeviceHelpers();
             context.getBean(ConfigUtil.class).loadConfigDetails();
-            if(isReprocessEnable)
-                context.getBean(Reprocessor.class).reprocess();
+            GlobalConfig.setActivity(context.getBean(Activity.class).setActivity(null));
+
+            if(GlobalConfig.getApplicableActivityList().contains(ActivityName.DATA_REPROCESSOR))
+                context.getBean(DataReProcessorApiFactory.class).reProcess();
 
             if(internal) {
                 System.out.println("Current Session Key is " + SESSION_KEY + ". Please Enter New Session Key in-case Change.");
@@ -70,7 +70,7 @@ public class DataProcessApplication {
                     SESSION_KEY = sessionKey.trim().toUpperCase();
                 }
 
-                System.out.println("Current Flow Enabled for  " + (IS_ONLY_FOR_QUALITY_CHECK ? "Quality Calculation" : "Packet Creation") + " . Do you want to Continue (Y-Yes, N-No)");
+                System.out.println("Current Flow Enabled for  " + getActivityName() + " . Do you want to Continue (Y-Yes, N-No)");
                 String option = "";
 
                 if(!IS_RUNNING_AS_BATCH) {
@@ -81,13 +81,15 @@ public class DataProcessApplication {
                 }
 
                 if(option.equalsIgnoreCase("Y")) {
-                    FileInputStream io = new FileInputStream("./ApiRequest.json");
+                    Resource resource = new ClassPathResource("ApiRequest.json");
+                    FileInputStream io = new FileInputStream(resource.getFile());
+					//FileInputStream io = new FileInputStream("./ApiRequest.json");
                     String requestJson = new String(io.readAllBytes(), StandardCharsets.UTF_8);
                     ObjectMapper mapper = new ObjectMapper();
                     RequestWrapper<DBImportRequest> request = mapper.readValue(requestJson, new TypeReference<RequestWrapper<DBImportRequest>>() {});
-                    System.out.println("Request : " + (new Gson()).toJson(request));
+        //            System.out.println("Request : " + (new Gson()).toJson(request));
                     PacketCreatorResponse response =  context.getBean(DataExtractionService.class).createPacketFromDataBase(request.getRequest());
-                    System.out.println("Response : " + (new Gson()).toJson(response));
+        //            System.out.println("Response : " + (new Gson()).toJson(response));
                 }
 
   // TODO Temporary removing this Need uncomment

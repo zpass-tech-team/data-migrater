@@ -27,6 +27,8 @@ public class FieldFormatRequest {
     private MvelDto mvelExpressions;
     private List<FieldName> fieldList;
     private String staticValue;
+    private List<IndividualBiometricFormat> individualBiometricFormat;
+    private Boolean useAsHandle;
 
     public List<FieldName> getFieldList() {
         if(fieldList != null && fieldList.size() > 0)

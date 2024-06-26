@@ -1,11 +1,15 @@
 package io.mosip.packet.core.constant;
 
+import io.mosip.packet.core.config.activity.Activity;
+import io.mosip.packet.core.constant.activity.ActivityName;
 import io.mosip.packet.core.service.thread.CustomizedThreadPoolExecutor;
 import io.mosip.packet.core.util.FixedListQueue;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Component
@@ -35,18 +39,33 @@ public class GlobalConfig {
 
     public static Boolean IS_DATABASE_READ_OPERATION = false;
 
-    public static Boolean IS_PACKET_UPLOAD_OPERATION = false;
-
-    public static Boolean IS_PACKET_REPROCESS_OPERATION = false;
-
     public static Boolean IS_PACKET_CREATOR_OPERATION = false;
 
-    public static Long NO_OF_PACKETS_UPLOADED = 0L;
+    public static Map<String, Long> COMPLETION_COUNT_MAP = new ConcurrentHashMap<>();
 
     public static List<CustomizedThreadPoolExecutor> THREAD_POOL_EXECUTOR_LIST = new ArrayList<>();
 
+    private static Activity activity;
+
     public static String getActivityName() {
-        return (IS_ONLY_FOR_QUALITY_CHECK ? "QUALITY ANALYSIS" : "PACKET CREATOR");
+        return activity.getActivityName().getActivityName();
+    }
+
+    public static List<ActivityName> getApplicableActivityList() {
+        return activity.getApplicableActivity();
+    }
+
+    public static List<ReferenceClassName> getApplicableReferenceClassList() {
+        return activity.getApplicableReferenceClass();
+    }
+
+    public static void setActivity(Activity activity) {
+        GlobalConfig.activity = activity;
+
+        if(activity.getActivityName().equals(ActivityName.DATA_QUALITY_ANALYZER))
+            IS_ONLY_FOR_QUALITY_CHECK = true;
+        else
+            IS_ONLY_FOR_QUALITY_CHECK = false;
     }
 
     public static boolean isThreadPoolCompleted() throws InterruptedException {
@@ -79,8 +98,23 @@ public class GlobalConfig {
 
     public static boolean isTaskCompleted(String eventName) throws InterruptedException {
         boolean isCompleted = true;
+        Integer pendingTaskCount = 0;
+        Boolean isAllProcessCompleted = true;
 
-        if(!IS_DATABASE_READ_OPERATION && !IS_PACKET_UPLOAD_OPERATION && !IS_PACKET_REPROCESS_OPERATION && !IS_PACKET_CREATOR_OPERATION)
+        for(CustomizedThreadPoolExecutor executor : THREAD_POOL_EXECUTOR_LIST) {
+            List<ThreadPoolExecutor> executerList = new ArrayList<>(executor.getPoolMap());
+            for(ThreadPoolExecutor entry : executerList) {
+                pendingTaskCount +=entry.getActiveCount();
+            }
+
+            if(!executor.getInputProcessCompleted())
+                isAllProcessCompleted = false;
+        }
+
+        if(pendingTaskCount > 0 || !isAllProcessCompleted)
+            return false;
+
+        if(!IS_DATABASE_READ_OPERATION && !IS_PACKET_CREATOR_OPERATION)
             for(CustomizedThreadPoolExecutor executor : THREAD_POOL_EXECUTOR_LIST) {
                 if(eventName == null || eventName.equals(executor.getNAME())) {
                     for(ThreadPoolExecutor entry : executor.getPoolMap()) {
@@ -116,7 +150,7 @@ public class GlobalConfig {
                 }
             }
 
-        if(IS_DATABASE_READ_OPERATION || IS_PACKET_UPLOAD_OPERATION || IS_PACKET_REPROCESS_OPERATION || IS_PACKET_CREATOR_OPERATION)
+        if(IS_DATABASE_READ_OPERATION || IS_PACKET_CREATOR_OPERATION)
             isCompleted = false;
 
         return isCompleted;

@@ -1,8 +1,7 @@
-package io.mosip.packet.extractor.util;
+package io.mosip.packet.core.util.regclient;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import io.mosip.kernel.clientcrypto.service.impl.ClientCryptoFacade;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
@@ -26,7 +25,6 @@ import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.repository.MachineMasterRepository;
 import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.core.util.DateUtils;
-import io.mosip.packet.core.util.RestApiClient;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -109,8 +107,12 @@ public class ConfigUtil {
 
                     List<HashMap<String, Object>> machines = null;
                     RequestWrapper wrapper = prepareMachineSearchDto(machineName);
-                    RestApiClient.setIsUserLoginRequired(true);
                     ResponseWrapper responseWrapper = (ResponseWrapper<PageDto>) restApiClient.postApi(ApiName.MASTER_MACHINE_SEARCH,null, null, wrapper, ResponseWrapper.class, MediaType.APPLICATION_JSON);
+
+                    if(responseWrapper.getErrors() != null && responseWrapper.getErrors().size() > 0) {
+                        String message = getErrorMessage(getErrorList(responseWrapper));
+                        throw new Exception("Error During Machine Fetch " + message);
+                    }
 
                     if(responseWrapper.getResponse() != null) {
                         HashMap<String, Object> response = (HashMap<String, Object>) responseWrapper.getResponse();
@@ -124,20 +126,11 @@ public class ConfigUtil {
                                     machineId = (String) map.get("id");
                                     String publicKey = (String) map.get("publicKey");
                                     configUtil.keyIndex = CryptoUtil.computeFingerPrint(CryptoUtil.decodeURLSafeBase64(publicKey),null);
-                                    System.out.println("KeyIndex from DB" + configUtil.keyIndex);
-                                    System.out.println("PublicKey from DB" + publicKey);
                                     break;
                                 }
                             }
                         }
                     }
-
-                    RestApiClient.setIsUserLoginRequired(false);
-
-    //                LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Copying private Key file into Local Disk (.mosipkeys) for Machine " + configUtil.machineName);
-    //                copyKeyFile(System.getProperty("user.dir") + File.separator + "privatekeys" + File.separator +
-    //                        machineId + ".reg.key", System.getProperty("user.dir") + File.separator + ".mosipkeys" + File.separator +
-    //                        "reg.key");
                 } else {
                     configUtil.keyIndex = CryptoUtil.computeFingerPrint(clientCryptoFacade.getClientSecurity().getEncryptionPublicPart(), null);
                 }
@@ -186,8 +179,6 @@ public class ConfigUtil {
         FileInputStream io = new FileInputStream(publicKeyFile);
         final String publicKey = java.util.Base64.getEncoder().encodeToString(io.readAllBytes());
         configUtil.keyIndex = CryptoUtil.computeFingerPrint(java.util.Base64.getDecoder().decode(publicKey),null);
-        System.out.println("KeyIndex from System" + configUtil.keyIndex);
-        System.out.println("PublicKey from System" + publicKey);
 
         MosipMachineModel model = new MosipMachineModel();
         model.setLangCode(env.getProperty("mosip.selected.languages"));
