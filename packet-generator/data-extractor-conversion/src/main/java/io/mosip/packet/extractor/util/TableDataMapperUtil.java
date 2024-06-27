@@ -215,13 +215,13 @@ public class TableDataMapperUtil implements DataMapperUtil {
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
                 String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
 
-                if(fieldsCategoryMap.get(tableName).containsKey(fieldName) && resultSet.containsKey(fieldName))  {
+                if(fieldsCategoryMap.get(tableName).containsKey(fieldName) && resultSet.containsKey(fieldFormatRequest.getFieldToMap() + "_" + fieldName))  {
                     Document document = new Document();
                     byte[] byteVal = null;
                     if(fieldFormatRequest.getMvelExpressions() != null && mvelValue != null) {
                         byteVal = convertObjectToByteArray(mvelValue);;
                     } else {
-                        byteVal = convertObjectToByteArray(resultSet.get(fieldName));
+                        byteVal = convertObjectToByteArray(resultSet.get(fieldFormatRequest.getFieldToMap() + "_" + fieldName));
                     }
 
                     if(objectStoreFetchEnabled)
@@ -232,17 +232,17 @@ public class TableDataMapperUtil implements DataMapperUtil {
                         DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
                         String refField = documentAttributes.getDocumentRefNoField().contains("STATIC") ? "STATIC_" +  commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
                                 :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentRefNoField());
-                        document.setRefNumber(String.valueOf(resultSet.get(refField)));
+                        document.setRefNumber(String.valueOf(resultSet.get(fieldFormatRequest.getFieldToMap() + "_" + refField)));
                         dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + refField, document.getRefNumber());
 
                         String formatField = documentAttributes.getDocumentFormatField().contains("STATIC") ? "STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
                                 :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentFormatField());
-                        document.setFormat(String.valueOf(resultSet.get(formatField)));
+                        document.setFormat(String.valueOf(resultSet.get(fieldFormatRequest.getFieldToMap() + "_" + formatField)));
                         dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + formatField, document.getFormat());
 
                         String codeField = documentAttributes.getDocumentCodeField().contains("STATIC") ? "STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
                                 :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField());
-                        document.setType(String.valueOf(resultSet.get(codeField)));
+                        document.setType(String.valueOf(resultSet.get(fieldFormatRequest.getFieldToMap() + "_" + codeField)));
                         dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + codeField, document.getType());
                     }
 

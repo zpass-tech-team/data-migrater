@@ -6,10 +6,7 @@ import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.packet.core.constant.DBTypes;
 import io.mosip.packet.core.constant.TableQueries;
-import io.mosip.packet.core.constant.tracker.NumberType;
-import io.mosip.packet.core.constant.tracker.StringType;
-import io.mosip.packet.core.constant.tracker.TimeStampType;
-import io.mosip.packet.core.constant.tracker.TrackerStatus;
+import io.mosip.packet.core.constant.tracker.*;
 import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
 import io.mosip.packet.core.entity.PacketTracker;
 import io.mosip.packet.core.logger.DataProcessLogger;
@@ -40,7 +37,7 @@ public class TrackerUtil {
     @Value("${mosip.packet.creator.tracking.batch.size:1}")
     private int batchLimit;
 
-    @Value("${mosip.packet.creator.tracking.batch.connection.reset.count:100}")
+    @Value("${mosip.packet.creator.tracking.batch.connection.reset.count:1000}")
     private int batchConResetCount;
 
     private int batchSize = 0;
@@ -164,15 +161,16 @@ public class TrackerUtil {
                     preparedStatement = null;
                     batchSize = 1;
                     refList.clear();
+
                     if(connSize > batchConResetCount) {
-                        isConnCreation=true;
-                        LOGGER.info("TrackerUtil Closing Connection");
-                        conn.close();
-                        conn=null;
-                        this.initialize();
-                        LOGGER.info("TrackerUtil Starting Connection");
-                        isConnCreation=false;
-                        connSize=1;
+                    isConnCreation=true;
+                    LOGGER.info("TrackerUtil Closing Connection");
+                    conn.close();
+                    conn=null;
+                    this.initialize();
+                    LOGGER.info("TrackerUtil Starting Connection");
+                    isConnCreation=false;
+                    connSize=1;
                     }
                 }
 
@@ -212,7 +210,7 @@ public class TrackerUtil {
         }
     }
 
-    public synchronized void updateDatabaseOffset(Long offset) throws SQLException {
+    public synchronized void updateDatabaseOffset(Long offset) throws SQLException, InterruptedException {
         if(IS_TRACKER_REQUIRED) {
             PreparedStatement preparedStatement = null;
             DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
@@ -223,6 +221,11 @@ public class TrackerUtil {
                 valueMap.put("TABLE_NAME", OFFSET_TRACKER_TABLE_NAME);
                 valueMap.put("SESSION_ID", SESSION_KEY);
                 valueMap.put("VALUE", offset.toString());
+                valueMap.put("IN_USE", "N");
+
+                while(isConnCreation)
+                    Thread.sleep(2000);
+
                 preparedStatement = conn.prepareStatement(queryFormatter.queryFormatter(query, valueMap));
                 preparedStatement.execute();
             } finally {
@@ -232,25 +235,46 @@ public class TrackerUtil {
         }
     }
 
-    public synchronized Long getDatabaseOffset() throws SQLException {
+    public synchronized Long getDatabaseOffset() throws SQLException, InterruptedException {
         if(IS_TRACKER_REQUIRED) {
-            PreparedStatement preparedStatement = null;
+            Statement statement = null;
             ResultSet resultSet = null;
             DBTypes dbType = Enum.valueOf(DBTypes.class, env.getProperty("spring.datasource.tracker.dbtype"));
 
             try {
-                preparedStatement = conn.prepareStatement("SELECT OFFSET_VALUE FROM " + OFFSET_TRACKER_TABLE_NAME + " WHERE SESSION_KEY = '" + SESSION_KEY + "'");
-                resultSet = preparedStatement.executeQuery();
-                if(resultSet.next())
-                    return resultSet.getLong(1);
-                else
+                while(isConnCreation)
+                    Thread.sleep(2000);
+
+                statement = conn.createStatement();
+                resultSet = statement.executeQuery("SELECT OFFSET_VALUE, IN_USE FROM " + OFFSET_TRACKER_TABLE_NAME + " WHERE SESSION_KEY = '" + SESSION_KEY + "'");
+                if(resultSet.next()) {
+                    Long value = resultSet.getLong(1);
+                    String inUse = resultSet.getString(2);
+
+                    if(inUse == null || inUse.equals("N") || inUse.isEmpty()) {
+                        statement.executeUpdate("UPDATE " + OFFSET_TRACKER_TABLE_NAME + " SET IN_USE = 'Y' WHERE SESSION_KEY = '" + SESSION_KEY + "'");
+                        return value;
+                    } else {
+                        LOGGER.info("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "OffSet Tracker Table in Use retry after 5 seconds");
+                        Thread.sleep(5000);
+                        return getDatabaseOffset();
+                    }
+                } else {
+                    String query = TableQueries.getInsertQueries(OFFSET_TRACKER_TABLE_NAME, dbType);
+                    Map<String, String> valueMap = new HashMap<>();
+                    valueMap.put("TABLE_NAME", OFFSET_TRACKER_TABLE_NAME);
+                    valueMap.put("SESSION_ID", SESSION_KEY);
+                    valueMap.put("VALUE", "0");
+                    valueMap.put("IN_USE", "Y");
+                    statement.execute(queryFormatter.queryFormatter(query, valueMap));
                     return 0L;
+                }
             } finally {
                 if(resultSet != null)
                     resultSet.close();
 
-                if(preparedStatement != null)
-                    preparedStatement.close();
+                if(statement != null)
+                    statement.close();
             }
         } else {
             return 0L;
@@ -279,13 +303,14 @@ public class TrackerUtil {
             PreparedStatement statement = null;
             ResultSet resultSet = null;
 
-            while(isConnCreation)
-                Thread.sleep(10000);
-
             try {
                 if(refList.contains(value.toString()))
                     return true;
-                statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ? AND ACTIVITY = ? AND SESSION_KEY = ?", TRACKER_TABLE_NAME));
+
+                while(isConnCreation)
+                    Thread.sleep(2000);
+
+                statement = conn.prepareStatement(String.format("SELECT 1 FROM %s WHERE REF_ID = ? AND ACTIVITY = ? AND SESSION_KEY = ? AND STATUS != 'FAILED'", TRACKER_TABLE_NAME));
                 statement.setString(1, value.toString());
                 statement.setString(2, activity);
                 statement.setString(3, SESSION_KEY);
@@ -350,12 +375,14 @@ public class TrackerUtil {
                 sb.append(addColumn("UPD_DTIMES", Timestamp.class, 100, false, dbTypes));
                 sb.append(");");
 
-                sb.append(String.format("ALTER TABLE %s ADD PRIMARY KEY (SESSION_KEY, REF_ID);", TRACKER_TABLE_NAME));
-                sb.append(String.format("CREATE INDEX IX_SEARCH ON  %s (REF_ID, ACTIVITY, SESSION_KEY);", TRACKER_TABLE_NAME));
+                sb.append(String.format("ALTER TABLE %s ADD PRIMARY KEY (SESSION_KEY, REF_ID, STATUS);", TRACKER_TABLE_NAME));
+                sb.append(String.format("CREATE INDEX IX_SEARCH_1 ON  %s (REF_ID, ACTIVITY, SESSION_KEY);", TRACKER_TABLE_NAME));
+                sb.append(String.format("CREATE INDEX IX_SEARCH_2 ON  %s (REF_ID, ACTIVITY, SESSION_KEY, STATUS);", TRACKER_TABLE_NAME));
             } else {
                 sb.append(String.format("CREATE TABLE %s (", OFFSET_TRACKER_TABLE_NAME));
                 sb.append(addColumn("SESSION_KEY", String.class, 100, true, dbTypes) + ",");
-                sb.append(addColumn("OFFSET_VALUE", Number.class, 12, false, dbTypes));
+                sb.append(addColumn("OFFSET_VALUE", Number.class, 12, false, dbTypes) + ",");
+                sb.append(addColumn("IN_USE", Character.class, 1, false, dbTypes));
                 sb.append(");");
 
                 sb.append(String.format("ALTER TABLE %s ADD PRIMARY KEY (SESSION_KEY);", OFFSET_TRACKER_TABLE_NAME));
@@ -370,6 +397,8 @@ public class TrackerUtil {
                     return columnName + " " + NumberType.valueOf(dbTypes.toString()).getValue(length.toString(), "0") + (isNotNull ? " NOT NULL" : "");
                 case "Timestamp" :
                     return columnName + " " + TimeStampType.valueOf(dbTypes.toString()).getType() + (isNotNull ? " NOT NULL" : "");
+                case "Character" :
+                    return columnName + " " + CharacterType.valueOf(dbTypes.toString()).getType() + (isNotNull ? " NOT NULL" : "");
                 default:
                     throw new Exception("Column Type " + columnType.getSimpleName() + " Not Found");
             }

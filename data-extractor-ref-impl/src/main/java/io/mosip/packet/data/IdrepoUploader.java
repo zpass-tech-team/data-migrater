@@ -110,7 +110,7 @@ public class IdrepoUploader implements DataExporter {
         idRequestDTO.setVersion(VERSION);
         idRequestDTO.setRequesttime(DateUtils.getUTCTimeFromDate(new Date()));
         idRequestDTO.setRequest(requestDto);
-        ResponseWrapper response = importIdentityService.importIdentity(idRequestDTO);
+        ResponseWrapper response = importIdentityService.importIdentity(idRequestDTO, demoDetails);
         if (response != null && response.getResponse() != null) {
             logger.info("Import identity success, response: {}", response.getResponse());
             trackerStatusUpdate(demoDetails.get(trackerColumn).toString(), packetDto, setter, TrackerStatus.PROCESSED, "ID Repo upload success");

@@ -1,6 +1,5 @@
 package io.mosip.packet.data.service;
 
-import com.google.gson.Gson;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.constant.ApiName;
@@ -11,7 +10,6 @@ import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.DataRestClientService;
 import io.mosip.packet.data.dto.IdRequestDto;
 
-import io.mosip.packet.data.dto.LocationDto;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.stereotype.Component;
@@ -26,8 +24,10 @@ public class ImportIdentityServiceImpl implements ImportIdentityService {
     private static final String PROVINCE = "province";
     private static final String DISTRICT = "district";
     private static final String CONSTITUENCY = "constituency";
-    private static final String SUBFOLDER = "subfolder";
+    private static final String SUBFOLDER = "SUBFOLDER";
     private static final String LANG_CODE = "eng";
+    private static final String HIERARCHY_NAME = "hierarchyName";
+    private static final String NAME = "name";
 
     private final Logger logger = DataProcessLogger.getLogger(ImportIdentityServiceImpl.class);
 
@@ -35,31 +35,34 @@ public class ImportIdentityServiceImpl implements ImportIdentityService {
     private DataRestClientService dataRestClientService;
 
     @Override
-    public ResponseWrapper importIdentity(IdRequestDto idRequestDto) throws ApisResourceAccessException {
+    public ResponseWrapper importIdentity(IdRequestDto idRequestDto, Map<String, Object> demoDetails) throws ApisResourceAccessException {
         logger.info("Writer Request: {}", idRequestDto);
         // Fetches location detail
-        getLocationDetails(idRequestDto);
+        getLocationDetails(idRequestDto, (String) demoDetails.get(SUBFOLDER));
         // Generates UIN
         generateUIN(idRequestDto);
         // Add Identity call
         return addIdentity(idRequestDto);
     }
 
-    private void getLocationDetails(IdRequestDto idRequestDto) throws ApisResourceAccessException {
+    private void getLocationDetails(IdRequestDto idRequestDto, String locationCode) throws ApisResourceAccessException {
         try {
             // Location details fetch
-            String locationCode = (String) ((Map<String, Object>) idRequestDto.getRequest().getIdentity()).get(SUBFOLDER);
+            //String locationCode = (String) ((Map<String, Object>) idRequestDto.getRequest().getIdentity()).get(SUBFOLDER);
             List<String> pathSegments = Arrays.asList(locationCode, LANG_CODE);
             ResponseWrapper response = (ResponseWrapper) dataRestClientService.getApi(ApiName.MASTER_LOCATION_GET, pathSegments, "", "", ResponseWrapper.class);
             if (response != null && response.getResponse() != null) {
-                List<LocationDto> locationDtos = (List<LocationDto>) response.getResponse();
-                locationDtos.stream().forEach(locationDto -> {
-                    if (locationDto.getHierarchyName().equalsIgnoreCase(PROVINCE)) {
-                        ((Map<String, Object>) idRequestDto.getRequest().getIdentity()).put(PROVINCE, locationDto.getName());
-                    } if(locationDto.getHierarchyName().equalsIgnoreCase(DISTRICT)) {
-                        ((Map<String, Object>) idRequestDto.getRequest().getIdentity()).put(DISTRICT, locationDto.getName());
-                    } if(locationDto.getHierarchyName().equalsIgnoreCase(CONSTITUENCY)) {
-                        ((Map<String, Object>) idRequestDto.getRequest().getIdentity()).put(CONSTITUENCY, locationDto.getName());
+                Map<String, Object> identity = ((Map<String, Object>) idRequestDto.getRequest().getIdentity());
+                Map<String, Object> responseMap = (Map<String, Object>) response.getResponse();
+                List<Map<String, Object>> locationDtos = (List<Map<String, Object>>) responseMap.get("locations");
+
+                locationDtos.stream().forEach(locationDtoMap -> {
+                    if (PROVINCE.equalsIgnoreCase(String.valueOf(locationDtoMap.get(HIERARCHY_NAME)))) {
+                        identity.put(PROVINCE, getLangMap(locationDtoMap));
+                    } else if(DISTRICT.equalsIgnoreCase(String.valueOf(locationDtoMap.get(HIERARCHY_NAME)))) {
+                        identity.put(DISTRICT, getLangMap(locationDtoMap));
+                    } else if(CONSTITUENCY.equalsIgnoreCase(String.valueOf(locationDtoMap.get(HIERARCHY_NAME)))){
+                        identity.put(CONSTITUENCY, getLangMap(locationDtoMap));
                     }
                 });
                 logger.info("Location fetch success.");
@@ -69,6 +72,10 @@ public class ImportIdentityServiceImpl implements ImportIdentityService {
                     e.getMessage() + ExceptionUtils.getStackTrace(e));
             throw e;
         }
+    }
+
+    private List<Map> getLangMap(Map<String, Object> locationDtoMap) {
+        return Arrays.asList(Map.of("language", LANG_CODE, "value", String.valueOf(locationDtoMap.get(NAME))));
     }
 
     private ResponseWrapper addIdentity(IdRequestDto idRequestDto) throws ApisResourceAccessException {

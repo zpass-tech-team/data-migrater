@@ -1,4 +1,3 @@
-import java.util.List;
 def getBiometricPath() {
         String fileName = (String) identity.get('fileName');
         String path = (String) identity.get('folder');
