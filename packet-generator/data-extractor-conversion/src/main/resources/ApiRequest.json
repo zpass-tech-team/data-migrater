@@ -7,7 +7,7 @@
 		"port": "5432",
 		"databaseName": "performance_testing",
 		"userId": "postgres",
-		"password": "DeePzRoH7g",
+		"password": "abc123",
 		"process": "NEW",
 		"tableDetails": [
 			{
