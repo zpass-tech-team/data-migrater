@@ -21,8 +21,6 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.io.FileInputStream;
@@ -81,9 +79,7 @@ public class DataProcessApplication {
                 }
 
                 if(option.equalsIgnoreCase("Y")) {
-                    Resource resource = new ClassPathResource("ApiRequest.json");
-                    FileInputStream io = new FileInputStream(resource.getFile());
-					//FileInputStream io = new FileInputStream("./ApiRequest.json");
+                    FileInputStream io = new FileInputStream("./ApiRequest.json");
                     String requestJson = new String(io.readAllBytes(), StandardCharsets.UTF_8);
                     ObjectMapper mapper = new ObjectMapper();
                     RequestWrapper<DBImportRequest> request = mapper.readValue(requestJson, new TypeReference<RequestWrapper<DBImportRequest>>() {});

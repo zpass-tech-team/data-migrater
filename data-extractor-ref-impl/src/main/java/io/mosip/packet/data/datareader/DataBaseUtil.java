@@ -192,7 +192,7 @@ public class DataBaseUtil implements DataReader {
 
             return formatter.replaceColumntoDataIfAny(selectSql, dataMap);
         } else if (tableRequestDto.getQueryType().equals(QuerySelection.SQL_QUERY)) {
-            String sqlQuery = tableRequestDto.getSqlQuery().toUpperCase();
+            String sqlQuery = tableRequestDto.getSqlQuery();
             return formatter.replaceColumntoDataIfAny(sqlQuery, dataMap);
         } else
             return null;
@@ -301,7 +301,13 @@ public class DataBaseUtil implements DataReader {
 
                             if ((processPercentage > 0.05 && processPercentage != 0) || (processPercentage == 0 && OFFSET_VALUE > 0 && oneTimeCheckForZeroOffset) || threadPool.getCurrentPendingCount() > 0) {
                             } else {
-                                OFFSET_VALUE = trackerUtil.getDatabaseOffset() == null ? 0 : trackerUtil.getDatabaseOffset();
+                                if(IS_TRACKER_REQUIRED)
+                                    trackerUtil.closeStatement();
+
+                                OFFSET_VALUE = trackerUtil.getDatabaseOffset();
+                                if(OFFSET_VALUE == null)
+                                    OFFSET_VALUE = 0l;
+
                                 List<TableRequestDto> tableRequestDtoList = dbImportRequest.getTableDetails();
                                 Collections.sort(tableRequestDtoList);
                                 TableRequestDto tableRequestDto = tableRequestDtoList.get(0);
@@ -318,6 +324,7 @@ public class DataBaseUtil implements DataReader {
                                     LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Cancelling Database Reader since No Data" + scrollableResultSet.getFetchSize());
                                     dataReader.cancel();
                                     threadPool.setInputProcessCompleted(true);
+                                    trackerUtil.updateDatabaseOffset(OFFSET_VALUE);
                                     IS_DATABASE_READ_OPERATION = false;
                                 }
 

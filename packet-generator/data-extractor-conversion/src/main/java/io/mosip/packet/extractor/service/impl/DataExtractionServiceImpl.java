@@ -603,6 +603,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 switch(dbImportRequest.getDbType().toString()) {
                     case "MSSQL":
                     case "ORACLE":
+                    case "MYSQL":
                         for (FieldName fieldName : fieldFormatRequest.getFieldList()) {
                             if(fieldName.getTableName() != null)
                                 tableName = fieldName.getTableName();
