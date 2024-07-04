@@ -8,16 +8,15 @@ import io.mosip.kernel.biometrics.spi.CbeffUtil;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
-import io.mosip.packet.core.constant.GlobalConfig;
 import io.mosip.packet.core.constant.tracker.TrackerStatus;
+import io.mosip.packet.core.dto.DataPostProcessorResponseDto;
+import io.mosip.packet.core.dto.DataProcessorResponseDto;
 import io.mosip.packet.core.dto.ResponseWrapper;
 import io.mosip.packet.core.dto.dbimport.DBImportRequest;
-import io.mosip.packet.core.dto.tracker.TrackerRequestDto;
-import io.mosip.packet.core.exception.ExceptionUtils;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.thread.ResultDto;
 import io.mosip.packet.core.service.thread.ResultSetter;
-import io.mosip.packet.core.spi.dataexporter.DataExporter;
+import io.mosip.packet.core.spi.datapostprocessor.DataPostProcessor;
 import io.mosip.packet.core.util.TrackerUtil;
 import io.mosip.packet.data.dto.Documents;
 import io.mosip.packet.data.dto.IdRequestDto;
@@ -29,22 +28,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.ObjectUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static io.mosip.packet.core.constant.GlobalConfig.SESSION_KEY;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
 import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
 
 @Component
-public class IdrepoUploader implements DataExporter {
+public class IdrepoUploader implements DataPostProcessor {
 
     private static final Logger logger = DataProcessLogger.getLogger(IdrepoUploader.class);
     private static final String VERSION = "v1";
@@ -69,8 +64,16 @@ public class IdrepoUploader implements DataExporter {
     private byte[] xsd;
 
     @Override
-    public Object export(PacketDto packetDto, DBImportRequest dbImportRequest, HashMap<String, String> metaInfo, HashMap<String, Object> demoDetails,
-                         String trackerColumn, ResultSetter setter, String trackerRefId, Long startTime) throws Exception {
+    public DataPostProcessorResponseDto postProcess(DataProcessorResponseDto processObject, ResultSetter setter, Long startTime) throws Exception {
+        DataPostProcessorResponseDto responseDto = new DataPostProcessorResponseDto();
+        responseDto.setProcess(processObject.getProcess());
+        responseDto.setRefId(processObject.getRefId());
+        responseDto.setTrackerRefId(processObject.getTrackerRefId());
+        responseDto.setResponses(new HashMap<>());
+
+        PacketDto packetDto = (PacketDto) processObject.getResponses().get("packetDto");
+        HashMap<String, Object> demoDetails = (HashMap<String, Object>) processObject.getResponses().get("demoDetails");
+        String trackerRefId = processObject.getTrackerRefId();
 
         logger.info("Entering Idrepo identity Uploader, RID:{}, NRCID:{} ", packetDto.getId(),
                 packetDto.getFields().get("nrcId"));
@@ -113,14 +116,17 @@ public class IdrepoUploader implements DataExporter {
         ResponseWrapper response = importIdentityService.importIdentity(idRequestDTO, demoDetails);
         if (response != null && response.getResponse() != null) {
             logger.info("Import identity success, response: {}", response.getResponse());
-            trackerStatusUpdate(demoDetails.get(trackerColumn).toString(), packetDto, setter, TrackerStatus.PROCESSED, "ID Repo upload success");
+            responseDto.getResponses().put("message", "Import identity success, response: " + response.getResponse());
+            trackerStatusUpdate(processObject.getRefId(), packetDto, setter, TrackerStatus.PROCESSED,  (new Gson()).toJson(responseDto));
         } else if (response != null && response.getErrors() != null) {
             logger.error("Error response received: {}", response.getErrors());
-            trackerStatusUpdate(demoDetails.get(trackerColumn).toString(), packetDto, setter, TrackerStatus.FAILED, response.getErrors().get(0).toString());
+            responseDto.getResponses().put("message", "Error response received: "+ response.getErrors());
+            trackerStatusUpdate(processObject.getRefId(), packetDto, setter, TrackerStatus.FAILED, (new Gson()).toJson(responseDto));
         }
         timeDifference = System.nanoTime()-startTime;
         logger.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Time Taken to exit the id repo file. " + trackerRefId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
-        return null;
+
+        return responseDto;
     }
 
     private void trackerStatusUpdate(String refId, PacketDto packetDto, ResultSetter setter, TrackerStatus status, String comment) {

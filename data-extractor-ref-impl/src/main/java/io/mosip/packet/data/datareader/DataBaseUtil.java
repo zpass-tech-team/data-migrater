@@ -6,8 +6,7 @@ import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.packet.core.config.activity.Activity;
 import io.mosip.packet.core.constant.*;
 import io.mosip.packet.core.constant.activity.ActivityName;
-import io.mosip.packet.core.constant.database.QueryLimitSetter;
-import io.mosip.packet.core.constant.database.QueryOffsetSetter;
+import io.mosip.packet.core.constant.database.QueryOffsetLimitSetter;
 import io.mosip.packet.core.dto.dbimport.*;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.thread.CustomizedThreadPoolExecutor;
@@ -143,7 +142,7 @@ public class DataBaseUtil implements DataReader {
             String filterCondition = null;
             boolean whereCondition= false;
 
-            String selectSql = "SELECT " + columnNames + "  from " + tableRequestDto.getTableName();
+            String selectSql = "SELECT " + columnNames + "  from " + tableRequestDto.getTableName().toLowerCase();
 
             if(tableRequestDto.getFilters() != null) {
                 for (QueryFilter queryFilter : tableRequestDto.getFilters()) {
@@ -169,25 +168,21 @@ public class DataBaseUtil implements DataReader {
             filterCondition = "";
 
             if(tableRequestDto.getExecutionOrderSequence().equals(1)) {
-                if(isTrackerSameHost) {
-                    if (!whereCondition) {
-                        filterCondition = " WHERE ";
-                        whereCondition=true;
-                    } else {
-                        filterCondition += " AND ";
-                    }
+//                if(isTrackerSameHost) {
+//                    if (!whereCondition) {
+//                        filterCondition = " WHERE ";
+//                        whereCondition=true;
+//                    } else {
+//                        filterCondition += " AND ";
+//                    }
+//
+//                    filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
+//                    selectSql += filterCondition;
+//                }
 
-                    filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE STATUS IN ('PROCESSED','PROCESSED_WITHOUT_UPLOAD', 'FAILED') AND SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
-                    selectSql += filterCondition;
-                }
+                selectSql += " ORDER BY  " + ((applicationIdColumn != null && !applicationIdColumn.isEmpty()) ? applicationIdColumn : trackColumn);
+                selectSql += " " + QueryOffsetLimitSetter.valueOf(dbType.toString()).getValue(OFFSET_VALUE, Long.valueOf(dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool));
 
-                if(applicationIdColumn != null && !applicationIdColumn.isEmpty())
-                    selectSql += " ORDER BY  " + applicationIdColumn;
-
-                if(!isTrackerSameHost && OFFSET_VALUE != null && OFFSET_VALUE > 0)
-                    selectSql += " " + QueryOffsetSetter.valueOf(dbType.toString()).getValue(OFFSET_VALUE);
-
-                selectSql += " " + QueryLimitSetter.valueOf(dbType.toString()).getValue(dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool);
             }
 
             return formatter.replaceColumntoDataIfAny(selectSql, dataMap);
@@ -315,6 +310,10 @@ public class DataBaseUtil implements DataReader {
                                 scrollableResultSet = statement1.executeQuery();
 
                                 if(scrollableResultSet.last()) {
+                                    LOGGER.warn("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "OFFSET Tracker auto disabled if Tracker Table belongs to same Database");
+                                    LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Current Row Count from result set is " + scrollableResultSet.getRow());
+                                    LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Current OFFSET Value is " + OFFSET_VALUE);
+                                    LOGGER.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Current Fetch Size is " + scrollableResultSet.getFetchSize());
                                     TOTAL_RECORDS_FOR_PROCESS += Long.valueOf(scrollableResultSet.getRow());
                                     OFFSET_VALUE += Long.valueOf(scrollableResultSet.getRow());
                                     trackerUtil.updateDatabaseOffset(OFFSET_VALUE);

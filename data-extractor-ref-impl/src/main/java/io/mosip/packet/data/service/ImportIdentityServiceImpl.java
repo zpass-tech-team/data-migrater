@@ -15,8 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class ImportIdentityServiceImpl implements ImportIdentityService {
@@ -30,6 +32,7 @@ public class ImportIdentityServiceImpl implements ImportIdentityService {
     private static final String NAME = "name";
 
     private final Logger logger = DataProcessLogger.getLogger(ImportIdentityServiceImpl.class);
+    private Map<String, Map<String, Object>> locationMemoryMap = new ConcurrentHashMap<>();
 
     @Autowired
     private DataRestClientService dataRestClientService;
@@ -49,28 +52,56 @@ public class ImportIdentityServiceImpl implements ImportIdentityService {
         try {
             // Location details fetch
             //String locationCode = (String) ((Map<String, Object>) idRequestDto.getRequest().getIdentity()).get(SUBFOLDER);
-            List<String> pathSegments = Arrays.asList(locationCode, LANG_CODE);
-            ResponseWrapper response = (ResponseWrapper) dataRestClientService.getApi(ApiName.MASTER_LOCATION_GET, pathSegments, "", "", ResponseWrapper.class);
-            if (response != null && response.getResponse() != null) {
-                Map<String, Object> identity = ((Map<String, Object>) idRequestDto.getRequest().getIdentity());
-                Map<String, Object> responseMap = (Map<String, Object>) response.getResponse();
-                List<Map<String, Object>> locationDtos = (List<Map<String, Object>>) responseMap.get("locations");
-
-                locationDtos.stream().forEach(locationDtoMap -> {
-                    if (PROVINCE.equalsIgnoreCase(String.valueOf(locationDtoMap.get(HIERARCHY_NAME)))) {
-                        identity.put(PROVINCE, getLangMap(locationDtoMap));
-                    } else if(DISTRICT.equalsIgnoreCase(String.valueOf(locationDtoMap.get(HIERARCHY_NAME)))) {
-                        identity.put(DISTRICT, getLangMap(locationDtoMap));
-                    } else if(CONSTITUENCY.equalsIgnoreCase(String.valueOf(locationDtoMap.get(HIERARCHY_NAME)))){
-                        identity.put(CONSTITUENCY, getLangMap(locationDtoMap));
-                    }
-                });
-                logger.info("Location fetch success.");
+            Map<String, Object> identity = ((Map<String, Object>) idRequestDto.getRequest().getIdentity());
+            if (locationMemoryMap.get(locationCode) != null && !locationMemoryMap.get(locationCode).isEmpty()) {
+                getLocationData(locationMemoryMap.get(locationCode), identity);
+            } else {
+                List<String> pathSegments = Arrays.asList(locationCode, LANG_CODE);
+                ResponseWrapper response = (ResponseWrapper) dataRestClientService.getApi(ApiName.MASTER_LOCATION_GET, pathSegments, "", "", ResponseWrapper.class);
+                if (response != null && response.getResponse() != null) {
+                    Map<String, Object> locationLocalMap = new HashMap<>();
+                    Map<String, Object> responseMap = (Map<String, Object>) response.getResponse();
+                    List<Map<String, Object>> locationDtos = (List<Map<String, Object>>) responseMap.get("locations");
+                    locationDtos.stream().forEach(locationDtoMap -> {
+                            setLocationData(locationDtoMap, identity);
+                            prepareLocationMap(locationLocalMap, locationDtoMap);
+                        }
+                    );
+                    locationMemoryMap.putIfAbsent(locationCode, locationLocalMap);
+                    logger.info("Location fetch success.");
+                }
             }
         } catch (ApisResourceAccessException e) {
             logger.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(), LoggerFileConstant.APPLICATIONID.toString(),
                     e.getMessage() + ExceptionUtils.getStackTrace(e));
             throw e;
+        }
+    }
+
+    private void getLocationData(Map<String, Object> locationMap, Map<String, Object> identity) {
+        identity.put(PROVINCE, locationMap.get(PROVINCE));
+        identity.put(DISTRICT, locationMap.get(DISTRICT));
+        identity.put(CONSTITUENCY, locationMap.get(CONSTITUENCY));
+    }
+
+    private void setLocationData(Map<String, Object> locationMap, Map<String, Object> identity) {
+        if (PROVINCE.equalsIgnoreCase(String.valueOf(locationMap.get(HIERARCHY_NAME)))) {
+            identity.put(PROVINCE, getLangMap(locationMap));
+        } else if(DISTRICT.equalsIgnoreCase(String.valueOf(locationMap.get(HIERARCHY_NAME)))) {
+            identity.put(DISTRICT, getLangMap(locationMap));
+        } else if(CONSTITUENCY.equalsIgnoreCase(String.valueOf(locationMap.get(HIERARCHY_NAME)))){
+            identity.put(CONSTITUENCY, getLangMap(locationMap));
+        }
+    }
+
+    private void prepareLocationMap(Map<String, Object> locationLocalMap, Map<String, Object> locationDBMap) {
+
+        if (PROVINCE.equalsIgnoreCase(String.valueOf(locationDBMap.get(HIERARCHY_NAME)))) {
+            locationLocalMap.put(PROVINCE, getLangMap(locationDBMap));
+        } else if(DISTRICT.equalsIgnoreCase(String.valueOf(locationDBMap.get(HIERARCHY_NAME)))) {
+            locationLocalMap.put(DISTRICT, getLangMap(locationDBMap));
+        } else if(CONSTITUENCY.equalsIgnoreCase(String.valueOf(locationDBMap.get(HIERARCHY_NAME)))){
+            locationLocalMap.put(CONSTITUENCY, getLangMap(locationDBMap));
         }
     }
 
