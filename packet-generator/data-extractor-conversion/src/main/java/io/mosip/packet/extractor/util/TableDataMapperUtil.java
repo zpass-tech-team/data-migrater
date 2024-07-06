@@ -65,11 +65,11 @@ public class TableDataMapperUtil implements DataMapperUtil {
         ObjectMapper mapper = new ObjectMapper();
         DataFormat destFormat = fieldFormatRequest.getDestFormat() != null && fieldFormatRequest.getDestFormat().size() > 0 ? fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1) : null;
         List<FieldName> fieldNames = fieldFormatRequest.getFieldList();
-        String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldNames.get(0).getFieldName().toLowerCase();
+        String fieldMap = fieldFormatRequest.getFieldToMap() != null ? fieldFormatRequest.getFieldToMap() : fieldNames.get(0).getOriginalFieldName().toLowerCase();
         String originalField = fieldFormatRequest.getFieldName();
         String[] fieldMapArray = fieldMap.split(",");
 
-        if((!dataMap2.get(fieldFormatRequest.getFieldCategory()).containsKey(originalField) || !dataMap2.get(fieldFormatRequest.getFieldCategory()).keySet().containsAll(Arrays.asList(fieldMapArray))) && fieldsCategoryMap.get(tableName).containsKey(fieldNames.get(0).getFieldName())) {
+        if((!dataMap2.get(fieldFormatRequest.getFieldCategory()).containsKey(originalField) || !dataMap2.get(fieldFormatRequest.getFieldCategory()).keySet().containsAll(Arrays.asList(fieldMapArray))) && commonUtil.isFieldPresentInTable(tableName, fieldsCategoryMap, fieldNames)) {
             String mvelValue = null;
             if (fieldFormatRequest.getMvelExpressions() != null) {
                 Map map = new HashMap();
@@ -113,30 +113,26 @@ public class TableDataMapperUtil implements DataMapperUtil {
 
                         initialEntry=false;
 
-                        if(fieldsCategoryMap.get(tableName).containsKey(field.getFieldName()))
+                        if(fieldsCategoryMap.get(tableName).containsKey(field.getOriginalFieldName()))
                             if(demoValue == null)
-                                demoValue = resultSet.get(field.getFieldName());
+                                demoValue = resultSet.get(field.getOriginalFieldName());
                             else {
-                                if(demoValue.toString().contains("<" + field.getFieldName() + ">"))
-                                    demoValue = demoValue.toString().replace("<" + field.getFieldName() + ">", resultSet.get(field.getFieldName()).toString());
+                                if(demoValue.toString().contains("<" + field.getOriginalFieldName() + ">"))
+                                    demoValue = demoValue.toString().replace("<" + field.getOriginalFieldName() + ">", resultSet.get(field.getOriginalFieldName()).toString());
                                 else
-                                    demoValue += VALUE_SPLITTER + resultSet.get(field.getFieldName());
+                                    demoValue += VALUE_SPLITTER + resultSet.get(field.getOriginalFieldName());
                             }
                         else
-                            demoValue += " <" + field.getFieldName() + ">";
+                            demoValue += " <" + field.getOriginalFieldName() + ">";
 
-                        dataMap2.get(fieldFormatRequest.getFieldCategory()).put(field.getTableName() + "." + field.getFieldName(), resultSet.get(field.getFieldName()));
+                        dataMap2.get(fieldFormatRequest.getFieldCategory()).put(field.getTableName() + "." + field.getOriginalFieldName(), resultSet.get(field.getOriginalFieldName()));
                     }
                 }
 
                 if(demoValue != null) {
                     if (destFormat != null) {
-                        if (destFormat.equals(DataFormat.DMY) || destFormat.equals(DataFormat.YMD)) {
-                            Date dateVal = DateUtils.findDateFormat(demoValue.toString());
-                            demoValue = DateUtils.parseDate(dateVal, destFormat.getFormat());
-                        } else {
-                            throw new Exception("Invalid Format for Conversion for Demo Details for Field : " + fieldFormatRequest.getFieldName());
-                        }
+                        Date dateVal = DateUtils.findDateFormat(demoValue.toString());
+                        demoValue = DateUtils.parseDate(dateVal, destFormat.getFormat());
                     }
 
                     if(fieldMapArray.length > 0) {
@@ -173,7 +169,7 @@ public class TableDataMapperUtil implements DataMapperUtil {
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(handleAttribute, fieldMap);
                 }
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.BIO)) {
-                String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
+                String fieldName = fieldFormatRequest.getFieldList().get(0).getOriginalFieldName();
                 Map<String, byte[]> map = new HashMap<>();
 
                 if(fieldsCategoryMap.get(tableName).containsKey(fieldName))  {
@@ -213,15 +209,16 @@ public class TableDataMapperUtil implements DataMapperUtil {
                     dataMap2.get(fieldFormatRequest.getFieldCategory()).put(originalField, "");
                 }
             } else if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
-                String fieldName = fieldFormatRequest.getFieldList().get(0).getFieldName();
+                String fieldName = fieldFormatRequest.getFieldList().get(0).getModifiedFieldName().toUpperCase();
+                String searchField = fieldFormatRequest.getFieldToMap().toUpperCase();
 
-                if(fieldsCategoryMap.get(tableName).containsKey(fieldName) && resultSet.containsKey(fieldName))  {
+                if(resultSet.containsKey(fieldName))  {
                     Document document = new Document();
                     byte[] byteVal = null;
                     if(fieldFormatRequest.getMvelExpressions() != null && mvelValue != null) {
                         byteVal = convertObjectToByteArray(mvelValue);;
                     } else {
-                        byteVal = convertObjectToByteArray(resultSet.get(fieldFormatRequest.getFieldToMap() + "_" + fieldName));
+                        byteVal = convertObjectToByteArray(resultSet.get(fieldName));
                     }
 
                     if(objectStoreFetchEnabled)
@@ -232,17 +229,17 @@ public class TableDataMapperUtil implements DataMapperUtil {
                         DocumentAttributes documentAttributes = fieldFormatRequest.getDocumentAttributes();
                         String refField = documentAttributes.getDocumentRefNoField().contains("STATIC") ? "STATIC_" +  commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentRefNoField())
                                 :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentRefNoField());
-                        document.setRefNumber(String.valueOf(resultSet.get(fieldFormatRequest.getFieldToMap() + "_" + refField)));
+                        document.setRefNumber(String.valueOf(resultSet.get(searchField + "_" + refField)));
                         dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + refField, document.getRefNumber());
 
                         String formatField = documentAttributes.getDocumentFormatField().contains("STATIC") ? "STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentFormatField())
                                 :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentFormatField());
-                        document.setFormat(String.valueOf(resultSet.get(fieldFormatRequest.getFieldToMap() + "_" + formatField)));
+                        document.setFormat(String.valueOf(resultSet.get(searchField + "_" + formatField.toUpperCase())));
                         dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + formatField, document.getFormat());
 
                         String codeField = documentAttributes.getDocumentCodeField().contains("STATIC") ? "STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
                                 :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField());
-                        document.setType(String.valueOf(resultSet.get(fieldFormatRequest.getFieldToMap() + "_" + codeField)));
+                        document.setType(String.valueOf(resultSet.get(searchField + "_" + codeField.toUpperCase())));
                         dataMap2.get(fieldFormatRequest.getFieldCategory()).put(fieldMap + ":" + codeField, document.getType());
                     }
 
@@ -278,8 +275,8 @@ public class TableDataMapperUtil implements DataMapperUtil {
         }
 
         if (localStoreRequired) {
-            bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
-            return bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getFieldName(), bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue, fieldName), fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
+            bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getOriginalFieldName() , bioValue, fieldFormatRequest.getSrcFormat());
+            return bioConvertorApiFactory.writeFile(fileNamePrefix + "-" + fieldFormatRequest.getFieldList().get(0).getOriginalFieldName(), bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue, fieldName), fieldFormatRequest.getDestFormat().get(fieldFormatRequest.getDestFormat().size()-1));
         } else {
             return bioConvertorApiFactory.convertImage(fieldFormatRequest, bioValue, fieldName);
         }
