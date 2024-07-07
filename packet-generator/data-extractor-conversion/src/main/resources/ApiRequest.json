@@ -2,21 +2,34 @@
 	"id": "string",
 	"metadata": {},
 	"request": {
-		"dbType": "POSTGRESQL",
-		"url": "postgres.zam-dev.mosip.net",
-		"port": "5432",
-		"databaseName": "performance_testing",
-		"userId": "postgres",
+		"dbType": "MYSQL",
+		"url": "mysql.url",
+		"port": "3306",
+		"databaseName": "abc",
+		"userId": "admin",
 		"password": "abc123",
 		"process": "NEW",
 		"tableDetails": [
 			{
-				"queryType": "SQL_QUERY",
+				"queryType": "TABLE",
 				"executionOrderSequence": 1,
-				"tableName": "TEST_DATA_FILE",
-				"sqlQuery": "SELECT * FROM public.test_data_file WHERE nrcid = '561557/76/3'",
+				"tableName": "VOTERS_LIST",
 				"nonIdSchemaTableFields": [
 					"FOLDER", "SUBFOLDER"
+				],
+				"filters" : [
+					{
+						"filterField" : "NRCID",
+						"fieldType" : "VARCHAR",
+						"fromValue" : "000001/01/1",
+						"filterCondition" : "EQUAL"
+					},
+					{
+						"filterField" : "STATUS",
+						"fieldType" : "VARCHAR",
+						"fromValue" : "NEW",
+						"filterCondition" : "EQUAL"
+					}
 				]
 			}
 		],
@@ -25,45 +38,49 @@
 		],
 		"columnDetails": [
 			{
-				"fieldName": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.NRCID",
 				"fieldToMap": "nrcId",
 				"useAsHandle" : true
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.LASTNAME",
+				"fieldName": "VOTERS_LIST.LASTNAME",
 				"fieldToMap": "lastName"
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FIRSTNAME",
+				"fieldName": "VOTERS_LIST.FIRSTNAME",
 				"fieldToMap": "firstName"
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.DOB",
+				"fieldName": "VOTERS_LIST.DATEOFBIRTH",
 				"fieldToMap": "dateOfBirth"
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.GENDER",
+				"fieldName": "VOTERS_LIST.GENDER",
 				"fieldToMap": "gender"
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.PHONENUMBER",
+				"fieldName": "VOTERS_LIST.PHONENUMBER",
 				"fieldToMap": "phoneNumber"
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.ADDRESSLINE",
+				"fieldName": "VOTERS_LIST.ADDRESSLINE",
 				"fieldToMap": "addressLine"
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FOLDER",
+				"fieldName": "VOTERS_LIST.EMAIL",
+				"fieldToMap": "email"
+			},
+			{
+				"fieldName": "VOTERS_LIST.FOLDER",
 				"fieldToMap": "FOLDER"
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.SUBFOLDER",
+				"fieldName": "VOTERS_LIST.SUBFOLDER",
 				"fieldToMap": "SUBFOLDER"
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.IDCARD1",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.FRONT_PAGE,VOTERS_LIST.BACK_PAGE",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"fieldToMap": "proofOfIdentity",
 				"documentAttributes": {
 					"documentRefNoField": "STATIC:123456",
@@ -73,12 +90,17 @@
 					}
 				},
 				"mvelExpressions" : {
-					"mvelFile" : "BiometricPath.mvel",
+					"mvelFile" : "DocumentPath.mvel",
 					"parameters" : [
 						{
-							"parameterName":"fileName",
+							"parameterName":"frontPageName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${IDCARD1}"
+							"parameterValue" : "${FRONT_PAGE}"
+						},
+						{
+							"parameterName":"backPageName",
+							"parameterType" : "STRING",
+							"parameterValue" : "${BACK_PAGE}"
 						},
 						{
 							"parameterName":"folder",
@@ -93,14 +115,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE1",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.RIGHT_THUMB",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_rightThumb",
 				"mvelExpressions" : {
@@ -109,7 +131,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE1}"
+							"parameterValue" : "${RIGHT_THUMB}"
 						},
 						{
 							"parameterName":"folder",
@@ -124,14 +146,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE2",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.RIGHT_INDEX",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_rightIndex",
 				"mvelExpressions" : {
@@ -140,7 +162,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE2}"
+							"parameterValue" : "${RIGHT_INDEX}"
 						},
 						{
 							"parameterName":"folder",
@@ -155,14 +177,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE3",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.RIGHT_MIDDLE",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_rightMiddle",
 				"mvelExpressions" : {
@@ -171,7 +193,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE3}"
+							"parameterValue" : "${RIGHT_MIDDLE}"
 						},
 						{
 							"parameterName":"folder",
@@ -186,14 +208,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE4",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.RIGHT_RING",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_rightRing",
 				"mvelExpressions" : {
@@ -202,7 +224,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE4}"
+							"parameterValue" : "${RIGHT_RING}"
 						},
 						{
 							"parameterName":"folder",
@@ -217,14 +239,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE5",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.RIGHT_LITTLE",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_rightLittle",
 				"mvelExpressions" : {
@@ -233,7 +255,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE5}"
+							"parameterValue" : "${RIGHT_LITTLE}"
 						},
 						{
 							"parameterName":"folder",
@@ -248,14 +270,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE6",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.LEFT_THUMB",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_leftThumb",
 				"mvelExpressions" : {
@@ -264,7 +286,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE6}"
+							"parameterValue" : "${LEFT_THUMB}"
 						},
 						{
 							"parameterName":"folder",
@@ -279,14 +301,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE7",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.LEFT_INDEX",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_leftIndex",
 				"mvelExpressions" : {
@@ -295,7 +317,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE7}"
+							"parameterValue" : "${LEFT_INDEX}"
 						},
 						{
 							"parameterName":"folder",
@@ -310,14 +332,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE8",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.LEFT_MIDDLE",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_leftMiddle",
 				"mvelExpressions" : {
@@ -326,7 +348,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE8}"
+							"parameterValue" : "${LEFT_MIDDLE}"
 						},
 						{
 							"parameterName":"folder",
@@ -341,14 +363,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE9",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.LEFT_RING",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_leftRing",
 				"mvelExpressions" : {
@@ -357,7 +379,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE9}"
+							"parameterValue" : "${LEFT_RING}"
 						},
 						{
 							"parameterName":"folder",
@@ -372,14 +394,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.FINGERPRINTIMAGE10",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.LEFT_LITTLE",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "WSQ",
 				"fieldToMap": "individualBiometrics_leftLittle",
 				"mvelExpressions" : {
@@ -388,7 +410,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${FINGERPRINTIMAGE10}"
+							"parameterValue" : "${LEFT_LITTLE}"
 						},
 						{
 							"parameterName":"folder",
@@ -403,14 +425,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			},
 			{
-				"fieldName": "TEST_DATA_FILE.PHOTO",
-				"primaryField": "TEST_DATA_FILE.NRCID",
+				"fieldName": "VOTERS_LIST.FACE",
+				"primaryField": "VOTERS_LIST.NRCID",
 				"srcFormat": "JPEG",
 				"fieldToMap": "individualBiometrics_face",
 				"mvelExpressions" : {
@@ -419,7 +441,7 @@
 						{
 							"parameterName":"fileName",
 							"parameterType" : "STRING",
-							"parameterValue" : "${PHOTO}"
+							"parameterValue" : "${FACE}"
 						},
 						{
 							"parameterName":"folder",
@@ -434,14 +456,14 @@
 						{
 							"parameterName":"drivePath",
 							"parameterType" : "STRING",
-							"parameterValue" : "D:\\mosip\\repos\\iiitb-pilot\\data-migrater\\images"
+							"parameterValue" : "D:\\mosip\\repos\\zpass-tech-team\\data-migrater\\images"
 						}
 					]
 				}
 			}
 		],
 		"trackerInfo" : {
-			"trackerColumn" : "TEST_DATA_FILE.NRCID"
+			"trackerColumn" : "nrcId"
 		}
 	},
 	"requesttime": "2018-12-10T06:12:52.994Z",
