@@ -77,15 +77,20 @@ public class TableDataMapperUtil implements DataMapperUtil {
                     if (parameter.getParameterType().equals(ParameterType.STRING))
                         if(parameter.getParameterValue().contains("${")) {
                             String value = parameter.getParameterValue().toUpperCase();
- //                           for(FieldCategory fieldCategory : FieldCategory.values()) {
- //                               value = value.replace(fieldCategory.toString() + ":", "");
- //                           }
+//                            for(FieldCategory fieldCategory : FieldCategory.values()) {
+//                                value = value.replace(fieldCategory.toString() + ":", "");
+//                            }
 
                             try {
                                 map.put(parameter.getParameterName(), formatter.replaceColumntoDataIfAny(value, dataMap2));
                             } catch (Exception e) {
                                 String param = value.replace("${", "").replace("}", "");
-                                map.put(parameter.getParameterName(), resultSet.get(param));
+                                if (fieldFormatRequest.getFieldCategory().equals(FieldCategory.DOC)) {
+                                    map.put(parameter.getParameterName(), resultSet.get(fieldMapArray[0].toUpperCase() +"_"+ param));
+                                } else {
+                                    map.put(parameter.getParameterName(), resultSet.get(param));
+                                }
+
                             }
                         } else {
                             map.put(parameter.getParameterName(), parameter.getParameterValue());

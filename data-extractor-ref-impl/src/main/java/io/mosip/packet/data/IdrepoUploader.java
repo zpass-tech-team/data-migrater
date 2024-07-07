@@ -1,5 +1,6 @@
 package io.mosip.packet.data;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import io.mosip.commons.packet.dto.packet.PacketDto;
@@ -8,6 +9,7 @@ import io.mosip.kernel.biometrics.spi.CbeffUtil;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.HMACUtils2;
 import io.mosip.packet.core.constant.tracker.TrackerStatus;
 import io.mosip.packet.core.dto.DataPostProcessorResponseDto;
 import io.mosip.packet.core.dto.DataProcessorResponseDto;
@@ -18,6 +20,7 @@ import io.mosip.packet.core.service.thread.ResultDto;
 import io.mosip.packet.core.service.thread.ResultSetter;
 import io.mosip.packet.core.spi.datapostprocessor.DataPostProcessor;
 import io.mosip.packet.core.util.TrackerUtil;
+import io.mosip.packet.data.dto.DemographicDedupe;
 import io.mosip.packet.data.dto.Documents;
 import io.mosip.packet.data.dto.IdRequestDto;
 import io.mosip.packet.data.dto.RequestDto;
@@ -32,11 +35,11 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_ID;
-import static io.mosip.packet.core.constant.RegistrationConstants.APPLICATION_NAME;
+import static io.mosip.packet.core.constant.RegistrationConstants.*;
 
 @Component
 public class IdrepoUploader implements DataPostProcessor {
@@ -117,6 +120,7 @@ public class IdrepoUploader implements DataPostProcessor {
         if (response != null && response.getResponse() != null) {
             logger.info("Import identity success, response: {}", response.getResponse());
             responseDto.getResponses().put("message", "Import identity success, response: " + response.getResponse());
+            String demoDedupeData = prepareDemoDedupe(demoDetails);
             trackerStatusUpdate(processObject.getRefId(), packetDto, setter, TrackerStatus.PROCESSED,  (new Gson()).toJson(responseDto));
         } else if (response != null && response.getErrors() != null) {
             logger.error("Error response received: {}", response.getErrors());
@@ -127,6 +131,40 @@ public class IdrepoUploader implements DataPostProcessor {
         logger.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Time Taken to exit the id repo file. " + trackerRefId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
 
         return responseDto;
+    }
+
+    private String prepareDemoDedupe(Map<String, Object> demoDetails) {
+        DemographicDedupe dedupe = new DemographicDedupe();
+        try {
+            StringBuilder fullName = new StringBuilder();
+            fullName.append((String) demoDetails.get("firstName"))
+                    .append((String) demoDetails.get("lastName"));
+            dedupe.setName(getHMACHashCode(fullName.toString().trim().toUpperCase()));
+            String dob = (String) demoDetails.get("dateOfBirth");
+            dedupe.setDob(getHMACHashCode(dob.replaceAll("-","/")));
+            String gender = (String) demoDetails.get("gender");
+            dedupe.setGender(getHMACHashCode(gender.trim()));
+            if (demoDetails.get("phone") != null) {
+                dedupe.setPhone(getHMACHashCode((String) demoDetails.get("phone")));
+            }
+            if (demoDetails.get("email") != null) {
+                dedupe.setEmail(getHMACHashCode((String) demoDetails.get("email")));
+            }
+            dedupe.setNrcId(getHMACHashCode((String) demoDetails.get("nrcId")));
+            dedupe.setLangCode(ENGLISH_LANG_CODE);
+            return mapper.writeValueAsString(dedupe);
+        } catch (JsonProcessingException e) {
+            logger.error("Error during json parse.", e);
+        } catch (NoSuchAlgorithmException e) {
+            logger.error("Error during hash generation.", e);
+        }
+        return null;
+    }
+
+    private String getHMACHashCode(String value) throws NoSuchAlgorithmException {
+        if (value == null)
+            return null;
+        return CryptoUtil.encodeToURLSafeBase64(HMACUtils2.generateHash(value.getBytes()));
     }
 
     private void trackerStatusUpdate(String refId, PacketDto packetDto, ResultSetter setter, TrackerStatus status, String comment) {
