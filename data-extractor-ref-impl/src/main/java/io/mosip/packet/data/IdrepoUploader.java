@@ -14,7 +14,6 @@ import io.mosip.packet.core.constant.tracker.TrackerStatus;
 import io.mosip.packet.core.dto.DataPostProcessorResponseDto;
 import io.mosip.packet.core.dto.DataProcessorResponseDto;
 import io.mosip.packet.core.dto.ResponseWrapper;
-import io.mosip.packet.core.dto.dbimport.DBImportRequest;
 import io.mosip.packet.core.logger.DataProcessLogger;
 import io.mosip.packet.core.service.thread.ResultDto;
 import io.mosip.packet.core.service.thread.ResultSetter;
@@ -26,11 +25,13 @@ import io.mosip.packet.data.dto.IdRequestDto;
 import io.mosip.packet.data.dto.RequestDto;
 import io.mosip.packet.data.service.ImportIdentityService;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -92,12 +93,18 @@ public class IdrepoUploader implements DataPostProcessor {
             } else if (entry.getKey().equalsIgnoreCase("IDSchemaVersion")) {
                 identity.put(entry.getKey(), NumberUtils.createDouble(entry.getValue()));
             } else if (entry.getKey().equalsIgnoreCase("phoneNumber")) {
-                identity.put(entry.getKey(), entry.getValue().replaceAll("[\\s+?�^]*", ""));
+                if (StringUtils.hasText(entry.getValue())) {
+                    identity.put(entry.getKey(), entry.getValue().replaceAll("[\\s+?�^]*", ""));
+                }
             } else if (entry.getKey().equalsIgnoreCase("selectedHandles")
                     || entry.getKey().equalsIgnoreCase("nrcId")
                     || entry.getKey().equalsIgnoreCase("UIN")
                     || entry.getKey().equalsIgnoreCase("registrationId")) {
                 identity.put(entry.getKey(), entry.getValue());
+            } else if (entry.getKey().equalsIgnoreCase("addressLine")) {
+                if (StringUtils.hasText(entry.getValue())) {
+                    identity.put(entry.getKey(), mapper.readValue(entry.getValue(), Object.class));
+                }
             } else {
                 identity.put(entry.getKey(), mapper.readValue(entry.getValue(), Object.class));
             }
@@ -120,12 +127,12 @@ public class IdrepoUploader implements DataPostProcessor {
         if (response != null && response.getResponse() != null) {
             logger.info("Import identity success, response: {}", response.getResponse());
             responseDto.getResponses().put("message", "Import identity success, response: " + response.getResponse());
-            String demoDedupeData = prepareDemoDedupe(demoDetails);
-            trackerStatusUpdate(processObject.getRefId(), packetDto, setter, TrackerStatus.PROCESSED,  (new Gson()).toJson(responseDto));
+            Map<String, Object> additionalMaps = prepareAdditionalMaps(demoDetails, packetDto);
+            trackerStatusUpdate(processObject.getRefId(), packetDto, setter, TrackerStatus.PROCESSED,  (new Gson()).toJson(responseDto), additionalMaps);
         } else if (response != null && response.getErrors() != null) {
             logger.error("Error response received: {}", response.getErrors());
             responseDto.getResponses().put("message", "Error response received: "+ response.getErrors());
-            trackerStatusUpdate(processObject.getRefId(), packetDto, setter, TrackerStatus.FAILED, (new Gson()).toJson(responseDto));
+            trackerStatusUpdate(processObject.getRefId(), packetDto, setter, TrackerStatus.FAILED, (new Gson()).toJson(responseDto), null);
         }
         timeDifference = System.nanoTime()-startTime;
         logger.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Time Taken to exit the id repo file. " + trackerRefId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
@@ -133,7 +140,7 @@ public class IdrepoUploader implements DataPostProcessor {
         return responseDto;
     }
 
-    private String prepareDemoDedupe(Map<String, Object> demoDetails) {
+    private Map<String, Object> prepareAdditionalMaps(Map<String, Object> demoDetails, PacketDto packetDto) {
         DemographicDedupe dedupe = new DemographicDedupe();
         try {
             StringBuilder fullName = new StringBuilder();
@@ -144,19 +151,22 @@ public class IdrepoUploader implements DataPostProcessor {
             dedupe.setDob(getHMACHashCode(dob.replaceAll("-","/")));
             String gender = (String) demoDetails.get("gender");
             dedupe.setGender(getHMACHashCode(gender.trim()));
-            if (demoDetails.get("phone") != null) {
+            if (StringUtils.hasText((String) demoDetails.get("phoneNumber"))) {
                 dedupe.setPhone(getHMACHashCode((String) demoDetails.get("phone")));
             }
-            if (demoDetails.get("email") != null) {
+            if (StringUtils.hasText((String) demoDetails.get("email"))) {
                 dedupe.setEmail(getHMACHashCode((String) demoDetails.get("email")));
             }
             dedupe.setNrcId(getHMACHashCode((String) demoDetails.get("nrcId")));
             dedupe.setLangCode(ENGLISH_LANG_CODE);
-            return mapper.writeValueAsString(dedupe);
+            dedupe.setIteration(1);
+            dedupe.setRegId(packetDto.getId());
+            dedupe.setProcess(packetDto.getProcess());
+            return Map.of("REG_CODE", demoDetails.get("SUBFOLDER"), "DEMO_DATA", mapper.writeValueAsString(dedupe));
         } catch (JsonProcessingException e) {
-            logger.error("Error during json parse.", e);
+            logger.error("Error while parsing demo data for additional maps.", e);
         } catch (NoSuchAlgorithmException e) {
-            logger.error("Error during hash generation.", e);
+            logger.error("Error while generating hash for additional maps.", e);
         }
         return null;
     }
@@ -167,12 +177,15 @@ public class IdrepoUploader implements DataPostProcessor {
         return CryptoUtil.encodeToURLSafeBase64(HMACUtils2.generateHash(value.getBytes()));
     }
 
-    private void trackerStatusUpdate(String refId, PacketDto packetDto, ResultSetter setter, TrackerStatus status, String comment) {
+    private void trackerStatusUpdate(String refId, PacketDto packetDto, ResultSetter setter, TrackerStatus status, String comment, Map<String, Object> additionalMaps) {
         ResultDto resultDto = new ResultDto();
         resultDto.setRegNo(packetDto.getId());
         resultDto.setRefId(refId);
         resultDto.setStatus(status);
         resultDto.setComments(comment);
+        if (additionalMaps != null) {
+            resultDto.setAdditionalMaps(additionalMaps);
+        }
         setter.setResult(resultDto);
     }
 
