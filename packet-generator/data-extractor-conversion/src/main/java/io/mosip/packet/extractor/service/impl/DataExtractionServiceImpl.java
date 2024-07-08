@@ -212,6 +212,7 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     trackerRequestDto.setSessionKey(SESSION_KEY);
                     trackerRequestDto.setStatus(resultDto.getStatus().toString());
                     trackerRequestDto.setComments(resultDto.getComments());
+                    trackerRequestDto.setAdditionalMaps(resultDto.getAdditionalMaps());
                     trackerUtil.addTrackerEntry(trackerRequestDto);
                     trackerUtil.addTrackerLocalEntry(resultDto.getRefId(), null, resultDto.getStatus(), dbImportRequest.getProcess(), resultDto.getComments(), SESSION_KEY, GlobalConfig.getActivityName());
                 }
@@ -496,9 +497,9 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                 fieldsCategoryMap.get(tableName).put(documentAttributes.getDocumentCodeField().contains("STATIC") ? "'" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField()) + "' AS " + fieldFormatRequest.getFieldToMap() + "_STATIC_" + commonUtil.getDocumentAttributeStaticValue(documentAttributes.getDocumentCodeField())
                         :  fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField()) + " AS " + fieldFormatRequest.getFieldToMap() + "_" + fieldFormatRequest.getFieldNameWithoutSchema(documentAttributes.getDocumentCodeField()), null);
 
-//                if(documentValueMap != null) {
-//                    fieldsCategoryMap.get(tableName).put(fieldFormatRequest.getFieldNameWithoutSchema(documentValueMap.getMapColumnName()), null);
-//                }
+                if(documentValueMap != null) {
+                    fieldsCategoryMap.get(tableName).put(fieldFormatRequest.getFieldNameWithoutSchema(documentValueMap.getMapColumnName()), null);
+                }
             }
         }
     }
