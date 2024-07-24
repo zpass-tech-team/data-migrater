@@ -187,7 +187,7 @@ public class TrackerUtil {
                 valueMap.put("REG_NO", trackerRequestDto.getRegNo());
                 valueMap.put("STATUS", trackerRequestDto.getStatus());
                 valueMap.put("CR_BY", "MIGRATOR");
-                valueMap.put("CR_DTIMES", DateUtils.formatDate(timestamp, "dd-MM-yyyy HH:mm:ss"));
+                valueMap.put("CR_DTIMES", DateUtils.formatDate(timestamp, "yyyy-MM-dd HH:mm:ss"));
                 valueMap.put("SESSION_KEY", trackerRequestDto.getSessionKey());
                 valueMap.put("ACTIVITY", trackerRequestDto.getActivity());
                 valueMap.put("PROCESS", trackerRequestDto.getProcess());
