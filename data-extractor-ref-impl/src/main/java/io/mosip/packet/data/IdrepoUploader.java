@@ -162,7 +162,7 @@ public class IdrepoUploader implements DataPostProcessor {
             dedupe.setIteration(1);
             dedupe.setRegId(packetDto.getId());
             dedupe.setProcess(packetDto.getProcess());
-            return Map.of("REG_CODE", demoDetails.get("SUBFOLDER"), "DEMO_DATA", mapper.writeValueAsString(dedupe));
+            return Map.of("REF_CODE", demoDetails.get("SUBFOLDER"), "DEMO_DATA", mapper.writeValueAsString(dedupe));
         } catch (JsonProcessingException e) {
             logger.error("Error while parsing demo data for additional maps.", e);
         } catch (NoSuchAlgorithmException e) {
