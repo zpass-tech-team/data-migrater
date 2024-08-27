@@ -1,5 +1,6 @@
 package io.mosip.packet.data.convertion;
 
+import io.mosip.commons.packet.exception.FileNotFoundInDestinationException;
 import io.mosip.packet.core.spi.BioDocApiFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +50,10 @@ public class BioDocDataFetchFromLocal implements BioDocApiFactory {
             File inputFile = new File(filepath);
             if (inputFile != null && inputFile.isFile()) {
                 return new FileInputStream(inputFile).readAllBytes();
+            } else {
+                logger.error("Biometric file not found or not a file: {}", filepath);
+                throw new FileNotFoundInDestinationException("Biometric file not found, path." + filepath);
             }
-            logger.info("Biometric file not found or not a file: {}", filepath);
         }
         return null;
     }

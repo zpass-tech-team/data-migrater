@@ -99,8 +99,11 @@ public class IdrepoUploader implements DataPostProcessor {
             } else if (entry.getKey().equalsIgnoreCase("selectedHandles")
                     || entry.getKey().equalsIgnoreCase("nrcId")
                     || entry.getKey().equalsIgnoreCase("UIN")
-                    || entry.getKey().equalsIgnoreCase("registrationId")) {
-                identity.put(entry.getKey(), entry.getValue());
+                    || entry.getKey().equalsIgnoreCase("registrationId")
+                    || entry.getKey().equalsIgnoreCase("email")) {
+                if (StringUtils.hasText(entry.getValue())) {
+                    identity.put(entry.getKey(), entry.getValue());
+                }
             } else if (entry.getKey().equalsIgnoreCase("addressLine")) {
                 if (StringUtils.hasText(entry.getValue())) {
                     identity.put(entry.getKey(), mapper.readValue(entry.getValue(), Object.class));
