@@ -155,7 +155,7 @@ public class IdrepoUploader implements DataPostProcessor {
             String gender = (String) demoDetails.get("gender");
             dedupe.setGender(getHMACHashCode(gender.trim()));
             if (StringUtils.hasText((String) demoDetails.get("phoneNumber"))) {
-                dedupe.setPhone(getHMACHashCode((String) demoDetails.get("phone")));
+                dedupe.setPhone(getHMACHashCode((String) demoDetails.get("phoneNumber")));
             }
             if (StringUtils.hasText((String) demoDetails.get("email"))) {
                 dedupe.setEmail(getHMACHashCode((String) demoDetails.get("email")));
