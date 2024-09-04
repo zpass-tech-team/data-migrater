@@ -43,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
@@ -167,9 +168,12 @@ public class PacketCreator {
                     }
                 }
             } else if (type.equals("documentType")) {
-                if (demoDetails.containsKey(id) && demoDetails.get(id) != null)
+                if (demoDetails.containsKey(id) && demoDetails.get(id) != null) {
+                    throwExceptionIfMandatoryFieldIsEmpty(demoDetails, id, required, ignorableFields);
                     demoMap.put(id, String.valueOf(demoDetails.get(id)));
+                }
             } else if (demoDetails.containsKey(id) && demoDetails.get(id) != null) {
+                throwExceptionIfMandatoryFieldIsEmpty(demoDetails, id, required, ignorableFields);
                 switch (type) {
                     case "simpleType":
                         List<SimpleType> valList = new ArrayList<>();
@@ -184,11 +188,19 @@ public class PacketCreator {
                         demoMap.put(id, demoDetails.get(id) == null ? "" : String.valueOf(demoDetails.get(id)));
                         break;
                 }
-            } else if (required && !ignorableFields.contains(id)) {
-                throw new Exception("Mandatory Field '" + id + "' value missing");
+            } else {
+                throwExceptionIfMandatoryFieldIsEmpty(demoDetails, id, required, ignorableFields);
             }
         }
         return demoMap;
+    }
+
+    private void throwExceptionIfMandatoryFieldIsEmpty(Map<String, Object> demoDetails, String id, Boolean required,
+                                             List ignorableFields) throws Exception {
+        if (required && !StringUtils.hasText(demoDetails.get(id).toString())
+                && !ignorableFields.contains(id)) {
+                throw new Exception("Mandatory Field '" + id + "' value missing");
+        }
     }
 
     public HashMap<String, Document> setDocuments(HashMap<String, Object> docDetails, List ignorableFields, HashMap<String, String> metaInfoMap, HashMap<String, Object> demoDetails)
