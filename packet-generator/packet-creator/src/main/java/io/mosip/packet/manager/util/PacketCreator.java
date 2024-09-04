@@ -188,8 +188,8 @@ public class PacketCreator {
                         demoMap.put(id, demoDetails.get(id) == null ? "" : String.valueOf(demoDetails.get(id)));
                         break;
                 }
-            } else {
-                throwExceptionIfMandatoryFieldIsEmpty(demoDetails, id, required, ignorableFields);
+            } else if (required && !ignorableFields.contains(id)) {
+                throw new Exception("Mandatory Field '" + id + "' value missing");
             }
         }
         return demoMap;

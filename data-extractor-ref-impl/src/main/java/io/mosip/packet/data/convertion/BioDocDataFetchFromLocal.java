@@ -47,12 +47,14 @@ public class BioDocDataFetchFromLocal implements BioDocApiFactory {
         if (byteval != null && byteval.length > 0) {
             String filepath = new String(byteval, StandardCharsets.UTF_8);
             filepath = filepath.replaceAll("'","");
-            File inputFile = new File(filepath);
-            if (inputFile != null && inputFile.isFile()) {
-                return new FileInputStream(inputFile).readAllBytes();
-            } else {
-                logger.error("Biometric file not found or not a file: {}", filepath);
-                throw new FileNotFoundInDestinationException("Biometric file not found, path." + filepath);
+            if (filepath.contains(".")) {
+                File inputFile = new File(filepath);
+                if (inputFile != null && inputFile.isFile()) {
+                    return new FileInputStream(inputFile).readAllBytes();
+                } else {
+                    logger.error("Biometric file not found or not a file: {}", filepath);
+                    throw new FileNotFoundInDestinationException("Biometric file not found, path." + filepath);
+                }
             }
         }
         return null;
@@ -74,13 +76,19 @@ public class BioDocDataFetchFromLocal implements BioDocApiFactory {
                 if (image1 != null) bufferedImageList.add(image1);
             }
         }
+        if (bufferedImageList.isEmpty()) {
+            logger.error("Document is mandatory, size: {}", bufferedImageList.size());
+            throw new Exception("Document is missing" + byteval);
+        }
         return bufferedImageList;
     }
 
     private static BufferedImage getBufferedImage(String filepath) throws IOException {
-        File inputFile = new File(filepath);
-        if (inputFile != null && inputFile.isFile()) {
-            return ImageIO.read(inputFile);
+        if (filepath.contains(".")) {
+            File inputFile = new File(filepath);
+            if (inputFile != null && inputFile.isFile()) {
+                return ImageIO.read(inputFile);
+            }
         }
         logger.info("Document file not found or not a file: {}", filepath);
         return null;
