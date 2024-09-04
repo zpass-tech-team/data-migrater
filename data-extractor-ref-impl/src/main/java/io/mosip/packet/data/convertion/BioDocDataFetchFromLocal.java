@@ -44,7 +44,7 @@ public class BioDocDataFetchFromLocal implements BioDocApiFactory {
 
     private byte[] getBioFileByteArray(byte[] byteval) throws Exception {
 
-        if (byteval != null) {
+        if (byteval != null && byteval.length > 0) {
             String filepath = new String(byteval, StandardCharsets.UTF_8);
             filepath = filepath.replaceAll("'","");
             File inputFile = new File(filepath);
@@ -61,7 +61,7 @@ public class BioDocDataFetchFromLocal implements BioDocApiFactory {
     private static List<BufferedImage> convertDocFiles(byte[] byteval) throws Exception {
 
         List<BufferedImage> bufferedImageList = new ArrayList<>();
-        if (byteval != null) {
+        if (byteval != null && byteval.length > 0) {
             String filepath = new String(byteval, StandardCharsets.UTF_8);
             String[] filepaths = filepath.replaceAll("'","").split(",");
             if (filepaths.length == 2) {
