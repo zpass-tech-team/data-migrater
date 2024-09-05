@@ -199,7 +199,7 @@ public class PacketCreator {
                                              List ignorableFields) throws Exception {
         if (required && !StringUtils.hasText(demoDetails.get(id).toString())
                 && !ignorableFields.contains(id)) {
-                throw new Exception("Mandatory Field '" + id + "' value missing");
+                throw new Exception("Missing value for mandatory field :" + id);
         }
     }
 
