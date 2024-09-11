@@ -189,7 +189,7 @@ public class PacketCreator {
                         break;
                 }
             } else if (required && !ignorableFields.contains(id)) {
-                throw new Exception("Mandatory Field '" + id + "' value missing");
+                throw new Exception("Missing value for mandatory field :" + id);
             }
         }
         return demoMap;
@@ -232,7 +232,7 @@ public class PacketCreator {
                     DocumentType documentType = new DocumentType(id, document.getType(), document.getFormat(), document.getRefNumber());
                     demoDetails.put(id, mapper.writeValueAsString(documentType));
                 }  else if (required && !ignorableFields.contains(id)) {
-                    throw new Exception("Mandatory Field '" + id + "' value missing");
+                    throw new Exception("Missing value for mandatory field :" + id);
                 }
 
             }
