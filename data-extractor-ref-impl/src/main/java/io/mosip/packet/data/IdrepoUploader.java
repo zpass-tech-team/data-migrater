@@ -135,7 +135,8 @@ public class IdrepoUploader implements DataPostProcessor {
         } else if (response != null && response.getErrors() != null) {
             logger.error("Error response received: {}", response.getErrors());
             responseDto.getResponses().put("message", "Error response received: "+ response.getErrors());
-            trackerStatusUpdate(processObject.getRefId(), packetDto, setter, TrackerStatus.FAILED, (new Gson()).toJson(responseDto), null);
+            Map<String, Object> additionalMaps = Map.of("REF_CODE", demoDetails.get("SUBFOLDER"));
+            trackerStatusUpdate(processObject.getRefId(), packetDto, setter, TrackerStatus.FAILED, (new Gson()).toJson(responseDto), additionalMaps);
         }
         timeDifference = System.nanoTime()-startTime;
         logger.debug("SESSION_ID", APPLICATION_NAME, APPLICATION_ID, "Time Taken to exit the id repo file. " + trackerRefId + " " + TimeUnit.SECONDS.convert(timeDifference, TimeUnit.NANOSECONDS));
