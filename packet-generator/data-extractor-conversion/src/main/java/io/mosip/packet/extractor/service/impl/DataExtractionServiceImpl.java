@@ -231,6 +231,14 @@ public class DataExtractionServiceImpl implements DataExtractionService {
                     trackerRequestDto.setSessionKey(SESSION_KEY);
                     trackerRequestDto.setStatus(TrackerStatus.STARTED.toString());
                     trackerRequestDto.setComments("Object Ready For Processing");
+
+                    if (!PACKET_TRACKER_ADDITIONAL_FIELDS.isEmpty()) {
+                        Map<String, Object> additionalMap = new HashMap<>();
+                        for (String key : PACKET_TRACKER_ADDITIONAL_FIELDS.keySet()) {
+                            additionalMap.put(key, dataHashMap.get(FieldCategory.DEMO).get(key));
+                        }
+                        trackerRequestDto.setAdditionalMaps(additionalMap);
+                    }
                     trackerUtil.addTrackerEntry(trackerRequestDto);
 
                     DataProcessorResponseDto processObject = dataProcessorApiFactory.process(dbImportRequest, dataHashMap, setter);

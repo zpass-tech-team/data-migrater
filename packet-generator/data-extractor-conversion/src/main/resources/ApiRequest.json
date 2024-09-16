@@ -15,7 +15,7 @@
 				"executionOrderSequence": 1,
 				"tableName": "VOTERS_LIST",
 				"nonIdSchemaTableFields": [
-					"FOLDER", "SUBFOLDER"
+					"FOLDER", "SUBFOLDER", "REG_CODE"
 				],
 				"filters" : [
 					{
@@ -460,6 +460,10 @@
 						}
 					]
 				}
+			},
+			{
+				"fieldName": "CLIENT_RECORDS_LIST.SUBFOLDER",
+				"fieldToMap": "REG_CODE"
 			}
 		],
 		"trackerInfo" : {
