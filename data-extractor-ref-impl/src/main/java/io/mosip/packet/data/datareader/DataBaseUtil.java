@@ -197,8 +197,11 @@ public class DataBaseUtil implements DataReader {
                     filterCondition += trackColumn + String.format(" NOT IN (SELECT REF_ID FROM %s WHERE SESSION_KEY = '%s') ", TRACKER_TABLE_NAME, SESSION_KEY);
                     selectSql += filterCondition;
                 }
-
-                selectSql += " ORDER BY  " + (applicationIdColumn != null && !applicationIdColumn.isEmpty() ? applicationIdColumn : trackColumn);
+                if (tableRequestDto.getOrderBy() != null ) {
+                    selectSql += " ORDER BY  " + String.join(",", tableRequestDto.getOrderBy());
+                } else {
+                    selectSql += " ORDER BY  " + (applicationIdColumn != null && !applicationIdColumn.isEmpty() ? applicationIdColumn : trackColumn);
+                }
 
                 if(!isPackerTrackerFilterRequired || !isTrackerSameHost)
                     selectSql += " " + QueryOffsetLimitSetter.valueOf(dbType.toString()).getValue(OFFSET_VALUE, Long.valueOf(dbReaderMaxThreadPoolCount*dbReaderMaxRecordsCountPerThreadPool));
