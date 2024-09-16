@@ -7,6 +7,7 @@ import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.packet.core.constant.DBTypes;
+import io.mosip.packet.core.constant.GlobalConfig;
 import io.mosip.packet.core.constant.TableQueries;
 import io.mosip.packet.core.constant.tracker.*;
 import io.mosip.packet.core.dto.TrackerAdditionalColumns;
@@ -81,7 +82,7 @@ public class TrackerUtil {
                 try {
                     statement = conn.createStatement();
                     statement.execute("SELECT COUNT(*) FROM " + TRACKER_TABLE_NAME);
-                    if(additionalFields != null) {
+                    if(StringUtils.hasText(additionalFields)) {
                         List<TrackerAdditionalColumns> val = mapper.readValue(additionalFields, new TypeReference<List<TrackerAdditionalColumns>>() {});
                         for(TrackerAdditionalColumns detail : val) {
                             PACKET_TRACKER_ADDITIONAL_FIELDS.put(detail.getColumnName(), detail.getIdSchemaField());
@@ -186,8 +187,17 @@ public class TrackerUtil {
                 valueMap.put("REF_ID", trackerRequestDto.getRefId());
                 valueMap.put("REG_NO", trackerRequestDto.getRegNo());
                 valueMap.put("STATUS", trackerRequestDto.getStatus());
+                if(trackerRequestDto.getStatus().equals(TrackerStatus.STARTED.toString())) {
+                    valueMap.put("CR_BY", "MIGRATOR");
+                    valueMap.put("CR_DTIMES", DateUtils.formatDate(timestamp, "yyyy-MM-dd HH:mm:ss"));
+                    valueMap.put("UPD_BY", null);
+                    valueMap.put("UPD_DTIMES", null);
+                } else {
                 valueMap.put("CR_BY", "MIGRATOR");
-                valueMap.put("CR_DTIMES", DateUtils.formatDate(timestamp, "yyyy-MM-dd HH:mm:ss"));
+                    valueMap.put("CR_DTIMES", DateUtils.formatDate(timestamp, "yyyy-MM-dd HH:mm:ss"));
+                    valueMap.put("UPD_BY", "MIGRATOR");
+                    valueMap.put("UPD_DTIMES", DateUtils.formatDate(timestamp, "yyyy-MM-dd HH:mm:ss"));
+                }
                 valueMap.put("SESSION_KEY", trackerRequestDto.getSessionKey());
                 valueMap.put("ACTIVITY", trackerRequestDto.getActivity());
                 valueMap.put("PROCESS", trackerRequestDto.getProcess());
@@ -198,7 +208,7 @@ public class TrackerUtil {
 
                 if(trackerRequestDto.getAdditionalMaps() != null) {
                     for(Map.Entry<String, Object> entry : trackerRequestDto.getAdditionalMaps().entrySet()) {
-                        if(PACKET_TRACKER_ADDITIONAL_FIELDS.containsKey(entry.getKey())) {
+                        if(PACKET_TRACKER_ADDITIONAL_FIELDS.containsKey(entry.getKey()) && entry.getValue() != null) {
                             insetAddCol += ", " + entry.getKey();
                             insetAddVal += ",'" + entry.getValue().toString() + "'";
                             insetAddColVal += ", " + entry.getKey() + "= '" + entry.getValue().toString() + "'";
